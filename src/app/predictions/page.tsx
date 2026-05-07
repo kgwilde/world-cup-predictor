@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { fixtures } from '@/data/fixtures';
-import { predictions } from '@/data/predictions';
 import type { Fixture } from '@/lib/types';
 import { groupPredictionsByScore } from '@/lib/predictions';
 import { FixtureCard } from '@/components/FixtureSlider';
@@ -33,8 +32,9 @@ function getFixtureDateKey(kickoffUtc: string) {
   return `${year}-${month}-${day}`;
 }
 
-function getPredictionsForFixture(fixtureId: string) {
-  return predictions.filter((prediction) => prediction.fixtureId === fixtureId);
+function getPredictionsForFixture(_fixtureId: string) {
+  // Predictions will be populated from Firestore once the tournament begins
+  return [];
 }
 
 function buildAvailableDates(allFixtures: Fixture[]) {

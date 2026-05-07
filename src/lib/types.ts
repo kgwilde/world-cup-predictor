@@ -65,3 +65,14 @@ export interface PlayerStanding {
   matchPoints: MatchPoints[];
   previousRank?: number;
 }
+
+// ─── Auth / User Profile ─────────────────────────────────────────────────────
+
+export interface UserProfile {
+  uid: string;
+  displayName: string | null;
+  email: string | null;
+  avatarUrl: string | null;
+  predictionFileUrl: string | null;
+  predictionUploadedAt: string | null;
+}

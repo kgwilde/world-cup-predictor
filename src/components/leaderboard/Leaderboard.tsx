@@ -1,37 +1,87 @@
 'use client';
 
-import { useState } from 'react';
-import { useStandings } from '@/components/hooks/use_standings';
-import { PlayerStanding } from '@/lib/types';
+import { useEffect, useState } from 'react';
 
+import { useAuthStore } from '@/app/stores/useAuthStore';
+import { useStandings } from '@/components/hooks/use_standings';
 import LeaderboardRow from '@/components/leaderboard/LeaderboardRow';
 import ReplayControls from '@/components/leaderboard/ReplayControls';
-
 import { fixtures } from '@/data/fixtures';
-import { results } from '@/data/results';
+import { generateMockPredictions, mockResults } from '@/data/mockData';
+import { getAllUsers } from '@/lib/firestore';
+import type { MatchResult, Player, PlayerStanding, Prediction, UserProfile } from '@/lib/types';
 
-const playedFixtures = getPlayedFixtures();
+const IS_MOCK = process.env.NEXT_PUBLIC_MOCK_RESULTS === 'true';
+
+const ACTIVE_RESULTS: MatchResult[] = IS_MOCK ? mockResults : [];
+
+const PLAYED_FIXTURES = (() => {
+  const withResults = new Set(ACTIVE_RESULTS.map((r) => r.fixtureId));
+  return fixtures
+    .filter((f) => withResults.has(f.id))
+    .sort((a, b) => new Date(a.kickoff).getTime() - new Date(b.kickoff).getTime());
+})();
+
+function resolveAvatarSrc(url: string | null): string | undefined {
+  if (!url) return undefined;
+  if (url.includes('.blob.vercel-storage.com/')) {
+    return `/api/blob-proxy?url=${encodeURIComponent(url)}`;
+  }
+  return url;
+}
+
+function userToPlayer(profile: UserProfile): Player {
+  return {
+    id: profile.uid,
+    name: profile.displayName ?? 'Unknown',
+    photoUrl: resolveAvatarSrc(profile.avatarUrl),
+  };
+}
 
 export default function Leaderboard() {
-  const [replayIndex, setReplayIndex] = useState(playedFixtures.length - 1);
-  const [viewerId] = useState<string | null>(readViewerIdFromStorage());
+  const viewerId = useAuthStore((s) => s.user?.uid ?? null);
+  const authLoading = useAuthStore((s) => s.loading);
+  const [firestoreUsers, setFirestoreUsers] = useState<UserProfile[]>([]);
+  const [usersLoading, setUsersLoading] = useState(true);
+  const [replayIndex, setReplayIndex] = useState(PLAYED_FIXTURES.length - 1);
+
+  // Wait for auth to resolve before querying Firestore so security rules can evaluate correctly
+  useEffect(() => {
+    if (authLoading) return;
+    getAllUsers()
+      .then(setFirestoreUsers)
+      .catch(console.error)
+      .finally(() => setUsersLoading(false));
+  }, [authLoading]);
+
+  const players: Player[] = firestoreUsers.map(userToPlayer);
+  const predictions: Prediction[] = IS_MOCK ? generateMockPredictions(players) : [];
 
   const { currentStandings, previousStandings, currentFixture } = useStandings(
-    playedFixtures,
+    players,
+    predictions,
+    ACTIVE_RESULTS,
+    PLAYED_FIXTURES,
     replayIndex
   );
+
+  if (usersLoading) {
+    return (
+      <div className="flex justify-center py-20">
+        <div className="w-6 h-6 border-2 border-wc-white/30 border-t-wc-white rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-2xl mx-auto px-4 space-y-4">
       <div className="space-y-4">
-        {playedFixtures.length > 0 && (
-          <ReplayControls
-            fixtures={playedFixtures}
-            currentIndex={replayIndex}
-            onPrev={() => setReplayIndex((index) => Math.max(-1, index - 1))}
-            onNext={() => setReplayIndex((index) => Math.min(playedFixtures.length - 1, index + 1))}
-          />
-        )}
+        <ReplayControls
+          fixtures={PLAYED_FIXTURES}
+          currentIndex={replayIndex}
+          onPrev={() => setReplayIndex((i) => Math.max(-1, i - 1))}
+          onNext={() => setReplayIndex((i) => Math.min(PLAYED_FIXTURES.length - 1, i + 1))}
+        />
 
         {currentStandings.length === 0 && <EmptyState />}
 
@@ -59,21 +109,6 @@ export default function Leaderboard() {
   );
 }
 
-function getPlayedFixtures() {
-  const fixtureIdsWithResults = new Set(results.map((result) => result.fixtureId));
-  const playedFixtures = fixtures.filter((fixture) => fixtureIdsWithResults.has(fixture.id));
-  return playedFixtures.sort(
-    (a, b) => new Date(a.kickoff).getTime() - new Date(b.kickoff).getTime()
-  );
-}
-
-function readViewerIdFromStorage(): string | null {
-  if (typeof window === 'undefined') {
-    return null;
-  }
-  return localStorage.getItem('playerId');
-}
-
 function getFixturePoints(standings: PlayerStanding[], playerId: string, fixtureId: string) {
   const standing = standings.find((s) => s.player.id === playerId);
   return standing?.matchPoints.find((mp) => mp.fixtureId === fixtureId)?.points ?? 0;
@@ -84,9 +119,7 @@ function getRankChange(
   previousStandings: PlayerStanding[] | null,
   playerId: string
 ) {
-  if (!previousStandings) {
-    return 0;
-  }
+  if (!previousStandings) return 0;
   const currentRank = currentStandings.find((s) => s.player.id === playerId)?.rank ?? 0;
   const previousRank = previousStandings.find((s) => s.player.id === playerId)?.rank ?? 0;
   return previousRank - currentRank;
@@ -98,10 +131,7 @@ function buildMatchDelta(
   currentFixtureId: string,
   playerId: string
 ) {
-  const hasStanding = standings.some((s) => s.player.id === playerId);
-  if (!hasStanding) {
-    return null;
-  }
+  if (!standings.some((s) => s.player.id === playerId)) return null;
   return {
     points: getFixturePoints(standings, playerId, currentFixtureId),
     rankChange: getRankChange(standings, previousStandings, playerId),
@@ -111,9 +141,9 @@ function buildMatchDelta(
 function EmptyState() {
   return (
     <div className="text-center py-20">
-      <div className="font-display text-4xl font-bold text-wc-black/20 mb-2">WE ARE</div>
-      <div className="font-display text-6xl font-bold text-wc-black/20">26</div>
-      <p className="text-wc-black/40 text-sm font-body mt-4">
+      <div className="font-display text-4xl font-bold text-wc-white/20 mb-2">WE ARE</div>
+      <div className="font-display text-6xl font-bold text-wc-white/20">26</div>
+      <p className="text-wc-white/40 text-sm font-body mt-4">
         No results yet. Check back after the first match.
       </p>
     </div>

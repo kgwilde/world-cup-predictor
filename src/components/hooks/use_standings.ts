@@ -1,14 +1,17 @@
 import { fixtures } from '@/data/fixtures';
-import { players } from '@/data/players';
-import { predictions } from '@/data/predictions';
-import { results } from '@/data/results';
 import { calculateStandings } from '@/lib/scoring';
-import { Fixture, PlayerStanding } from '@/lib/types';
+import type { Fixture, MatchResult, Player, PlayerStanding, Prediction } from '@/lib/types';
 
-export function useStandings(playedFixtures: Fixture[], replayIndex: number) {
+export function useStandings(
+  players: Player[],
+  predictions: Prediction[],
+  results: MatchResult[],
+  playedFixtures: Fixture[],
+  replayIndex: number,
+) {
   if (replayIndex === -1) {
     return {
-      currentStandings: buildZeroStandings(),
+      currentStandings: buildZeroStandings(players),
       previousStandings: null,
       currentFixture: null,
     };
@@ -22,7 +25,7 @@ export function useStandings(playedFixtures: Fixture[], replayIndex: number) {
     predictions,
     results,
     currentFixture?.id,
-    fixtures
+    fixtures,
   );
 
   const previousStandings = previousFixture
@@ -32,7 +35,7 @@ export function useStandings(playedFixtures: Fixture[], replayIndex: number) {
   return { currentStandings, previousStandings, currentFixture };
 }
 
-function buildZeroStandings(): PlayerStanding[] {
+function buildZeroStandings(players: Player[]): PlayerStanding[] {
   return [...players]
     .sort((a, b) => a.name.localeCompare(b.name))
     .map((player, index) => ({

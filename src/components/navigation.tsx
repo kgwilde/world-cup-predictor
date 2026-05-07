@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Home, Brain, Trophy, User } from 'lucide-react';
-import { useIdentityStore } from '@/app/stores/useIdentityStore';
 
 type NavItem = {
   href: string;
@@ -15,6 +14,7 @@ const BASE_NAV_ITEMS: NavItem[] = [
   { href: '/', label: 'Home', Icon: Home },
   { href: '/predictions', label: 'Predictions', Icon: Brain },
   { href: '/scoring', label: 'Scoring', Icon: Trophy },
+  { href: '/profile', label: 'Profile', Icon: User },
 ];
 
 function isActivePath(itemPath: string, currentPath: string): boolean {
@@ -79,33 +79,17 @@ function NavLink({ item, isActive, variant, isDisabled = false }: NavLinkProps) 
 export function Navigation() {
   const currentPath = usePathname();
 
-  const playerId = useIdentityStore((state) => state.playerId);
-  const hasHydrated = useIdentityStore((state) => state.hasHydrated);
-
-  const profileNavItem: NavItem = {
-    href: playerId ? '/profile' : '#',
-    label: 'Profile',
-    Icon: User,
-  };
-
-  const navItems: NavItem[] = [...BASE_NAV_ITEMS, profileNavItem];
-
   return (
     <>
       <nav className="hidden sm:block bg-wc-ink border-b border-wc-white/10 sticky top-[88px] z-10">
         <div className="max-w-2xl mx-auto px-4 flex items-center gap-2">
-          {navItems.map((item) => {
-            const isProfileTab = item.label === 'Profile';
-
-            const isDisabled = isProfileTab && (!hasHydrated || !playerId);
-
+          {BASE_NAV_ITEMS.map((item) => {
             return (
               <NavLink
                 key={item.href}
                 item={item}
                 isActive={isActivePath(item.href, currentPath)}
                 variant="top"
-                isDisabled={isDisabled}
               />
             );
           })}
@@ -114,10 +98,8 @@ export function Navigation() {
 
       <nav className="sm:hidden fixed bottom-0 inset-x-0 bg-wc-ink border-t border-wc-white/10 z-20 pb-[env(safe-area-inset-bottom)]">
         <div className="max-w-2xl mx-auto flex items-stretch">
-          {navItems.map((item) => {
+          {BASE_NAV_ITEMS.map((item) => {
             const isProfileTab = item.label === 'Profile';
-
-            const isDisabled = isProfileTab && (!hasHydrated || !playerId);
 
             return (
               <NavLink
@@ -125,7 +107,6 @@ export function Navigation() {
                 item={item}
                 isActive={isActivePath(item.href, currentPath)}
                 variant="bottom"
-                isDisabled={isDisabled}
               />
             );
           })}
