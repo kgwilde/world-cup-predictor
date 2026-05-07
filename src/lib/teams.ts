@@ -1,0 +1,38 @@
+export const TEAM_NAMES: Record<string, string> = {
+  MX: 'Mexico',
+  US: 'USA',
+  CA: 'Canada',
+  AR: 'Argentina',
+  DE: 'Germany',
+  BR: 'Brazil',
+  FR: 'France',
+  ES: 'Spain',
+  PT: 'Portugal',
+  ZA: 'South Africa',
+  GB: 'England',
+  IT: 'Italy',
+  NL: 'Netherlands',
+  JP: 'Japan',
+  MA: 'Morocco',
+  NG: 'Nigeria',
+  SN: 'Senegal',
+  AU: 'Australia',
+  KR: 'South Korea',
+  HR: 'Croatia',
+  BE: 'Belgium',
+  CH: 'Switzerland',
+  UY: 'Uruguay',
+  CO: 'Colombia',
+  EC: 'Ecuador',
+  PE: 'Peru',
+  QA: 'Qatar',
+  SA: 'Saudi Arabia',
+  IR: 'Iran',
+  TR: 'Turkey',
+  PL: 'Poland',
+  RS: 'Serbia',
+};
+
+export function teamName(code: string): string {
+  return TEAM_NAMES[code] ?? code;
+}
