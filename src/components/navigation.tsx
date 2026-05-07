@@ -55,9 +55,7 @@ function NavLink({ item, isActive, variant, isDisabled = false, showBadge = fals
         tabIndex={isDisabled ? -1 : 0}
       >
         {label}
-        {showBadge && (
-          <span className="absolute top-1.5 right-1 w-2 h-2 rounded-full bg-wc-gold" />
-        )}
+        {showBadge && <span className="absolute top-1.5 right-1 w-2 h-2 rounded-full bg-wc-gold" />}
       </Link>
     );
   }
@@ -65,7 +63,7 @@ function NavLink({ item, isActive, variant, isDisabled = false, showBadge = fals
   const baseClasses =
     'relative flex flex-col items-center justify-center gap-1 flex-1 py-2 transition-colors';
 
-  const activeClasses = isActive ? 'text-wc-white' : 'text-wc-white/40';
+  const activeClasses = isActive ? 'text-wc-white' : 'text-gray-400';
 
   const disabledClasses = isDisabled ? 'opacity-40 pointer-events-none cursor-not-allowed' : '';
 

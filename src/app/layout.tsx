@@ -1,14 +1,27 @@
 import type { Metadata, Viewport } from 'next';
+import localFont from 'next/font/local';
+import { Noto_Sans } from 'next/font/google';
+
 import { ClientProviders } from '@/components/ClientProviders';
 import { Header } from '@/components/Header';
 import { Navigation } from '@/components/navigation';
-import { Barlow_Condensed, Noto_Sans } from 'next/font/google';
+
 import './globals.css';
 
-const display = Barlow_Condensed({
-  variable: '--font-display-src',
-  subsets: ['latin'],
-  weight: ['400', '600', '700', '800'],
+const fifaSans = localFont({
+  src: [
+    {
+      path: '../../public/fonts/FIFASans-Regular.woff2',
+      weight: '400',
+      style: 'normal',
+    },
+    {
+      path: '../../public/fonts/FIFASans-Medium.woff2',
+      weight: '500',
+      style: 'normal',
+    },
+  ],
+  variable: '--font-body-src',
 });
 
 const body = Noto_Sans({
@@ -38,7 +51,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className="dark">
-      <body className={`${display.variable} ${body.variable} font-body antialiased`}>
+      <body className={`${fifaSans.variable} ${body.variable} font-body antialiased`}>
         <div className="min-h-screen bg-wc-black pb-16 sm:pb-0">
           <ClientProviders />
           <Header />

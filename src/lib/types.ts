@@ -39,6 +39,7 @@ export interface MatchResult {
 export interface Player {
   id: string;
   name: string;
+  teamName?: string;
   photoUrl?: string;
 }
 
@@ -73,6 +74,7 @@ export interface UserProfile {
   displayName: string | null;
   email: string | null;
   avatarUrl: string | null;
+  teamName: string | null;
   predictionFileUrl: string | null;
   predictionUploadedAt: string | null;
   approved: boolean;

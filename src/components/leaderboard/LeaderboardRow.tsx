@@ -83,7 +83,7 @@ export default function LeaderboardRow({ standing, isViewer, matchDelta }: Props
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5">
           <span className="font-display text-wc-white font-bold text-lg leading-tight truncate">
-            {standing.player.name}
+            {standing.player.teamName ?? standing.player.name}
           </span>
           {isViewer && (
             <span className="text-[10px] font-body font-semibold text-wc-gold bg-wc-gold/10 px-1.5 py-0.5 rounded uppercase tracking-wider shrink-0">
@@ -91,6 +91,9 @@ export default function LeaderboardRow({ standing, isViewer, matchDelta }: Props
             </span>
           )}
         </div>
+        {standing.player.teamName && (
+          <p className="text-wc-white/40 text-xs font-body truncate">{standing.player.name}</p>
+        )}
       </div>
 
       {matchDelta && (

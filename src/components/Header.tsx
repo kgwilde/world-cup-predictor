@@ -2,6 +2,7 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 
 import { useEffect, useState } from 'react';
 
@@ -9,24 +10,31 @@ export function Header() {
   return (
     <header className="bg-wc-blue border-b border-wc-white/10 sticky top-0 z-10">
       <div className="max-w-2xl mx-auto px-3 sm:px-4 py-3 sm:py-4 flex items-center justify-between gap-3">
-        <Image
-          src="/logo.svg"
-          alt="Logo"
-          width={40}
-          height={40}
-          className="select-none w-8 h-8 sm:w-10 sm:h-10 shrink-0"
-        />
-        <div className="min-w-0 flex-1">
-          <h1 className="font-display font-bold text-base sm:text-2xl tracking-tight leading-tight">
-            World Cup 2026
-          </h1>
-          <h1 className="font-display font-bold text-base sm:text-2xl tracking-tight leading-tight">
-            Match Predictor
-          </h1>
-          <p className="hidden sm:block text-wc-bone text-md font-body tracking-widest mt-1">
-            11 June - 19 July 2026
-          </p>
-        </div>
+        <Link
+          href="/"
+          className="flex items-center gap-3 min-w-0 flex-1 hover:opacity-90 transition-opacity"
+        >
+          <Image
+            src="/logo.svg"
+            alt="Logo"
+            width={40}
+            height={40}
+            className="select-none w-8 h-8 sm:w-10 sm:h-10 shrink-0"
+          />
+
+          <div className="min-w-0">
+            <h1 className="font-display font-bold text-base sm:text-2xl tracking-tight leading-tight">
+              World Cup 2026
+            </h1>
+            <h1 className="font-display font-bold text-base sm:text-2xl tracking-tight leading-tight">
+              Match Predictor
+            </h1>
+            <p className="hidden sm:block text-wc-bone text-md font-body tracking-widest mt-1">
+              11 June - 19 July 2026
+            </p>
+          </div>
+        </Link>
+
         <WorldCupCountdown />
       </div>
     </header>

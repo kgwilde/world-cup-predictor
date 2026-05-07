@@ -1,13 +1,11 @@
 'use client';
 
 import { getIdToken } from 'firebase/auth';
-import { CheckCircle2, Clock, Download, Upload, X } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { CheckCircle2, Clock, Upload, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 
 import { useAuthStore } from '@/app/stores/useAuthStore';
 import { updateUserProfile } from '@/lib/firestore';
-
-const TEMPLATE_URL = process.env.NEXT_PUBLIC_PREDICTIONS_TEMPLATE_URL ?? null;
 
 function resolveAvatarSrc(url: string | null): string | null {
   if (!url) return null;
@@ -28,6 +26,15 @@ export function ProfileSettings() {
   const [predictionsError, setPredictionsError] = useState<string | null>(null);
   const [predictionsSuccess, setPredictionsSuccess] = useState(false);
 
+  const [teamNameValue, setTeamNameValue] = useState(profile?.teamName ?? '');
+  const [teamNameSaving, setTeamNameSaving] = useState(false);
+  const [teamNameError, setTeamNameError] = useState<string | null>(null);
+  const [teamNameSuccess, setTeamNameSuccess] = useState(false);
+
+  useEffect(() => {
+    setTeamNameValue(profile?.teamName ?? '');
+  }, [profile?.teamName]);
+
   if (!user || !profile) return null;
 
   const uid = user.uid;
@@ -39,6 +46,23 @@ export function ProfileSettings() {
 
   async function getToken(): Promise<string> {
     return getIdToken(user!);
+  }
+
+  async function handleTeamNameSave() {
+    const trimmed = teamNameValue.trim();
+    if (!trimmed) return;
+    setTeamNameSaving(true);
+    setTeamNameError(null);
+    setTeamNameSuccess(false);
+    try {
+      await updateUserProfile(uid, { teamName: trimmed });
+      await refreshProfile();
+      setTeamNameSuccess(true);
+    } catch (err) {
+      setTeamNameError(err instanceof Error ? err.message : 'Failed to save');
+    } finally {
+      setTeamNameSaving(false);
+    }
   }
 
   async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -94,6 +118,7 @@ export function ProfileSettings() {
   }
 
   const isApproved = profile.approved === true;
+  const hasTeamName = !!profile.teamName;
   const hasPredictions = !!profile.predictionFileUrl;
 
   return (
@@ -158,7 +183,9 @@ export function ProfileSettings() {
               <StatusChip done={isApproved} doneLabel="Approved" pendingLabel="Pending" />
             </div>
             {isApproved ? (
-              <p className="text-wc-bone text-xs">You&apos;re in — your account has been approved.</p>
+              <p className="text-wc-bone text-xs">
+                You&apos;re in — your account has been approved.
+              </p>
             ) : (
               <p className="text-wc-bone text-xs">
                 Your account is under review. Come back here to see when you&apos;ve been approved.
@@ -167,81 +194,112 @@ export function ProfileSettings() {
           </div>
         </div>
 
-        {/* Step 2: Predictions */}
+        {/* Step 2: Team name */}
+        <div className="flex gap-4">
+          <div className="flex flex-col items-center">
+            <StepIcon done={hasTeamName} />
+            <div className="w-px flex-1 bg-wc-white/10 my-1" />
+          </div>
+          <div className="pb-3 flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="font-display font-bold text-sm text-wc-white">Team name</span>
+              <StatusChip done={hasTeamName} doneLabel="Saved" pendingLabel="Not set" />
+            </div>
+            <p className="text-wc-bone text-xs">
+              Your team name is shown on the leaderboard to everyone else.
+            </p>
+          </div>
+        </div>
+
+        {/* Team name actions — full width */}
+        <div className="flex flex-col gap-3 mb-6">
+          <input
+            type="text"
+            value={teamNameValue}
+            onChange={(e) => {
+              setTeamNameValue(e.target.value);
+              setTeamNameSuccess(false);
+            }}
+            placeholder="e.g. Galácticos FC"
+            maxLength={40}
+            disabled={teamNameSaving}
+            className="bg-wc-ink text-wc-white text-sm rounded-lg px-3 py-2.5 outline-none border border-wc-white/10 focus:border-wc-gold/50 placeholder:text-wc-white/20 disabled:opacity-50 transition-colors"
+          />
+          <button
+            onClick={handleTeamNameSave}
+            disabled={
+              teamNameSaving || !teamNameValue.trim() || teamNameValue.trim() === profile.teamName
+            }
+            className="flex items-center justify-center gap-2 text-sm font-semibold bg-wc-gold text-wc-black rounded-lg px-4 py-3 hover:opacity-90 transition-opacity disabled:opacity-50"
+          >
+            {teamNameSaving ? 'Saving…' : profile.teamName ? 'Update team name' : 'Save team name'}
+          </button>
+          {teamNameError && <p className="text-red-400 text-xs">{teamNameError}</p>}
+          {teamNameSuccess && <p className="text-green-400 text-xs">Team name saved!</p>}
+        </div>
+
+        {/* Step 3: Predictions */}
         <div className="flex gap-4">
           <div className="flex flex-col items-center pt-0.5">
             <StepIcon done={hasPredictions} />
           </div>
-          <div className="flex-1 min-w-0 flex flex-col gap-3">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="font-display font-bold text-sm text-wc-white">Predictions</span>
-                <StatusChip
-                  done={hasPredictions}
-                  doneLabel="Uploaded"
-                  pendingLabel="Not uploaded"
-                />
-              </div>
-              <p className="text-wc-bone text-xs">
-                Download the template, fill in your scores, then upload before the tournament starts.
-              </p>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="font-display font-bold text-sm text-wc-white">Predictions</span>
+              <StatusChip done={hasPredictions} doneLabel="Uploaded" pendingLabel="Not uploaded" />
             </div>
+            <p className="text-wc-bone text-xs">
+              Download the template, fill in your scores, then upload before the tournament starts.
+            </p>
+          </div>
+        </div>
 
-            {TEMPLATE_URL && (
-              <a
-                href={TEMPLATE_URL}
-                download
-                className="flex items-center justify-between bg-wc-ink rounded-lg px-3 py-2.5 hover:bg-wc-white/5 transition-colors group"
-              >
-                <div>
-                  <p className="text-wc-white text-sm font-medium">predictions-template.xlsx</p>
-                  <p className="text-wc-bone text-xs">Download and fill in your scores</p>
-                </div>
-                <Download size={16} className="text-wc-gold shrink-0" />
-              </a>
-            )}
+        {/* Predictions actions — full width */}
+        <div className="flex flex-col gap-3 mt-3">
+          <div className="bg-wc-ink rounded-lg px-3 py-2.5">
+            <p className="text-wc-white/40 text-sm">Predictions template coming soon</p>
+          </div>
 
-            {profile.predictionFileUrl && (
-              <div className="flex items-center justify-between bg-wc-ink rounded-lg px-3 py-2">
-                <div>
-                  <p className="text-wc-white text-sm font-medium">Predictions uploaded</p>
-                  {profile.predictionUploadedAt && (
-                    <p className="text-wc-bone text-xs">{formatDate(profile.predictionUploadedAt)}</p>
-                  )}
-                </div>
-                {predictionDownloadUrl && (
-                  <a href={predictionDownloadUrl} className="text-wc-gold text-xs underline">
-                    Download
-                  </a>
+          {profile.predictionFileUrl && (
+            <div className="flex items-center justify-between bg-wc-ink rounded-lg px-3 py-2">
+              <div>
+                <p className="text-wc-white text-sm font-medium">Predictions uploaded</p>
+                {profile.predictionUploadedAt && (
+                  <p className="text-wc-bone text-xs">{formatDate(profile.predictionUploadedAt)}</p>
                 )}
               </div>
-            )}
+              {predictionDownloadUrl && (
+                <a href={predictionDownloadUrl} className="text-wc-gold text-xs underline">
+                  Download
+                </a>
+              )}
+            </div>
+          )}
 
-            <input
-              ref={predictionsInputRef}
-              type="file"
-              accept=".xlsx,.csv"
-              className="hidden"
-              onChange={handlePredictionsChange}
-            />
-            <button
-              onClick={() => predictionsInputRef.current?.click()}
-              disabled={predictionsLoading}
-              className="flex items-center justify-center gap-2 text-sm font-semibold bg-wc-gold text-wc-black rounded-lg px-4 py-3 hover:opacity-90 transition-opacity disabled:opacity-50"
-            >
-              <Upload size={14} />
-              {predictionsLoading
-                ? 'Uploading…'
-                : profile.predictionFileUrl
-                  ? 'Replace file'
-                  : 'Upload predictions'}
-            </button>
+          <input
+            ref={predictionsInputRef}
+            type="file"
+            accept=".xlsx,.csv"
+            className="hidden"
+            onChange={handlePredictionsChange}
+          />
+          <button
+            onClick={() => predictionsInputRef.current?.click()}
+            disabled={predictionsLoading}
+            className="flex items-center justify-center gap-2 text-sm font-semibold bg-wc-gold text-wc-black rounded-lg px-4 py-3 hover:opacity-90 transition-opacity disabled:opacity-50"
+          >
+            <Upload size={14} />
+            {predictionsLoading
+              ? 'Uploading…'
+              : profile.predictionFileUrl
+                ? 'Replace file'
+                : 'Upload predictions'}
+          </button>
 
-            {predictionsError && <p className="text-red-400 text-xs">{predictionsError}</p>}
-            {predictionsSuccess && (
-              <p className="text-green-400 text-xs">Predictions uploaded successfully!</p>
-            )}
-          </div>
+          {predictionsError && <p className="text-red-400 text-xs">{predictionsError}</p>}
+          {predictionsSuccess && (
+            <p className="text-green-400 text-xs">Predictions uploaded successfully!</p>
+          )}
         </div>
       </div>
 
@@ -306,7 +364,9 @@ function Initials({ name, size }: { name: string; size: number }) {
 }
 
 function Spinner() {
-  return <div className="w-6 h-6 border-2 border-wc-white/30 border-t-wc-white rounded-full animate-spin" />;
+  return (
+    <div className="w-6 h-6 border-2 border-wc-white/30 border-t-wc-white rounded-full animate-spin" />
+  );
 }
 
 function formatDate(iso: string): string {

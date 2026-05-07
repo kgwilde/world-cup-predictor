@@ -36,6 +36,7 @@ function userToPlayer(profile: UserProfile): Player {
   return {
     id: profile.uid,
     name: profile.displayName ?? 'Unknown',
+    teamName: profile.teamName ?? undefined,
     photoUrl: resolveAvatarSrc(profile.avatarUrl),
   };
 }
@@ -56,7 +57,9 @@ export default function Leaderboard() {
       .catch(console.error)
       .finally(() => setUsersLoading(false));
   }, [authLoading]);
-  const players: Player[] = firestoreUsers.filter((u) => u.approved === true).map(userToPlayer);
+  const players: Player[] = firestoreUsers
+    .filter((u) => u.approved === true && !!u.teamName)
+    .map(userToPlayer);
   const predictions: Prediction[] = IS_MOCK ? generateMockPredictions(players) : [];
 
   const { currentStandings, previousStandings, currentFixture } = useStandings(
