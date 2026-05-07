@@ -33,6 +33,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             displayName: user.displayName,
             email: user.email,
             avatarUrl: user.photoURL,
+            teamName: null,
             predictionFileUrl: null,
             predictionUploadedAt: null,
             approved: false,
