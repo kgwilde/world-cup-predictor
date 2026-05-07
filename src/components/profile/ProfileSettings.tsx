@@ -1,7 +1,7 @@
 'use client';
 
 import { getIdToken } from 'firebase/auth';
-import { Download, Upload, X } from 'lucide-react';
+import { CheckCircle2, Clock, Download, Upload, X } from 'lucide-react';
 import { useRef, useState } from 'react';
 
 import { useAuthStore } from '@/app/stores/useAuthStore';
@@ -11,7 +11,6 @@ const TEMPLATE_URL = process.env.NEXT_PUBLIC_PREDICTIONS_TEMPLATE_URL ?? null;
 
 function resolveAvatarSrc(url: string | null): string | null {
   if (!url) return null;
-  // Blob-stored avatars need the server-side proxy; Google/external URLs are already public
   if (url.includes('.blob.vercel-storage.com/')) {
     return `/api/blob-proxy?url=${encodeURIComponent(url)}`;
   }
@@ -45,21 +44,16 @@ export function ProfileSettings() {
   async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-
     setAvatarError(null);
     setAvatarLoading(true);
-
     try {
       const idToken = await getToken();
       const formData = new FormData();
       formData.append('file', file);
       formData.append('idToken', idToken);
-
       const res = await fetch('/api/upload/avatar', { method: 'POST', body: formData });
       const data = await res.json();
-
       if (!res.ok) throw new Error(data.error ?? 'Upload failed');
-
       await updateUserProfile(uid, { avatarUrl: data.url });
       await refreshProfile();
     } catch (err) {
@@ -73,22 +67,17 @@ export function ProfileSettings() {
   async function handlePredictionsChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-
     setPredictionsError(null);
     setPredictionsSuccess(false);
     setPredictionsLoading(true);
-
     try {
       const idToken = await getToken();
       const formData = new FormData();
       formData.append('file', file);
       formData.append('idToken', idToken);
-
       const res = await fetch('/api/upload/predictions', { method: 'POST', body: formData });
       const data = await res.json();
-
       if (!res.ok) throw new Error(data.error ?? 'Upload failed');
-
       const now = new Date().toISOString();
       await updateUserProfile(uid, {
         predictionFileUrl: data.url,
@@ -104,9 +93,12 @@ export function ProfileSettings() {
     }
   }
 
+  const isApproved = profile.approved === true;
+  const hasPredictions = !!profile.predictionFileUrl;
+
   return (
     <div className="max-w-sm mx-auto px-4 py-8 flex flex-col gap-6">
-      {/* Avatar section */}
+      {/* Profile header */}
       <div className="bg-wc-ink rounded-2xl p-6 flex flex-col items-center gap-4">
         <div className="relative">
           {avatarSrc ? (
@@ -152,74 +144,105 @@ export function ProfileSettings() {
         {avatarError && <p className="text-red-400 text-xs text-center">{avatarError}</p>}
       </div>
 
-      {/* Predictions file section */}
-      <div className="bg-wc-ink rounded-2xl p-6 flex flex-col gap-4">
-        <div>
-          <h2 className="font-display font-bold text-lg text-wc-white">Predictions file</h2>
-          <p className="text-wc-bone text-xs mt-1">
-            Download the template, fill in your predictions, then upload it before the tournament
-            starts.
-          </p>
-        </div>
-
-        {/* Template download */}
-        {TEMPLATE_URL && (
-          <a
-            href={TEMPLATE_URL}
-            download
-            className="flex items-center justify-between bg-wc-black/40 rounded-lg px-3 py-2.5 hover:bg-wc-black/60 transition-colors group"
-          >
-            <div>
-              <p className="text-wc-white text-sm font-medium">predictions-template.xlsx</p>
-              <p className="text-wc-bone text-xs">Download and fill in your scores</p>
+      {/* Setup checklist */}
+      <div className="flex flex-col">
+        {/* Step 1: Account approval */}
+        <div className="flex gap-4">
+          <div className="flex flex-col items-center">
+            <StepIcon done={isApproved} />
+            <div className="w-px flex-1 bg-wc-white/10 my-1" />
+          </div>
+          <div className="pb-6 flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="font-display font-bold text-sm text-wc-white">Account approval</span>
+              <StatusChip done={isApproved} doneLabel="Approved" pendingLabel="Pending" />
             </div>
-            <Download size={16} className="text-wc-gold shrink-0 group-hover:text-wc-gold/80" />
-          </a>
-        )}
-
-        {/* Uploaded file status */}
-        {profile.predictionFileUrl ? (
-          <div className="flex items-center justify-between bg-wc-black/40 rounded-lg px-3 py-2">
-            <div>
-              <p className="text-wc-white text-sm font-medium">Predictions uploaded</p>
-              {profile.predictionUploadedAt && (
-                <p className="text-wc-bone text-xs">{formatDate(profile.predictionUploadedAt)}</p>
-              )}
-            </div>
-            {predictionDownloadUrl && (
-              <a href={predictionDownloadUrl} className="text-wc-gold text-xs underline">
-                Download
-              </a>
+            {isApproved ? (
+              <p className="text-wc-bone text-xs">You&apos;re in — your account has been approved.</p>
+            ) : (
+              <p className="text-wc-bone text-xs">
+                Your account is under review. Come back here to see when you&apos;ve been approved.
+              </p>
             )}
           </div>
-        ) : (
-          <p className="text-wc-bone text-sm">No file uploaded yet.</p>
-        )}
+        </div>
 
-        <input
-          ref={predictionsInputRef}
-          type="file"
-          accept=".xlsx,.csv"
-          className="hidden"
-          onChange={handlePredictionsChange}
-        />
-        <button
-          onClick={() => predictionsInputRef.current?.click()}
-          disabled={predictionsLoading}
-          className="flex items-center justify-center gap-2 text-sm font-semibold bg-wc-gold text-wc-black rounded-lg px-4 py-3 hover:opacity-90 transition-opacity disabled:opacity-50"
-        >
-          <Upload size={14} />
-          {predictionsLoading
-            ? 'Uploading…'
-            : profile.predictionFileUrl
-              ? 'Replace file'
-              : 'Upload predictions'}
-        </button>
+        {/* Step 2: Predictions */}
+        <div className="flex gap-4">
+          <div className="flex flex-col items-center pt-0.5">
+            <StepIcon done={hasPredictions} />
+          </div>
+          <div className="flex-1 min-w-0 flex flex-col gap-3">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="font-display font-bold text-sm text-wc-white">Predictions</span>
+                <StatusChip
+                  done={hasPredictions}
+                  doneLabel="Uploaded"
+                  pendingLabel="Not uploaded"
+                />
+              </div>
+              <p className="text-wc-bone text-xs">
+                Download the template, fill in your scores, then upload before the tournament starts.
+              </p>
+            </div>
 
-        {predictionsError && <p className="text-red-400 text-xs">{predictionsError}</p>}
-        {predictionsSuccess && (
-          <p className="text-green-400 text-xs">Predictions uploaded successfully!</p>
-        )}
+            {TEMPLATE_URL && (
+              <a
+                href={TEMPLATE_URL}
+                download
+                className="flex items-center justify-between bg-wc-ink rounded-lg px-3 py-2.5 hover:bg-wc-white/5 transition-colors group"
+              >
+                <div>
+                  <p className="text-wc-white text-sm font-medium">predictions-template.xlsx</p>
+                  <p className="text-wc-bone text-xs">Download and fill in your scores</p>
+                </div>
+                <Download size={16} className="text-wc-gold shrink-0" />
+              </a>
+            )}
+
+            {profile.predictionFileUrl && (
+              <div className="flex items-center justify-between bg-wc-ink rounded-lg px-3 py-2">
+                <div>
+                  <p className="text-wc-white text-sm font-medium">Predictions uploaded</p>
+                  {profile.predictionUploadedAt && (
+                    <p className="text-wc-bone text-xs">{formatDate(profile.predictionUploadedAt)}</p>
+                  )}
+                </div>
+                {predictionDownloadUrl && (
+                  <a href={predictionDownloadUrl} className="text-wc-gold text-xs underline">
+                    Download
+                  </a>
+                )}
+              </div>
+            )}
+
+            <input
+              ref={predictionsInputRef}
+              type="file"
+              accept=".xlsx,.csv"
+              className="hidden"
+              onChange={handlePredictionsChange}
+            />
+            <button
+              onClick={() => predictionsInputRef.current?.click()}
+              disabled={predictionsLoading}
+              className="flex items-center justify-center gap-2 text-sm font-semibold bg-wc-gold text-wc-black rounded-lg px-4 py-3 hover:opacity-90 transition-opacity disabled:opacity-50"
+            >
+              <Upload size={14} />
+              {predictionsLoading
+                ? 'Uploading…'
+                : profile.predictionFileUrl
+                  ? 'Replace file'
+                  : 'Upload predictions'}
+            </button>
+
+            {predictionsError && <p className="text-red-400 text-xs">{predictionsError}</p>}
+            {predictionsSuccess && (
+              <p className="text-green-400 text-xs">Predictions uploaded successfully!</p>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Sign out */}
@@ -231,6 +254,37 @@ export function ProfileSettings() {
         Sign out
       </button>
     </div>
+  );
+}
+
+function StepIcon({ done }: { done: boolean }) {
+  if (done) {
+    return <CheckCircle2 className="w-6 h-6 text-wc-gold shrink-0" />;
+  }
+  return (
+    <div className="w-6 h-6 rounded-full border-2 border-wc-white/20 flex items-center justify-center shrink-0">
+      <Clock className="w-3 h-3 text-wc-white/30" />
+    </div>
+  );
+}
+
+function StatusChip({
+  done,
+  doneLabel,
+  pendingLabel,
+}: {
+  done: boolean;
+  doneLabel: string;
+  pendingLabel: string;
+}) {
+  return (
+    <span
+      className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+        done ? 'bg-wc-gold/20 text-wc-gold' : 'bg-wc-white/10 text-wc-white/40'
+      }`}
+    >
+      {done ? doneLabel : pendingLabel}
+    </span>
   );
 }
 
@@ -252,9 +306,7 @@ function Initials({ name, size }: { name: string; size: number }) {
 }
 
 function Spinner() {
-  return (
-    <div className="w-6 h-6 border-2 border-wc-white/30 border-t-wc-white rounded-full animate-spin" />
-  );
+  return <div className="w-6 h-6 border-2 border-wc-white/30 border-t-wc-white rounded-full animate-spin" />;
 }
 
 function formatDate(iso: string): string {

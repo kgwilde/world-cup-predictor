@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 
+import Link from 'next/link';
+
 import { useAuthStore } from '@/app/stores/useAuthStore';
 import { useStandings } from '@/components/hooks/use_standings';
 import LeaderboardRow from '@/components/leaderboard/LeaderboardRow';
@@ -41,6 +43,7 @@ function userToPlayer(profile: UserProfile): Player {
 export default function Leaderboard() {
   const viewerId = useAuthStore((s) => s.user?.uid ?? null);
   const authLoading = useAuthStore((s) => s.loading);
+  const isGuest = !authLoading && !viewerId;
   const [firestoreUsers, setFirestoreUsers] = useState<UserProfile[]>([]);
   const [usersLoading, setUsersLoading] = useState(true);
   const [replayIndex, setReplayIndex] = useState(PLAYED_FIXTURES.length - 1);
@@ -53,8 +56,7 @@ export default function Leaderboard() {
       .catch(console.error)
       .finally(() => setUsersLoading(false));
   }, [authLoading]);
-
-  const players: Player[] = firestoreUsers.map(userToPlayer);
+  const players: Player[] = firestoreUsers.filter((u) => u.approved === true).map(userToPlayer);
   const predictions: Prediction[] = IS_MOCK ? generateMockPredictions(players) : [];
 
   const { currentStandings, previousStandings, currentFixture } = useStandings(
@@ -82,6 +84,8 @@ export default function Leaderboard() {
           onPrev={() => setReplayIndex((i) => Math.max(-1, i - 1))}
           onNext={() => setReplayIndex((i) => Math.min(PLAYED_FIXTURES.length - 1, i + 1))}
         />
+
+        {isGuest && <SignUpPrompt />}
 
         {currentStandings.length === 0 && <EmptyState />}
 
@@ -136,6 +140,25 @@ function buildMatchDelta(
     points: getFixturePoints(standings, playerId, currentFixtureId),
     rankChange: getRankChange(standings, previousStandings, playerId),
   };
+}
+
+function SignUpPrompt() {
+  return (
+    <Link
+      href="/profile"
+      className="flex items-center justify-between px-4 py-3 rounded-xl bg-wc-gold/10 border border-wc-gold/30 hover:bg-wc-gold/20 transition-colors group"
+    >
+      <div>
+        <p className="font-display font-bold text-wc-gold text-sm tracking-wide">
+          Want to join the competition?
+        </p>
+        <p className="text-wc-white/50 text-xs font-body mt-0.5">
+          Sign up on your Profile to get on the leaderboard.
+        </p>
+      </div>
+      <span className="text-wc-gold/60 group-hover:text-wc-gold text-lg transition-colors">→</span>
+    </Link>
+  );
 }
 
 function EmptyState() {

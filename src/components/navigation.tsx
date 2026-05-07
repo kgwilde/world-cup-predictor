@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Home, Brain, Trophy, User } from 'lucide-react';
 
+import { useAuthStore } from '@/app/stores/useAuthStore';
+
 type NavItem = {
   href: string;
   label: string;
@@ -29,14 +31,15 @@ type NavLinkProps = {
   isActive: boolean;
   variant: 'top' | 'bottom';
   isDisabled?: boolean;
+  showBadge?: boolean;
 };
 
-function NavLink({ item, isActive, variant, isDisabled = false }: NavLinkProps) {
+function NavLink({ item, isActive, variant, isDisabled = false, showBadge = false }: NavLinkProps) {
   const { href, label, Icon } = item;
 
   if (variant === 'top') {
     const baseClasses =
-      'px-4 py-2 font-display font-bold text-sm tracking-wide transition-colors border-b-2';
+      'relative px-4 py-2 font-display font-bold text-sm tracking-wide transition-colors border-b-2';
 
     const activeClasses = isActive
       ? 'border-wc-white text-wc-white'
@@ -52,12 +55,15 @@ function NavLink({ item, isActive, variant, isDisabled = false }: NavLinkProps) 
         tabIndex={isDisabled ? -1 : 0}
       >
         {label}
+        {showBadge && (
+          <span className="absolute top-1.5 right-1 w-2 h-2 rounded-full bg-wc-gold" />
+        )}
       </Link>
     );
   }
 
   const baseClasses =
-    'flex flex-col items-center justify-center gap-1 flex-1 py-2 transition-colors';
+    'relative flex flex-col items-center justify-center gap-1 flex-1 py-2 transition-colors';
 
   const activeClasses = isActive ? 'text-wc-white' : 'text-wc-white/40';
 
@@ -70,7 +76,12 @@ function NavLink({ item, isActive, variant, isDisabled = false }: NavLinkProps) 
       aria-disabled={isDisabled}
       tabIndex={isDisabled ? -1 : 0}
     >
-      <Icon className="w-5 h-5" />
+      <div className="relative">
+        <Icon className="w-5 h-5" />
+        {showBadge && (
+          <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-wc-gold" />
+        )}
+      </div>
       <span className="font-display font-bold text-xs tracking-wide">{label}</span>
     </Link>
   );
@@ -78,6 +89,9 @@ function NavLink({ item, isActive, variant, isDisabled = false }: NavLinkProps) 
 
 export function Navigation() {
   const currentPath = usePathname();
+  const user = useAuthStore((s) => s.user);
+  const authLoading = useAuthStore((s) => s.loading);
+  const showProfileBadge = !authLoading && !user;
 
   return (
     <>
@@ -90,6 +104,7 @@ export function Navigation() {
                 item={item}
                 isActive={isActivePath(item.href, currentPath)}
                 variant="top"
+                showBadge={item.href === '/profile' && showProfileBadge}
               />
             );
           })}
@@ -99,14 +114,13 @@ export function Navigation() {
       <nav className="sm:hidden fixed bottom-0 inset-x-0 bg-wc-ink border-t border-wc-white/10 z-20 pb-[env(safe-area-inset-bottom)]">
         <div className="max-w-2xl mx-auto flex items-stretch">
           {BASE_NAV_ITEMS.map((item) => {
-            const isProfileTab = item.label === 'Profile';
-
             return (
               <NavLink
                 key={item.href}
                 item={item}
                 isActive={isActivePath(item.href, currentPath)}
                 variant="bottom"
+                showBadge={item.href === '/profile' && showProfileBadge}
               />
             );
           })}

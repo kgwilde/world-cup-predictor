@@ -23,6 +23,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   init: () => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      // Always mark loading at the start so consumers don't render with stale profile
+      set({ loading: true });
       if (user) {
         let profile = await getUserProfile(user.uid);
         if (!profile) {
@@ -33,6 +35,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             avatarUrl: user.photoURL,
             predictionFileUrl: null,
             predictionUploadedAt: null,
+            approved: false,
           };
           await createUserProfile(profile);
         }

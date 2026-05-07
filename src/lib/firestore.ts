@@ -1,4 +1,4 @@
-import { collection, doc, getDoc, getDocs, setDoc, updateDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocsFromServer, query, setDoc, updateDoc, where } from 'firebase/firestore';
 
 import { db } from './firebase';
 import type { UserProfile } from './types';
@@ -17,6 +17,7 @@ export async function updateUserProfile(uid: string, data: Partial<UserProfile>)
 }
 
 export async function getAllUsers(): Promise<UserProfile[]> {
-  const snap = await getDocs(collection(db, 'users'));
+  const q = query(collection(db, 'users'), where('approved', '==', true));
+  const snap = await getDocsFromServer(q);
   return snap.docs.map((d) => d.data() as UserProfile);
 }

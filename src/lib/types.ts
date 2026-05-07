@@ -75,4 +75,5 @@ export interface UserProfile {
   avatarUrl: string | null;
   predictionFileUrl: string | null;
   predictionUploadedAt: string | null;
+  approved: boolean;
 }
