@@ -13,8 +13,13 @@ export function AuthBootstrap() {
   }, [init]);
 
   useEffect(() => {
-    if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
+    if (!('serviceWorker' in navigator)) return;
+    if (process.env.NODE_ENV === 'production') {
       navigator.serviceWorker.register('/sw.js').catch(console.error);
+    } else {
+      navigator.serviceWorker.getRegistrations().then((registrations) => {
+        registrations.forEach((r) => r.unregister());
+      });
     }
   }, []);
 

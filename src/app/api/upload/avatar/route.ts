@@ -46,6 +46,7 @@ export async function POST(request: NextRequest) {
       access: 'private',
       contentType: file.type,
       addRandomSuffix: false,
+      allowOverwrite: true,
     });
 
     return NextResponse.json({ url: blob.url });

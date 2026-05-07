@@ -1,7 +1,6 @@
 // components/world-cup-countdown.tsx
 'use client';
 
-import Image from 'next/image';
 import Link from 'next/link';
 
 import { useEffect, useState } from 'react';
@@ -14,7 +13,8 @@ export function Header() {
           href="/"
           className="flex items-center gap-3 min-w-0 flex-1 hover:opacity-90 transition-opacity"
         >
-          <Image
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
             src="/logo.svg"
             alt="Logo"
             width={40}

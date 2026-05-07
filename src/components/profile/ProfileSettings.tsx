@@ -69,6 +69,13 @@ export function ProfileSettings() {
     const file = e.target.files?.[0];
     if (!file) return;
     setAvatarError(null);
+
+    if (file.size > 5 * 1024 * 1024) {
+      setAvatarError('File too large — maximum size is 5 MB.');
+      if (avatarInputRef.current) avatarInputRef.current.value = '';
+      return;
+    }
+
     setAvatarLoading(true);
     try {
       const idToken = await getToken();
@@ -77,6 +84,7 @@ export function ProfileSettings() {
       formData.append('idToken', idToken);
       const res = await fetch('/api/upload/avatar', { method: 'POST', body: formData });
       const data = await res.json();
+      console.log(data);
       if (!res.ok) throw new Error(data.error ?? 'Upload failed');
       await updateUserProfile(uid, { avatarUrl: data.url });
       await refreshProfile();
