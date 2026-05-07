@@ -74,6 +74,7 @@ export interface UserProfile {
   displayName: string | null;
   email: string | null;
   avatarUrl: string | null;
+  avatarUpdatedAt: string | null;
   teamName: string | null;
   predictionFileUrl: string | null;
   predictionUploadedAt: string | null;

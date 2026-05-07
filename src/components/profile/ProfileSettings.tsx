@@ -7,10 +7,12 @@ import { useEffect, useRef, useState } from 'react';
 import { useAuthStore } from '@/app/stores/useAuthStore';
 import { updateUserProfile } from '@/lib/firestore';
 
-function resolveAvatarSrc(url: string | null): string | null {
+function resolveAvatarSrc(url: string | null, updatedAt?: string | null): string | null {
   if (!url) return null;
   if (url.includes('.blob.vercel-storage.com/')) {
-    return `/api/blob-proxy?url=${encodeURIComponent(url)}`;
+    const params = new URLSearchParams({ url });
+    if (updatedAt) params.set('t', updatedAt);
+    return `/api/blob-proxy?${params}`;
   }
   return url;
 }
@@ -39,7 +41,7 @@ export function ProfileSettings() {
 
   const uid = user.uid;
   const displayName = profile.displayName ?? user.email ?? 'You';
-  const avatarSrc = resolveAvatarSrc(profile.avatarUrl);
+  const avatarSrc = resolveAvatarSrc(profile.avatarUrl, profile.avatarUpdatedAt);
   const predictionDownloadUrl = profile.predictionFileUrl
     ? `/api/blob-proxy?url=${encodeURIComponent(profile.predictionFileUrl)}&download`
     : null;
@@ -84,9 +86,11 @@ export function ProfileSettings() {
       formData.append('idToken', idToken);
       const res = await fetch('/api/upload/avatar', { method: 'POST', body: formData });
       const data = await res.json();
-      console.log(data);
       if (!res.ok) throw new Error(data.error ?? 'Upload failed');
-      await updateUserProfile(uid, { avatarUrl: data.url });
+      await updateUserProfile(uid, {
+        avatarUrl: data.url,
+        avatarUpdatedAt: new Date().toISOString(),
+      });
       await refreshProfile();
     } catch (err) {
       setAvatarError(err instanceof Error ? err.message : 'Upload failed');
