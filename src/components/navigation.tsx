@@ -61,7 +61,7 @@ function NavLink({ item, isActive, variant, isDisabled = false, showBadge = fals
   }
 
   const baseClasses =
-    'relative flex flex-col items-center justify-center gap-1 flex-1 py-3 transition-colors';
+    'relative flex flex-col items-center justify-center gap-1 flex-1 py-3 pb-4 transition-colors';
 
   const activeClasses = isActive ? 'text-wc-white' : 'text-gray-400';
 
