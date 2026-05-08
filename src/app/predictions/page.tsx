@@ -2,15 +2,18 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { fixtures } from '@/data/fixtures';
-import { generateMockPredictions } from '@/data/mockData';
-import type { Fixture, Player, Prediction, UserProfile } from '@/lib/types';
+import { generateMockPredictions, mockResults } from '@/data/mockData';
+import type { Fixture, MatchResult, Player, Prediction, UserProfile } from '@/lib/types';
 import { groupPredictionsByScore } from '@/lib/predictions';
+import { scoreMatch } from '@/lib/scoring';
 import { getAllUsers } from '@/lib/firestore';
 import { useAuthStore } from '@/app/stores/useAuthStore';
 import { FixtureCard } from '@/components/FixtureSlider';
+import Avatar from '@/components/leaderboard/Avatar';
 import PredictionRow from '@/components/predictions/PredictionRow';
 
 const IS_MOCK = process.env.NEXT_PUBLIC_MOCK_RESULTS === 'true';
+const ACTIVE_RESULTS: MatchResult[] = IS_MOCK ? mockResults : [];
 const MOCK_DATE_OVERRIDE: string | null = null;
 
 function resolveAvatarSrc(url: string | null): string | undefined {
@@ -74,16 +77,38 @@ function getDefaultSelectedDate(dateKeys: string[], today: Date) {
   return dateKeys[0];
 }
 
+function PlaceholderScoreChip() {
+  return (
+    <div className="rounded-lg border border-dashed border-white/20 px-3 py-1 text-sm font-semibold text-white/20 tabular-nums">
+      ? – ?
+    </div>
+  );
+}
+
+function UnpredictedRow({ player }: { player: Player }) {
+  return (
+    <div className="flex items-center justify-between gap-3 border-b border-white/10 py-3 last:border-0">
+      <div className="flex min-w-0 flex-1 items-center gap-3">
+        <Avatar name={player.name} photoUrl={player.photoUrl} size={30} />
+        <span className="text-sm font-medium leading-snug text-white/90">{player.name}</span>
+      </div>
+      <PlaceholderScoreChip />
+    </div>
+  );
+}
+
 function MatchPredictionCard({
   fixture,
   now,
   players,
   allPredictions,
+  result,
 }: {
   fixture: Fixture;
   now: Date;
   players: Player[];
   allPredictions: Prediction[];
+  result?: MatchResult;
 }) {
   const fixturePredictions = useMemo(
     () => allPredictions.filter((p) => p.fixtureId === fixture.id),
@@ -95,26 +120,55 @@ function MatchPredictionCard({
     [fixturePredictions]
   );
 
+  const sortedGroups = useMemo(() => {
+    if (!result) return predictionGroups;
+    return [...predictionGroups].sort((a, b) => {
+      const ptsA = scoreMatch(
+        { playerId: '', fixtureId: fixture.id, homeGoals: a.homeGoals, awayGoals: a.awayGoals },
+        result,
+      ).points;
+      const ptsB = scoreMatch(
+        { playerId: '', fixtureId: fixture.id, homeGoals: b.homeGoals, awayGoals: b.awayGoals },
+        result,
+      ).points;
+      if (ptsB !== ptsA) return ptsB - ptsA;
+      return b.playerIds.length - a.playerIds.length;
+    });
+  }, [predictionGroups, result, fixture.id]);
+
+  const unpredictedPlayers = useMemo(() => {
+    const predictingIds = new Set(fixturePredictions.map((p) => p.playerId));
+    return players.filter((p) => !predictingIds.has(p.id));
+  }, [fixturePredictions, players]);
+
   return (
     <div className="overflow-hidden rounded-2xl bg-wc-ink">
       <div className="p-3">
-        <FixtureCard fixture={fixture} now={now} isFullWidth />
+        <FixtureCard fixture={fixture} now={now} isFullWidth result={result} />
       </div>
       <div className="border-t border-white/10">
-        {predictionGroups.length > 0 ? (
-          <div className="px-4">
-            {predictionGroups.map((group) => (
+        <div className="px-4">
+          {sortedGroups.map((group) => {
+            const pts = result
+              ? scoreMatch(
+                  { playerId: '', fixtureId: fixture.id, homeGoals: group.homeGoals, awayGoals: group.awayGoals },
+                  result,
+                ).points
+              : undefined;
+            return (
               <PredictionRow
                 key={`${group.homeGoals}-${group.awayGoals}`}
                 group={group}
                 fixture={fixture}
                 players={players}
+                points={pts}
               />
-            ))}
-          </div>
-        ) : (
-          <p className="py-5 text-center text-sm text-white/40">No predictions submitted yet</p>
-        )}
+            );
+          })}
+          {unpredictedPlayers.map((player) => (
+            <UnpredictedRow key={player.id} player={player} />
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -123,6 +177,7 @@ function MatchPredictionCard({
 export default function PredictionsPage() {
   const now = useMemo(() => getCurrentDate(), []);
   const availableDates = useMemo(() => buildAvailableDates(fixtures), []);
+  const resultMap = useMemo(() => new Map(ACTIVE_RESULTS.map((r) => [r.fixtureId, r])), []);
   const authLoading = useAuthStore((s) => s.loading);
 
   const [selectedDate, setSelectedDate] = useState<string>(() =>
@@ -203,6 +258,7 @@ export default function PredictionsPage() {
               now={now}
               players={players}
               allPredictions={allPredictions}
+              result={resultMap.get(fixture.id)}
             />
           ))}
         </div>

@@ -71,11 +71,7 @@ export default function Leaderboard() {
   );
 
   if (usersLoading) {
-    return (
-      <div className="flex justify-center py-20">
-        <div className="w-6 h-6 border-2 border-wc-white/30 border-t-wc-white rounded-full animate-spin" />
-      </div>
-    );
+    return <LeaderboardSkeleton />;
   }
 
   return (
@@ -172,6 +168,38 @@ function EmptyState() {
       <p className="text-wc-white/40 text-sm font-body mt-4">
         No results yet. Check back after the first match.
       </p>
+    </div>
+  );
+}
+
+const SKELETON_NAME_WIDTHS = ['w-36', 'w-24', 'w-32', 'w-28', 'w-40'];
+
+function SkeletonRow({ index }: { index: number }) {
+  return (
+    <div
+      className="flex items-center gap-3 px-4 py-3 rounded-lg bg-wc-ink border border-wc-white/10 animate-pulse"
+      style={{ animationDelay: `${index * 80}ms` }}
+    >
+      <div className="w-7 h-5 rounded bg-wc-white/10 shrink-0" />
+      <div className="w-10 h-10 rounded-full bg-wc-white/10 shrink-0" />
+      <div className="flex-1 min-w-0 space-y-2">
+        <div className={`h-5 rounded bg-wc-white/10 ${SKELETON_NAME_WIDTHS[index]}`} />
+        <div className="h-3 rounded bg-wc-white/10 w-20" />
+      </div>
+      <div className="flex flex-col items-end gap-1 shrink-0">
+        <div className="w-8 h-7 rounded bg-wc-white/10" />
+        <div className="w-5 h-2.5 rounded bg-wc-white/10" />
+      </div>
+    </div>
+  );
+}
+
+function LeaderboardSkeleton() {
+  return (
+    <div className="max-w-2xl mx-auto px-4 space-y-2">
+      {SKELETON_NAME_WIDTHS.map((_, i) => (
+        <SkeletonRow key={i} index={i} />
+      ))}
     </div>
   );
 }

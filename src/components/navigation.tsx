@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Brain, Trophy, User } from 'lucide-react';
+import { Home, Brain, Trophy, User, Shield } from 'lucide-react';
 
 import { useAuthStore } from '@/app/stores/useAuthStore';
 
@@ -90,12 +90,17 @@ export function Navigation() {
   const user = useAuthStore((s) => s.user);
   const authLoading = useAuthStore((s) => s.loading);
   const showProfileBadge = !authLoading && !user;
+  const isAdmin = !!user && user.uid === process.env.NEXT_PUBLIC_ADMIN_UID;
+
+  const navItems = isAdmin
+    ? [...BASE_NAV_ITEMS, { href: '/admin', label: 'Admin', Icon: Shield }]
+    : BASE_NAV_ITEMS;
 
   return (
     <>
       <nav className="hidden sm:block bg-wc-ink border-b border-wc-white/10 sticky top-[88px] z-10">
         <div className="max-w-2xl mx-auto px-4 flex items-center gap-2">
-          {BASE_NAV_ITEMS.map((item) => {
+          {navItems.map((item) => {
             return (
               <NavLink
                 key={item.href}
@@ -111,7 +116,7 @@ export function Navigation() {
 
       <nav className="sm:hidden fixed bottom-0 inset-x-0 bg-wc-ink border-t border-wc-white/10 z-20 pb-[env(safe-area-inset-bottom)]">
         <div className="max-w-2xl mx-auto flex items-stretch">
-          {BASE_NAV_ITEMS.map((item) => {
+          {navItems.map((item) => {
             return (
               <NavLink
                 key={item.href}

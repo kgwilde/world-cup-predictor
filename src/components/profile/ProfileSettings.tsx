@@ -1,8 +1,7 @@
 'use client';
 
 import { getIdToken } from 'firebase/auth';
-import { CheckCircle2, Clock, Shield, Upload, X } from 'lucide-react';
-import Link from 'next/link';
+import { Download, Upload, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 import { useAuthStore } from '@/app/stores/useAuthStore';
@@ -131,37 +130,39 @@ export function ProfileSettings() {
   }
 
   const isApproved = profile.approved === true;
-  const hasTeamName = !!profile.teamName;
   const hasPredictions = !!profile.predictionFileUrl;
 
   return (
-    <div className="max-w-sm mx-auto px-4 py-8 flex flex-col gap-6">
-      {/* Profile header */}
-      <div className="bg-wc-ink rounded-2xl p-6 flex flex-col items-center gap-4">
-        <div className="relative">
-          {avatarSrc ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={avatarSrc}
-              alt={displayName}
-              width={96}
-              height={96}
-              className="rounded-full object-cover ring-2 ring-wc-gold"
-              style={{ width: 96, height: 96 }}
-            />
-          ) : (
-            <Initials name={displayName} size={96} />
-          )}
-          {avatarLoading && (
-            <div className="absolute inset-0 rounded-full bg-wc-black/70 flex items-center justify-center">
-              <Spinner />
-            </div>
-          )}
-        </div>
+    <div className="max-w-sm mx-auto px-4 py-8 flex flex-col gap-4">
+      {/* Profile card */}
+      <div className="bg-wc-ink rounded-2xl p-5">
+        <div className="flex items-center gap-4">
+          <div className="relative shrink-0">
+            {avatarSrc ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={avatarSrc}
+                alt={displayName}
+                width={72}
+                height={72}
+                className="rounded-full object-cover ring-2 ring-wc-gold"
+                style={{ width: 72, height: 72 }}
+              />
+            ) : (
+              <Initials name={displayName} size={72} />
+            )}
+            {avatarLoading && (
+              <div className="absolute inset-0 rounded-full bg-wc-black/70 flex items-center justify-center">
+                <Spinner />
+              </div>
+            )}
+          </div>
 
-        <div className="text-center">
-          <p className="font-display font-bold text-xl text-wc-white">{displayName}</p>
-          <p className="text-wc-bone text-sm">{user.email}</p>
+          <div className="flex-1 min-w-0">
+            <p className="font-display font-bold text-wc-white truncate">{displayName}</p>
+            <p className="text-wc-bone text-xs truncate mb-2">{user.email}</p>
+            <StatusChip done={isApproved} doneLabel="Approved" pendingLabel="Pending approval" />
+          </div>
         </div>
 
         <input
@@ -174,58 +175,19 @@ export function ProfileSettings() {
         <button
           onClick={() => avatarInputRef.current?.click()}
           disabled={avatarLoading}
-          className="flex items-center gap-2 text-sm text-wc-gold border border-wc-gold/40 rounded-lg px-4 py-2 hover:bg-wc-gold/10 transition-colors disabled:opacity-50"
+          className="mt-4 w-full flex items-center justify-center gap-2 text-sm text-wc-bone border border-wc-white/10 rounded-lg px-4 py-2.5 hover:border-wc-white/30 hover:text-wc-white transition-colors disabled:opacity-50"
         >
           <Upload size={14} />
           {avatarLoading ? 'Uploading…' : 'Change photo'}
         </button>
-        {avatarError && <p className="text-red-400 text-xs text-center">{avatarError}</p>}
+        {avatarError && <p className="text-red-400 text-xs mt-2">{avatarError}</p>}
       </div>
 
-      {/* Setup checklist */}
-      <div className="flex flex-col">
-        {/* Step 1: Account approval */}
-        <div className="flex gap-4">
-          <div className="flex flex-col items-center">
-            <StepIcon done={isApproved} />
-            <div className="w-px flex-1 bg-wc-white/10 my-1" />
-          </div>
-          <div className="pb-6 flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="font-display font-bold text-sm text-wc-white">Account approval</span>
-              <StatusChip done={isApproved} doneLabel="Approved" pendingLabel="Pending" />
-            </div>
-            {isApproved ? (
-              <p className="text-wc-bone text-xs">
-                You&apos;re in — your account has been approved.
-              </p>
-            ) : (
-              <p className="text-wc-bone text-xs">
-                Your account is under review. Come back here to see when you&apos;ve been approved.
-              </p>
-            )}
-          </div>
-        </div>
-
-        {/* Step 2: Team name */}
-        <div className="flex gap-4">
-          <div className="flex flex-col items-center">
-            <StepIcon done={hasTeamName} />
-            <div className="w-px flex-1 bg-wc-white/10 my-1" />
-          </div>
-          <div className="pb-3 flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="font-display font-bold text-sm text-wc-white">Team name</span>
-              <StatusChip done={hasTeamName} doneLabel="Saved" pendingLabel="Not set" />
-            </div>
-            <p className="text-wc-bone text-xs">
-              Your team name is shown on the leaderboard to everyone else.
-            </p>
-          </div>
-        </div>
-
-        {/* Team name actions — full width */}
-        <div className="flex flex-col gap-3 mb-6">
+      {/* Team name card */}
+      <div className="bg-wc-ink rounded-2xl p-5">
+        <p className="font-display font-bold text-sm text-wc-white mb-1">Team name</p>
+        <p className="text-wc-bone/60 text-xs mb-3">Shown to everyone on the leaderboard.</p>
+        <div className="flex gap-2">
           <input
             type="text"
             value={teamNameValue}
@@ -236,58 +198,41 @@ export function ProfileSettings() {
             placeholder="e.g. Galácticos FC"
             maxLength={40}
             disabled={teamNameSaving}
-            className="bg-wc-ink text-wc-white text-sm rounded-lg px-3 py-2.5 outline-none border border-wc-white/10 focus:border-wc-gold/50 placeholder:text-wc-white/20 disabled:opacity-50 transition-colors"
+            className="flex-1 bg-wc-black/30 text-wc-white text-sm rounded-lg px-3 py-2.5 outline-none border border-wc-white/10 focus:border-wc-gold/50 placeholder:text-wc-white/20 disabled:opacity-50 transition-colors"
           />
           <button
             onClick={handleTeamNameSave}
             disabled={
               teamNameSaving || !teamNameValue.trim() || teamNameValue.trim() === profile.teamName
             }
-            className="flex items-center justify-center gap-2 text-sm font-semibold bg-wc-gold text-wc-black rounded-lg px-4 py-3 hover:opacity-90 transition-opacity disabled:opacity-50"
+            className="text-sm font-semibold bg-wc-gold text-wc-black rounded-lg px-4 py-2.5 hover:opacity-90 transition-opacity disabled:opacity-50 shrink-0"
           >
-            {teamNameSaving ? 'Saving…' : profile.teamName ? 'Update team name' : 'Save team name'}
+            {teamNameSaving ? 'Saving…' : 'Save'}
           </button>
-          {teamNameError && <p className="text-red-400 text-xs">{teamNameError}</p>}
-          {teamNameSuccess && <p className="text-green-400 text-xs">Team name saved!</p>}
         </div>
+        {teamNameError && <p className="text-red-400 text-xs mt-2">{teamNameError}</p>}
+        {teamNameSuccess && <p className="text-green-400 text-xs mt-2">Saved!</p>}
+      </div>
 
-        {/* Step 3: Predictions */}
-        <div className="flex gap-4">
-          <div className="flex flex-col items-center pt-0.5">
-            <StepIcon done={hasPredictions} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="font-display font-bold text-sm text-wc-white">Predictions</span>
-              <StatusChip done={hasPredictions} doneLabel="Uploaded" pendingLabel="Not uploaded" />
-            </div>
-            <p className="text-wc-bone text-xs">
-              Download the template, fill in your scores, then upload before the tournament starts.
-            </p>
-          </div>
+      {/* Predictions card */}
+      <div className="bg-wc-ink rounded-2xl p-5">
+        <div className="flex items-center justify-between mb-1">
+          <p className="font-display font-bold text-sm text-wc-white">Predictions</p>
+          {hasPredictions && <StatusChip done={true} doneLabel="Uploaded" pendingLabel="" />}
         </div>
+        <p className="text-wc-bone/60 text-xs mb-4">
+          Download the template, fill in your scores, then upload before the tournament starts.
+        </p>
 
-        {/* Predictions actions — full width */}
-        <div className="flex flex-col gap-3 mt-3">
-          <div className="bg-wc-ink rounded-lg px-3 py-2.5">
-            <p className="text-wc-white/40 text-sm">Predictions template coming soon</p>
-          </div>
-
-          {profile.predictionFileUrl && (
-            <div className="flex items-center justify-between bg-wc-ink rounded-lg px-3 py-2">
-              <div>
-                <p className="text-wc-white text-sm font-medium">Predictions uploaded</p>
-                {profile.predictionUploadedAt && (
-                  <p className="text-wc-bone text-xs">{formatDate(profile.predictionUploadedAt)}</p>
-                )}
-              </div>
-              {predictionDownloadUrl && (
-                <a href={predictionDownloadUrl} className="text-wc-gold text-xs underline">
-                  Download
-                </a>
-              )}
-            </div>
-          )}
+        <div className="flex flex-col gap-2">
+          <button
+            disabled
+            className="flex items-center justify-center gap-2 text-sm text-wc-white/30 border border-wc-white/10 rounded-lg px-4 py-2.5 cursor-not-allowed"
+          >
+            <Download size={14} />
+            Download template
+            <span className="text-xs text-wc-white/20 ml-1">(coming soon)</span>
+          </button>
 
           <input
             ref={predictionsInputRef}
@@ -299,7 +244,7 @@ export function ProfileSettings() {
           <button
             onClick={() => predictionsInputRef.current?.click()}
             disabled={predictionsLoading}
-            className="flex items-center justify-center gap-2 text-sm font-semibold bg-wc-gold text-wc-black rounded-lg px-4 py-3 hover:opacity-90 transition-opacity disabled:opacity-50"
+            className="flex items-center justify-center gap-2 text-sm font-semibold bg-wc-gold text-wc-black rounded-lg px-4 py-2.5 hover:opacity-90 transition-opacity disabled:opacity-50"
           >
             <Upload size={14} />
             {predictionsLoading
@@ -309,22 +254,25 @@ export function ProfileSettings() {
                 : 'Upload predictions'}
           </button>
 
-          {predictionsError && <p className="text-red-400 text-xs">{predictionsError}</p>}
-          {predictionsSuccess && (
-            <p className="text-green-400 text-xs">Predictions uploaded successfully!</p>
+          {profile.predictionFileUrl && profile.predictionUploadedAt && (
+            <div className="flex items-center justify-between pt-1">
+              <p className="text-wc-bone/40 text-xs">
+                Uploaded {formatDate(profile.predictionUploadedAt)}
+              </p>
+              {predictionDownloadUrl && (
+                <a href={predictionDownloadUrl} className="text-wc-gold text-xs">
+                  Download
+                </a>
+              )}
+            </div>
           )}
         </div>
-      </div>
 
-      {user.uid === process.env.NEXT_PUBLIC_ADMIN_UID && (
-        <Link
-          href="/admin"
-          className="flex items-center justify-center gap-2 text-wc-gold text-sm border border-wc-gold/30 rounded-lg py-3 hover:bg-wc-gold/10 transition-colors"
-        >
-          <Shield size={14} />
-          Admin dashboard
-        </Link>
-      )}
+        {predictionsError && <p className="text-red-400 text-xs mt-2">{predictionsError}</p>}
+        {predictionsSuccess && (
+          <p className="text-green-400 text-xs mt-2">Predictions uploaded successfully!</p>
+        )}
+      </div>
 
       {/* Sign out */}
       <button
@@ -334,17 +282,6 @@ export function ProfileSettings() {
         <X size={14} />
         Sign out
       </button>
-    </div>
-  );
-}
-
-function StepIcon({ done }: { done: boolean }) {
-  if (done) {
-    return <CheckCircle2 className="w-6 h-6 text-wc-gold shrink-0" />;
-  }
-  return (
-    <div className="w-6 h-6 rounded-full border-2 border-wc-white/20 flex items-center justify-center shrink-0">
-      <Clock className="w-3 h-3 text-wc-white/30" />
     </div>
   );
 }
@@ -360,7 +297,7 @@ function StatusChip({
 }) {
   return (
     <span
-      className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+      className={`inline-block text-xs px-2 py-0.5 rounded-full font-medium ${
         done ? 'bg-wc-gold/20 text-wc-gold' : 'bg-wc-white/10 text-wc-white/40'
       }`}
     >

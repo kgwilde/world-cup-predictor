@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import * as Flags from 'country-flag-icons/react/3x2';
-import type { Fixture, FixtureStage, Team } from '@/lib/types';
+import type { Fixture, FixtureStage, MatchResult, Team } from '@/lib/types';
 
 import { fixtures } from '@/data/fixtures';
 
@@ -155,9 +155,10 @@ interface FixtureCardProps {
   fixture: Fixture;
   now: Date;
   isFullWidth?: boolean;
+  result?: MatchResult;
 }
 
-export function FixtureCard({ fixture, now, isFullWidth }: FixtureCardProps) {
+export function FixtureCard({ fixture, now, isFullWidth, result }: FixtureCardProps) {
   const kickoff = new Date(fixture.kickoff);
   const isLive = isFixtureLive(kickoff, now);
   const dayLabel = formatKickoffDay(kickoff, now);
@@ -210,9 +211,26 @@ export function FixtureCard({ fixture, now, isFullWidth }: FixtureCardProps) {
 
           <div className="flex items-center justify-between gap-2">
             <TeamHalf team={fixture.homeTeam} side="home" />
-            <span className="text-[10px] font-bold uppercase tracking-widest text-white/50">
-              vs
-            </span>
+            {result ? (
+              <div className="flex flex-col items-center gap-0.5">
+                <div className="flex items-center gap-1.5">
+                  <span className="font-display font-bold text-2xl text-wc-white tabular-nums leading-none">
+                    {result.homeGoals}
+                  </span>
+                  <span className="text-wc-white/30 text-base">–</span>
+                  <span className="font-display font-bold text-2xl text-wc-white tabular-nums leading-none">
+                    {result.awayGoals}
+                  </span>
+                </div>
+                <span className="text-[9px] font-semibold uppercase tracking-widest text-wc-white/40">
+                  FT
+                </span>
+              </div>
+            ) : (
+              <span className="text-[10px] font-bold uppercase tracking-widest text-white/50">
+                vs
+              </span>
+            )}
             <TeamHalf team={fixture.awayTeam} side="away" />
           </div>
 
