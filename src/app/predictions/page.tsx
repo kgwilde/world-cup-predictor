@@ -2,12 +2,32 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { fixtures } from '@/data/fixtures';
-import type { Fixture } from '@/lib/types';
+import { generateMockPredictions } from '@/data/mockData';
+import type { Fixture, Player, Prediction, UserProfile } from '@/lib/types';
 import { groupPredictionsByScore } from '@/lib/predictions';
+import { getAllUsers } from '@/lib/firestore';
+import { useAuthStore } from '@/app/stores/useAuthStore';
 import { FixtureCard } from '@/components/FixtureSlider';
 import PredictionRow from '@/components/predictions/PredictionRow';
 
+const IS_MOCK = process.env.NEXT_PUBLIC_MOCK_RESULTS === 'true';
 const MOCK_DATE_OVERRIDE: string | null = null;
+
+function resolveAvatarSrc(url: string | null): string | undefined {
+  if (!url) return undefined;
+  if (url.includes('.blob.vercel-storage.com/'))
+    return `/api/blob-proxy?url=${encodeURIComponent(url)}`;
+  return url;
+}
+
+function userToPlayer(profile: UserProfile): Player {
+  return {
+    id: profile.uid,
+    name: profile.displayName ?? 'Unknown',
+    teamName: profile.teamName ?? undefined,
+    photoUrl: resolveAvatarSrc(profile.avatarUrl),
+  };
+}
 
 function getCurrentDate() {
   if (MOCK_DATE_OVERRIDE) {
@@ -32,11 +52,6 @@ function getFixtureDateKey(kickoffUtc: string) {
   return `${year}-${month}-${day}`;
 }
 
-function getPredictionsForFixture(_fixtureId: string) {
-  // Predictions will be populated from Firestore once the tournament begins
-  return [];
-}
-
 function buildAvailableDates(allFixtures: Fixture[]) {
   const uniqueDateKeys = [
     ...new Set(allFixtures.map((fixture) => getFixtureDateKey(fixture.kickoff))),
@@ -59,8 +74,21 @@ function getDefaultSelectedDate(dateKeys: string[], today: Date) {
   return dateKeys[0];
 }
 
-function MatchPredictionCard({ fixture, now }: { fixture: Fixture; now: Date }) {
-  const fixturePredictions = useMemo(() => getPredictionsForFixture(fixture.id), [fixture.id]);
+function MatchPredictionCard({
+  fixture,
+  now,
+  players,
+  allPredictions,
+}: {
+  fixture: Fixture;
+  now: Date;
+  players: Player[];
+  allPredictions: Prediction[];
+}) {
+  const fixturePredictions = useMemo(
+    () => allPredictions.filter((p) => p.fixtureId === fixture.id),
+    [fixture.id, allPredictions]
+  );
 
   const predictionGroups = useMemo(
     () => groupPredictionsByScore(fixturePredictions),
@@ -68,22 +96,24 @@ function MatchPredictionCard({ fixture, now }: { fixture: Fixture; now: Date }) 
   );
 
   return (
-    <div className="space-y-3 rounded-3xl border border-white/10 bg-white/[0.02] p-3 shadow-xl backdrop-blur-sm">
-      <FixtureCard fixture={fixture} now={now} isFullWidth />
-
-      <div className="space-y-2">
+    <div className="overflow-hidden rounded-2xl bg-wc-ink">
+      <div className="p-3">
+        <FixtureCard fixture={fixture} now={now} isFullWidth />
+      </div>
+      <div className="border-t border-white/10">
         {predictionGroups.length > 0 ? (
-          predictionGroups.map((group) => (
-            <PredictionRow
-              key={`${group.homeGoals}-${group.awayGoals}`}
-              group={group}
-              fixture={fixture}
-            />
-          ))
-        ) : (
-          <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.03] px-4 py-6 text-center text-sm text-white/60">
-            No predictions have been submitted yet
+          <div className="px-4">
+            {predictionGroups.map((group) => (
+              <PredictionRow
+                key={`${group.homeGoals}-${group.awayGoals}`}
+                group={group}
+                fixture={fixture}
+                players={players}
+              />
+            ))}
           </div>
+        ) : (
+          <p className="py-5 text-center text-sm text-white/40">No predictions submitted yet</p>
         )}
       </div>
     </div>
@@ -93,9 +123,26 @@ function MatchPredictionCard({ fixture, now }: { fixture: Fixture; now: Date }) 
 export default function PredictionsPage() {
   const now = useMemo(() => getCurrentDate(), []);
   const availableDates = useMemo(() => buildAvailableDates(fixtures), []);
+  const authLoading = useAuthStore((s) => s.loading);
 
   const [selectedDate, setSelectedDate] = useState<string>(() =>
     getDefaultSelectedDate(availableDates, now)
+  );
+  const [firestoreUsers, setFirestoreUsers] = useState<UserProfile[]>([]);
+
+  useEffect(() => {
+    if (authLoading) return;
+    getAllUsers().then(setFirestoreUsers).catch(console.error);
+  }, [authLoading]);
+
+  const players = useMemo<Player[]>(
+    () => firestoreUsers.filter((u) => u.approved && !!u.teamName).map(userToPlayer),
+    [firestoreUsers]
+  );
+
+  const allPredictions = useMemo<Prediction[]>(
+    () => (IS_MOCK ? generateMockPredictions(players) : []),
+    [players]
   );
 
   const fixturesForDay = useMemo(
@@ -116,16 +163,16 @@ export default function PredictionsPage() {
   }, [selectedDate]);
 
   return (
-    <main className="min-h-screen bg-wc-black px-4 py-2 text-white sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-5xl space-y-6">
+    <main className="min-h-screen bg-wc-black px-4 py-6 text-white sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-5xl space-y-8">
         <div>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">Match Predictions</h1>
-          <p className="mt-2 text-sm text-white/60">
+          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Match Predictions</h1>
+          <p className="mt-2 max-w-lg text-sm text-white/55">
             Browse each match day and see how everyone predicted the scorelines.
           </p>
         </div>
 
-        <div className="no-scrollbar flex gap-3 overflow-x-auto pb-2">
+        <div className="no-scrollbar flex gap-2 overflow-x-auto pb-2">
           {availableDates.map((dateKey) => {
             const isActive = dateKey === selectedDate;
             const date = new Date(dateKey);
@@ -136,21 +183,27 @@ export default function PredictionsPage() {
                 ref={isActive ? activeButtonRef : null}
                 type="button"
                 onClick={() => setSelectedDate(dateKey)}
-                className={`shrink-0 rounded-2xl border px-4 py-3 text-left transition ${
+                className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition ${
                   isActive
-                    ? 'border-white/30 bg-white/10'
-                    : 'border-white/10 bg-white/[0.03] hover:bg-white/[0.06]'
+                    ? 'bg-wc-gold text-wc-black'
+                    : 'bg-wc-ink text-white/60 hover:text-white/80'
                 }`}
               >
-                <div className="text-sm font-semibold">{formatDateLabel(date)}</div>
+                {formatDateLabel(date)}
               </button>
             );
           })}
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-4">
           {fixturesForDay.map((fixture) => (
-            <MatchPredictionCard key={fixture.id} fixture={fixture} now={now} />
+            <MatchPredictionCard
+              key={fixture.id}
+              fixture={fixture}
+              now={now}
+              players={players}
+              allPredictions={allPredictions}
+            />
           ))}
         </div>
       </div>

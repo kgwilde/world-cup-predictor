@@ -1,7 +1,8 @@
 'use client';
 
 import { getIdToken } from 'firebase/auth';
-import { CheckCircle2, Clock, Upload, X } from 'lucide-react';
+import { CheckCircle2, Clock, Shield, Upload, X } from 'lucide-react';
+import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 
 import { useAuthStore } from '@/app/stores/useAuthStore';
@@ -314,6 +315,16 @@ export function ProfileSettings() {
           )}
         </div>
       </div>
+
+      {user.uid === process.env.NEXT_PUBLIC_ADMIN_UID && (
+        <Link
+          href="/admin"
+          className="flex items-center justify-center gap-2 text-wc-gold text-sm border border-wc-gold/30 rounded-lg py-3 hover:bg-wc-gold/10 transition-colors"
+        >
+          <Shield size={14} />
+          Admin dashboard
+        </Link>
+      )}
 
       {/* Sign out */}
       <button

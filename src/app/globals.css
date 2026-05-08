@@ -14,8 +14,8 @@
   --color-wc-teal: #2aa198;
   --color-wc-magenta: #d4336b;
 
-  --font-display: var(--font-display-src), 'Barlow Condensed', system-ui, sans-serif;
-  --font-body: var(--font-body-src), 'Noto Sans', system-ui, sans-serif;
+  --font-display: var(--font-body-src), 'Barlow Condensed', system-ui, sans-serif;
+  --font-body: var(--font-body-src), system-ui, sans-serif;
 }
 
 html {

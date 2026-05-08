@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from 'next';
 import localFont from 'next/font/local';
-import { Noto_Sans } from 'next/font/google';
 
 import { ClientProviders } from '@/components/ClientProviders';
 import { Header } from '@/components/Header';
@@ -24,12 +23,6 @@ const fifaSans = localFont({
   variable: '--font-body-src',
 });
 
-const body = Noto_Sans({
-  variable: '--font-body-src',
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-});
-
 export const metadata: Metadata = {
   title: 'WC26 Predictor',
   description: 'FIFA World Cup 2026 match predictions & leaderboard',
@@ -51,7 +44,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className="dark">
-      <body className={`${fifaSans.variable} ${body.variable} font-body antialiased`}>
+      <body className={`${fifaSans.variable} font-body antialiased`}>
         <div className="min-h-screen bg-wc-black pb-16 sm:pb-0">
           <ClientProviders />
           <Header />

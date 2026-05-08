@@ -1,55 +1,48 @@
 import Avatar from '@/components/leaderboard/Avatar';
 import ScoreChip from './ScoreChip';
 import StackedAvatars from './StackedAvatars';
-import { players } from '@/data/players';
 import type { PredictionGroup } from '@/lib/predictions';
-import { Fixture } from '@/lib/types';
+import type { Fixture, Player } from '@/lib/types';
 
 interface Props {
   group: PredictionGroup;
   fixture: Fixture;
+  players: Player[];
 }
 
-function getPlayerName(playerId: string) {
-  return players.find((player) => player.id === playerId)?.name ?? 'Unknown';
+function getPlayerName(players: Player[], playerId: string) {
+  return players.find((p) => p.id === playerId)?.name ?? 'Unknown';
 }
 
-function formatPlayerNames(playerIds: string[]) {
-  const names = playerIds.map(getPlayerName);
+function formatPlayerNames(players: Player[], playerIds: string[]) {
+  const names = playerIds.map((id) => getPlayerName(players, id));
 
-  if (names.length === 1) {
-    return names[0];
-  }
-
-  if (names.length === 2) {
-    return `${names[0]} & ${names[1]}`;
-  }
+  if (names.length === 1) return names[0];
+  if (names.length === 2) return `${names[0]} & ${names[1]}`;
 
   const allButLast = names.slice(0, -1).join(', ');
-  const lastName = names[names.length - 1];
-  return `${allButLast} & ${lastName}`;
+  return `${allButLast} & ${names[names.length - 1]}`;
 }
 
-export default function PredictionRow({ group, fixture }: Props) {
+export default function PredictionRow({ group, fixture, players }: Props) {
   const isGrouped = group.playerIds.length > 1;
-  const containerClass = isGrouped
-    ? 'border-wc-teal/25 bg-wc-teal/[0.07]'
-    : 'border-white/10 bg-white/[0.03]';
 
   return (
     <div
-      className={`flex items-center justify-between gap-3 rounded-2xl border px-3 py-3 ${containerClass}`}
+      className={`flex items-center justify-between gap-3 border-b border-white/10 py-3 last:border-0 ${
+        isGrouped ? 'bg-wc-teal/5' : ''
+      }`}
     >
       <div className="flex min-w-0 flex-1 items-center gap-3">
         {isGrouped ? (
           <StackedAvatars playerIds={group.playerIds} />
         ) : (
-          <Avatar name={getPlayerName(group.playerIds[0])} size={30} />
+          <Avatar name={getPlayerName(players, group.playerIds[0])} size={30} />
         )}
 
         <div className="flex min-w-0 flex-col gap-0.5">
           <div className="text-sm font-medium leading-snug text-white/90">
-            {formatPlayerNames(group.playerIds)}
+            {formatPlayerNames(players, group.playerIds)}
           </div>
           {isGrouped && (
             <div className="text-[10px] font-semibold uppercase tracking-wider text-wc-teal">

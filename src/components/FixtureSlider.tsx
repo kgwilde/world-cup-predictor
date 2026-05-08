@@ -171,7 +171,7 @@ export function FixtureCard({ fixture, now, isFullWidth }: FixtureCardProps) {
   const awayGlow = `radial-gradient(circle at top right, ${fixture.awayTeam.accentColor} 0%, transparent 45%)`;
   const cardBackground = `${homeGlow}, ${awayGlow}, #0a0a0a`;
 
-  const accentBar = `linear-gradient(to right, ${fixture.homeTeam.accentColor} 0%, ${fixture.homeTeam.accentColor} 50%, ${fixture.awayTeam.accentColor} 50%, ${fixture.awayTeam.accentColor} 100%)`;
+  const accentBar = `linear-gradient(to right, ${fixture.homeTeam.accentColor} 0%, ${fixture.homeTeam.accentColor} 35%, ${fixture.awayTeam.accentColor} 65%, ${fixture.awayTeam.accentColor} 100%)`;
 
   return (
     <article className={`snap-start shrink-0 ${isFullWidth ? 'w-full' : 'w-[15rem] sm:w-[17rem]'}`}>

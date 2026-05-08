@@ -1,7 +1,7 @@
 import { collection, doc, getDoc, getDocsFromServer, query, setDoc, updateDoc, where } from 'firebase/firestore';
 
 import { db } from './firebase';
-import type { UserProfile } from './types';
+import type { MatchResult, UserProfile } from './types';
 
 export async function getUserProfile(uid: string): Promise<UserProfile | null> {
   const snap = await getDoc(doc(db, 'users', uid));
@@ -20,4 +20,14 @@ export async function getAllUsers(): Promise<UserProfile[]> {
   const q = query(collection(db, 'users'), where('approved', '==', true));
   const snap = await getDocsFromServer(q);
   return snap.docs.map((d) => d.data() as UserProfile);
+}
+
+export async function getAllUsersAdmin(): Promise<UserProfile[]> {
+  const snap = await getDocsFromServer(collection(db, 'users'));
+  return snap.docs.map((d) => d.data() as UserProfile);
+}
+
+export async function getResults(): Promise<MatchResult[]> {
+  const snap = await getDocsFromServer(collection(db, 'results'));
+  return snap.docs.map((d) => d.data() as MatchResult);
 }
