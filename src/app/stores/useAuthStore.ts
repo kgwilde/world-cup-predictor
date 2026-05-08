@@ -4,22 +4,29 @@ import { onAuthStateChanged, signOut as firebaseSignOut, type User } from 'fireb
 import { create } from 'zustand';
 
 import { auth } from '@/lib/firebase';
-import { createUserProfile, getUserProfile } from '@/lib/firestore';
+import { createUserProfile, getAllUsers, getUserProfile } from '@/lib/firestore';
 import type { UserProfile } from '@/lib/types';
 
 interface AuthState {
   user: User | null;
   profile: UserProfile | null;
   loading: boolean;
+  allUsers: UserProfile[];
+  usersLoading: boolean;
   init: () => () => void;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
 
+// Module-level guard so we only ever fire one getAllUsers() request per session
+let allUsersFetchPromise: Promise<void> | null = null;
+
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   profile: null,
   loading: true,
+  allUsers: [],
+  usersLoading: true,
 
   init: () => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -44,6 +51,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         set({ user, profile, loading: false });
       } else {
         set({ user: null, profile: null, loading: false });
+      }
+
+      // Fetch approved players once per session — shared by Leaderboard and Predictions
+      if (!allUsersFetchPromise) {
+        allUsersFetchPromise = getAllUsers()
+          .then((users) => set({ allUsers: users, usersLoading: false }))
+          .catch(() => set({ usersLoading: false }));
       }
     });
     return unsubscribe;

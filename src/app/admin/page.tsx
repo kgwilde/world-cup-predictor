@@ -36,17 +36,17 @@ function TabSpinner() {
 
 // ─── Users Tab ────────────────────────────────────────────────────────────────
 
-function UsersTab() {
+function UsersTab({
+  users,
+  loading,
+  onUsersChange,
+}: {
+  users: UserProfile[];
+  loading: boolean;
+  onUsersChange: (users: UserProfile[]) => void;
+}) {
   const { user } = useAuthStore();
-  const [users, setUsers] = useState<UserProfile[]>([]);
-  const [loading, setLoading] = useState(true);
   const [approvingUids, setApprovingUids] = useState<Set<string>>(new Set());
-
-  useEffect(() => {
-    getAllUsersAdmin()
-      .then(setUsers)
-      .finally(() => setLoading(false));
-  }, []);
 
   async function handleApprove(targetUid: string) {
     if (!user) return;
@@ -59,7 +59,7 @@ function UsersTab() {
         body: JSON.stringify({ idToken, targetUid }),
       });
       if (!res.ok) throw new Error('Failed to approve');
-      setUsers((prev) => prev.map((u) => (u.uid === targetUid ? { ...u, approved: true } : u)));
+      onUsersChange(users.map((u) => (u.uid === targetUid ? { ...u, approved: true } : u)));
     } finally {
       setApprovingUids((prev) => {
         const next = new Set(prev);
@@ -161,31 +161,26 @@ const STAGES: { key: FixtureStage; label: string }[] = [
   { key: 'final', label: 'Final' },
 ];
 
-function ResultsTab() {
+function ResultsTab({
+  results,
+  loading,
+  onResultsChange,
+}: {
+  results: MatchResult[];
+  loading: boolean;
+  onResultsChange: (results: MatchResult[]) => void;
+}) {
   const { user } = useAuthStore();
-  const [results, setResults] = useState<MatchResult[]>([]);
-  const [loading, setLoading] = useState(true);
   const [stage, setStage] = useState<FixtureStage>('group');
-  const [homeInputs, setHomeInputs] = useState<Record<string, string>>({});
-  const [awayInputs, setAwayInputs] = useState<Record<string, string>>({});
+  // Initialized from results on first mount (key prop in parent resets when results load)
+  const [homeInputs, setHomeInputs] = useState<Record<string, string>>(() =>
+    Object.fromEntries(results.map((r) => [r.fixtureId, String(r.homeGoals)]))
+  );
+  const [awayInputs, setAwayInputs] = useState<Record<string, string>>(() =>
+    Object.fromEntries(results.map((r) => [r.fixtureId, String(r.awayGoals)]))
+  );
   const [savingIds, setSavingIds] = useState<Set<string>>(new Set());
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
-
-  useEffect(() => {
-    getResults()
-      .then((res) => {
-        setResults(res);
-        const home: Record<string, string> = {};
-        const away: Record<string, string> = {};
-        for (const r of res) {
-          home[r.fixtureId] = String(r.homeGoals);
-          away[r.fixtureId] = String(r.awayGoals);
-        }
-        setHomeInputs(home);
-        setAwayInputs(away);
-      })
-      .finally(() => setLoading(false));
-  }, []);
 
   async function handleSave(fixtureId: string) {
     if (!user) return;
@@ -205,10 +200,10 @@ function ResultsTab() {
         body: JSON.stringify({ idToken, fixtureId, homeGoals, awayGoals }),
       });
       if (!res.ok) throw new Error('Failed to save');
-      setResults((prev) => {
-        const without = prev.filter((r) => r.fixtureId !== fixtureId);
-        return [...without, { fixtureId, homeGoals, awayGoals }];
-      });
+      onResultsChange([
+        ...results.filter((r) => r.fixtureId !== fixtureId),
+        { fixtureId, homeGoals, awayGoals },
+      ]);
       setSavedIds((prev) => new Set(prev).add(fixtureId));
       setTimeout(() => {
         setSavedIds((prev) => {
@@ -346,6 +341,22 @@ type Tab = 'users' | 'results';
 export default function AdminPage() {
   const { user, loading } = useAuthStore();
   const [tab, setTab] = useState<Tab>('users');
+  const [adminUsers, setAdminUsers] = useState<UserProfile[]>([]);
+  const [adminUsersLoading, setAdminUsersLoading] = useState(true);
+  const [results, setResults] = useState<MatchResult[]>([]);
+  const [resultsLoading, setResultsLoading] = useState(true);
+
+  const isAdmin = !loading && !!user && user.uid === process.env.NEXT_PUBLIC_ADMIN_UID;
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    getAllUsersAdmin()
+      .then(setAdminUsers)
+      .finally(() => setAdminUsersLoading(false));
+    getResults()
+      .then(setResults)
+      .finally(() => setResultsLoading(false));
+  }, [isAdmin]);
 
   if (loading) {
     return (
@@ -355,7 +366,7 @@ export default function AdminPage() {
     );
   }
 
-  if (!user || user.uid !== process.env.NEXT_PUBLIC_ADMIN_UID) {
+  if (!isAdmin) {
     return (
       <div className="min-h-screen bg-wc-black flex flex-col items-center justify-center gap-3 px-4">
         <p className="text-wc-gold text-xs font-semibold uppercase tracking-widest">
@@ -393,7 +404,22 @@ export default function AdminPage() {
           ))}
         </div>
 
-        <div>{tab === 'users' ? <UsersTab /> : <ResultsTab />}</div>
+        <div>
+          {tab === 'users' ? (
+            <UsersTab
+              users={adminUsers}
+              loading={adminUsersLoading}
+              onUsersChange={setAdminUsers}
+            />
+          ) : (
+            <ResultsTab
+              key={resultsLoading ? 'loading' : 'loaded'}
+              results={results}
+              loading={resultsLoading}
+              onResultsChange={setResults}
+            />
+          )}
+        </div>
       </div>
     </div>
   );

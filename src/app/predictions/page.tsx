@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState, useEffect } from 'react';
 import { fixtures } from '@/data/fixtures';
 import { generateMockPredictions, mockResults } from '@/data/mockData';
 import type { Fixture, MatchResult, Player, Prediction, UserProfile } from '@/lib/types';
 import { groupPredictionsByScore } from '@/lib/predictions';
 import { scoreMatch } from '@/lib/scoring';
-import { getAllUsers } from '@/lib/firestore';
+import { resolveAvatarSrc } from '@/lib/avatar';
 import { useAuthStore } from '@/app/stores/useAuthStore';
 import { FixtureCard } from '@/components/FixtureSlider';
 import Avatar from '@/components/leaderboard/Avatar';
@@ -16,19 +16,12 @@ const IS_MOCK = process.env.NEXT_PUBLIC_MOCK_RESULTS === 'true';
 const ACTIVE_RESULTS: MatchResult[] = IS_MOCK ? mockResults : [];
 const MOCK_DATE_OVERRIDE: string | null = null;
 
-function resolveAvatarSrc(url: string | null): string | undefined {
-  if (!url) return undefined;
-  if (url.includes('.blob.vercel-storage.com/'))
-    return `/api/blob-proxy?url=${encodeURIComponent(url)}`;
-  return url;
-}
-
 function userToPlayer(profile: UserProfile): Player {
   return {
     id: profile.uid,
     name: profile.displayName ?? 'Unknown',
     teamName: profile.teamName ?? undefined,
-    photoUrl: resolveAvatarSrc(profile.avatarUrl),
+    photoUrl: resolveAvatarSrc(profile.avatarUrl, profile.avatarUpdatedAt),
   };
 }
 
@@ -125,11 +118,11 @@ function MatchPredictionCard({
     return [...predictionGroups].sort((a, b) => {
       const ptsA = scoreMatch(
         { playerId: '', fixtureId: fixture.id, homeGoals: a.homeGoals, awayGoals: a.awayGoals },
-        result,
+        result
       ).points;
       const ptsB = scoreMatch(
         { playerId: '', fixtureId: fixture.id, homeGoals: b.homeGoals, awayGoals: b.awayGoals },
-        result,
+        result
       ).points;
       if (ptsB !== ptsA) return ptsB - ptsA;
       return b.playerIds.length - a.playerIds.length;
@@ -151,8 +144,13 @@ function MatchPredictionCard({
           {sortedGroups.map((group) => {
             const pts = result
               ? scoreMatch(
-                  { playerId: '', fixtureId: fixture.id, homeGoals: group.homeGoals, awayGoals: group.awayGoals },
-                  result,
+                  {
+                    playerId: '',
+                    fixtureId: fixture.id,
+                    homeGoals: group.homeGoals,
+                    awayGoals: group.awayGoals,
+                  },
+                  result
                 ).points
               : undefined;
             return (
@@ -178,17 +176,11 @@ export default function PredictionsPage() {
   const now = useMemo(() => getCurrentDate(), []);
   const availableDates = useMemo(() => buildAvailableDates(fixtures), []);
   const resultMap = useMemo(() => new Map(ACTIVE_RESULTS.map((r) => [r.fixtureId, r])), []);
-  const authLoading = useAuthStore((s) => s.loading);
+  const firestoreUsers = useAuthStore((s) => s.allUsers);
 
   const [selectedDate, setSelectedDate] = useState<string>(() =>
     getDefaultSelectedDate(availableDates, now)
   );
-  const [firestoreUsers, setFirestoreUsers] = useState<UserProfile[]>([]);
-
-  useEffect(() => {
-    if (authLoading) return;
-    getAllUsers().then(setFirestoreUsers).catch(console.error);
-  }, [authLoading]);
 
   const players = useMemo<Player[]>(
     () => firestoreUsers.filter((u) => u.approved && !!u.teamName).map(userToPlayer),

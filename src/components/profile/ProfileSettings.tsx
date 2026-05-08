@@ -5,17 +5,8 @@ import { Download, Upload, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 import { useAuthStore } from '@/app/stores/useAuthStore';
+import { resolveAvatarSrc } from '@/lib/avatar';
 import { updateUserProfile } from '@/lib/firestore';
-
-function resolveAvatarSrc(url: string | null, updatedAt?: string | null): string | null {
-  if (!url) return null;
-  if (url.includes('.blob.vercel-storage.com/')) {
-    const params = new URLSearchParams({ url });
-    if (updatedAt) params.set('t', updatedAt);
-    return `/api/blob-proxy?${params}`;
-  }
-  return url;
-}
 
 export function ProfileSettings() {
   const { user, profile, signOut, refreshProfile } = useAuthStore();

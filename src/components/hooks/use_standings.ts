@@ -1,3 +1,5 @@
+import { useMemo } from 'react';
+
 import { fixtures } from '@/data/fixtures';
 import { calculateStandings } from '@/lib/scoring';
 import type { Fixture, MatchResult, Player, PlayerStanding, Prediction } from '@/lib/types';
@@ -9,28 +11,19 @@ export function useStandings(
   playedFixtures: Fixture[],
   replayIndex: number,
 ) {
-  if (replayIndex === -1) {
-    return {
-      currentStandings: buildZeroStandings(players),
-      previousStandings: null,
-      currentFixture: null,
-    };
-  }
+  const currentStandings = useMemo(() => {
+    if (replayIndex === -1) return buildZeroStandings(players);
+    const fixture = playedFixtures[replayIndex];
+    return calculateStandings(players, predictions, results, fixture?.id, fixtures);
+  }, [players, predictions, results, playedFixtures, replayIndex]);
 
-  const currentFixture = playedFixtures[replayIndex];
-  const previousFixture = replayIndex > 0 ? playedFixtures[replayIndex - 1] : null;
+  const previousStandings = useMemo(() => {
+    if (replayIndex <= 0) return null;
+    const prevFixture = playedFixtures[replayIndex - 1];
+    return calculateStandings(players, predictions, results, prevFixture.id, fixtures);
+  }, [players, predictions, results, playedFixtures, replayIndex]);
 
-  const currentStandings = calculateStandings(
-    players,
-    predictions,
-    results,
-    currentFixture?.id,
-    fixtures,
-  );
-
-  const previousStandings = previousFixture
-    ? calculateStandings(players, predictions, results, previousFixture.id, fixtures)
-    : null;
+  const currentFixture = replayIndex === -1 ? null : playedFixtures[replayIndex];
 
   return { currentStandings, previousStandings, currentFixture };
 }

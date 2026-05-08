@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import Link from 'next/link';
 
@@ -10,7 +10,7 @@ import LeaderboardRow from '@/components/leaderboard/LeaderboardRow';
 import ReplayControls from '@/components/leaderboard/ReplayControls';
 import { fixtures } from '@/data/fixtures';
 import { generateMockPredictions, mockResults } from '@/data/mockData';
-import { getAllUsers } from '@/lib/firestore';
+import { resolveAvatarSrc } from '@/lib/avatar';
 import type { MatchResult, Player, PlayerStanding, Prediction, UserProfile } from '@/lib/types';
 
 const IS_MOCK = process.env.NEXT_PUBLIC_MOCK_RESULTS === 'true';
@@ -24,20 +24,12 @@ const PLAYED_FIXTURES = (() => {
     .sort((a, b) => new Date(a.kickoff).getTime() - new Date(b.kickoff).getTime());
 })();
 
-function resolveAvatarSrc(url: string | null): string | undefined {
-  if (!url) return undefined;
-  if (url.includes('.blob.vercel-storage.com/')) {
-    return `/api/blob-proxy?url=${encodeURIComponent(url)}`;
-  }
-  return url;
-}
-
 function userToPlayer(profile: UserProfile): Player {
   return {
     id: profile.uid,
     name: profile.displayName ?? 'Unknown',
     teamName: profile.teamName ?? undefined,
-    photoUrl: resolveAvatarSrc(profile.avatarUrl),
+    photoUrl: resolveAvatarSrc(profile.avatarUrl, profile.avatarUpdatedAt),
   };
 }
 
@@ -45,18 +37,10 @@ export default function Leaderboard() {
   const viewerId = useAuthStore((s) => s.user?.uid ?? null);
   const authLoading = useAuthStore((s) => s.loading);
   const isGuest = !authLoading && !viewerId;
-  const [firestoreUsers, setFirestoreUsers] = useState<UserProfile[]>([]);
-  const [usersLoading, setUsersLoading] = useState(true);
+  const firestoreUsers = useAuthStore((s) => s.allUsers);
+  const usersLoading = useAuthStore((s) => s.usersLoading);
   const [replayIndex, setReplayIndex] = useState(PLAYED_FIXTURES.length - 1);
 
-  // Wait for auth to resolve before querying Firestore so security rules can evaluate correctly
-  useEffect(() => {
-    if (authLoading) return;
-    getAllUsers()
-      .then(setFirestoreUsers)
-      .catch(console.error)
-      .finally(() => setUsersLoading(false));
-  }, [authLoading]);
   const players: Player[] = firestoreUsers
     .filter((u) => u.approved === true && !!u.teamName)
     .map(userToPlayer);
