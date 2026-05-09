@@ -5,13 +5,13 @@ import { create } from 'zustand';
 
 import { auth } from '@/lib/firebase';
 import { createUserProfile, getAllUsers, getResults, getUserProfile } from '@/lib/firestore';
-import type { MatchResult, UserProfile } from '@/lib/types';
+import type { MatchResult, PublicProfile, UserProfile } from '@/lib/types';
 
 interface AuthState {
   user: User | null;
   profile: UserProfile | null;
   loading: boolean;
-  allUsers: UserProfile[];
+  allUsers: PublicProfile[];
   usersLoading: boolean;
   results: MatchResult[];
   resultsLoading: boolean;
@@ -85,9 +85,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     if (!user) return;
     const profile = await getUserProfile(user.uid);
     if (!profile) return;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { email: _email, ...publicProfile } = profile;
     set((state) => ({
       profile,
-      allUsers: state.allUsers.map((u) => (u.uid === profile.uid ? profile : u)),
+      allUsers: state.allUsers.map((u) => (u.uid === profile.uid ? publicProfile : u)),
     }));
   },
 }));

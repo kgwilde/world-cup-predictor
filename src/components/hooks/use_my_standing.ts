@@ -7,11 +7,11 @@ import { fixtures } from '@/data/fixtures';
 import { generateMockPredictions, mockResults } from '@/data/mockData';
 import { resolveAvatarSrc } from '@/lib/avatar';
 import { calculateStandings } from '@/lib/scoring';
-import type { Player, UserProfile } from '@/lib/types';
+import type { Player, PublicProfile } from '@/lib/types';
 
 const IS_MOCK = process.env.NEXT_PUBLIC_MOCK_RESULTS === 'true';
 
-function userToPlayer(profile: UserProfile): Player {
+function userToPlayer(profile: PublicProfile): Player {
   return {
     id: profile.uid,
     name: profile.displayName ?? 'Unknown',

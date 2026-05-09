@@ -3,7 +3,7 @@
 import { useMemo, useRef, useState, useEffect } from 'react';
 import { fixtures } from '@/data/fixtures';
 import { generateMockPredictions, mockResults } from '@/data/mockData';
-import type { Fixture, MatchResult, Player, Prediction, UserProfile } from '@/lib/types';
+import type { Fixture, MatchResult, Player, Prediction, PublicProfile } from '@/lib/types';
 import { groupPredictionsByScore } from '@/lib/predictions';
 import { scoreMatch } from '@/lib/scoring';
 import { resolveAvatarSrc } from '@/lib/avatar';
@@ -16,7 +16,7 @@ const IS_MOCK = process.env.NEXT_PUBLIC_MOCK_RESULTS === 'true';
 const ACTIVE_RESULTS: MatchResult[] = IS_MOCK ? mockResults : [];
 const MOCK_DATE_OVERRIDE: string | null = null;
 
-function userToPlayer(profile: UserProfile): Player {
+function userToPlayer(profile: PublicProfile): Player {
   return {
     id: profile.uid,
     name: profile.displayName ?? 'Unknown',

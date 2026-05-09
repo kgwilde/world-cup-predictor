@@ -11,11 +11,11 @@ import ReplayControls from '@/components/leaderboard/ReplayControls';
 import { fixtures } from '@/data/fixtures';
 import { generateMockPredictions, mockResults } from '@/data/mockData';
 import { resolveAvatarSrc } from '@/lib/avatar';
-import type { MatchResult, Player, PlayerStanding, Prediction, UserProfile } from '@/lib/types';
+import type { MatchResult, Player, PlayerStanding, Prediction, PublicProfile } from '@/lib/types';
 
 const IS_MOCK = process.env.NEXT_PUBLIC_MOCK_RESULTS === 'true';
 
-function userToPlayer(profile: UserProfile): Player {
+function userToPlayer(profile: PublicProfile): Player {
   return {
     id: profile.uid,
     name: profile.displayName ?? 'Unknown',

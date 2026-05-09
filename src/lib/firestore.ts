@@ -1,7 +1,7 @@
 import { collection, doc, getDoc, getDocsFromServer, query, setDoc, updateDoc, where } from 'firebase/firestore';
 
 import { db } from './firebase';
-import type { MatchResult, UserProfile } from './types';
+import type { MatchResult, PublicProfile, UserProfile } from './types';
 
 export async function getUserProfile(uid: string): Promise<UserProfile | null> {
   const snap = await getDoc(doc(db, 'users', uid));
@@ -16,10 +16,14 @@ export async function updateUserProfile(uid: string, data: Partial<UserProfile>)
   await updateDoc(doc(db, 'users', uid), data as Record<string, unknown>);
 }
 
-export async function getAllUsers(): Promise<UserProfile[]> {
+export async function getAllUsers(): Promise<PublicProfile[]> {
   const q = query(collection(db, 'users'), where('approved', '==', true));
   const snap = await getDocsFromServer(q);
-  return snap.docs.map((d) => d.data() as UserProfile);
+  return snap.docs.map((d) => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { email: _email, ...pub } = d.data() as UserProfile;
+    return pub;
+  });
 }
 
 export async function getAllUsersAdmin(): Promise<UserProfile[]> {
