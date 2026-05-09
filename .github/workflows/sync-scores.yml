@@ -31,7 +31,7 @@ jobs:
       - run: npm ci
 
       - name: Sync scores
-        run: node scripts/sync-scores.mjs ${{ inputs.test_mode == 'true' && '--test' || '' }}
+        run: node scripts/sync-scores.mjs ${{ inputs.test_mode && '--test' || '' }}
         env:
           FOOTBALL_DATA_API_KEY: ${{ secrets.FOOTBALL_DATA_API_KEY }}
           FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
