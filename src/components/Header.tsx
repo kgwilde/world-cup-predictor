@@ -5,6 +5,8 @@ import Link from 'next/link';
 
 import { useEffect, useState } from 'react';
 
+import { useMyStanding } from '@/components/hooks/use_my_standing';
+
 export function Header() {
   return (
     <header className="bg-wc-blue border-b border-wc-white/10 sticky top-0 z-10">
@@ -34,10 +36,42 @@ export function Header() {
             </p>
           </div>
         </Link>
-
         <WorldCupCountdown />
+        {/* <PlayerRankWidget /> */}
       </div>
     </header>
+  );
+}
+
+function ordinal(n: number): string {
+  const s = ['th', 'st', 'nd', 'rd'];
+  const v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}
+
+function PlayerRankWidget() {
+  const standing = useMyStanding();
+  if (!standing) return null;
+
+  return (
+    <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+      <div className="flex flex-col items-center">
+        <span className="font-display font-bold text-lg sm:text-2xl leading-none tabular-nums">
+          {ordinal(standing.rank)}
+        </span>
+        <span className="text-wc-bone text-[10px] sm:text-xs font-body tracking-wider mt-0.5 sm:mt-1">
+          rank
+        </span>
+      </div>
+      <div className="flex flex-col items-center">
+        <span className="font-display font-bold text-lg sm:text-2xl leading-none tabular-nums">
+          {standing.totalPoints}
+        </span>
+        <span className="text-wc-bone text-[10px] sm:text-xs font-body tracking-wider mt-0.5 sm:mt-1">
+          pts
+        </span>
+      </div>
+    </div>
   );
 }
 

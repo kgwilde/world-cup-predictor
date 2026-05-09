@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import Link from 'next/link';
 
@@ -14,15 +14,6 @@ import { resolveAvatarSrc } from '@/lib/avatar';
 import type { MatchResult, Player, PlayerStanding, Prediction, UserProfile } from '@/lib/types';
 
 const IS_MOCK = process.env.NEXT_PUBLIC_MOCK_RESULTS === 'true';
-
-const ACTIVE_RESULTS: MatchResult[] = IS_MOCK ? mockResults : [];
-
-const PLAYED_FIXTURES = (() => {
-  const withResults = new Set(ACTIVE_RESULTS.map((r) => r.fixtureId));
-  return fixtures
-    .filter((f) => withResults.has(f.id))
-    .sort((a, b) => new Date(a.kickoff).getTime() - new Date(b.kickoff).getTime());
-})();
 
 function userToPlayer(profile: UserProfile): Player {
   return {
@@ -39,7 +30,25 @@ export default function Leaderboard() {
   const isGuest = !authLoading && !viewerId;
   const firestoreUsers = useAuthStore((s) => s.allUsers);
   const usersLoading = useAuthStore((s) => s.usersLoading);
-  const [replayIndex, setReplayIndex] = useState(PLAYED_FIXTURES.length - 1);
+  const storeResults = useAuthStore((s) => s.results);
+  const resultsLoading = useAuthStore((s) => s.resultsLoading);
+
+  const activeResults: MatchResult[] = IS_MOCK ? mockResults : storeResults;
+
+  const playedFixtures = useMemo(() => {
+    const withResults = new Set(activeResults.map((r) => r.fixtureId));
+    return fixtures
+      .filter((f) => withResults.has(f.id))
+      .sort((a, b) => new Date(a.kickoff).getTime() - new Date(b.kickoff).getTime());
+  }, [activeResults]);
+
+  const [replayIndex, setReplayIndex] = useState(-1);
+
+  useEffect(() => {
+    if (!resultsLoading) {
+      setReplayIndex(playedFixtures.length - 1);
+    }
+  }, [resultsLoading, playedFixtures.length]);
 
   const players: Player[] = firestoreUsers
     .filter((u) => u.approved === true && !!u.teamName)
@@ -49,23 +58,23 @@ export default function Leaderboard() {
   const { currentStandings, previousStandings, currentFixture } = useStandings(
     players,
     predictions,
-    ACTIVE_RESULTS,
-    PLAYED_FIXTURES,
+    activeResults,
+    playedFixtures,
     replayIndex
   );
 
-  if (usersLoading) {
+  if (usersLoading || resultsLoading) {
     return <LeaderboardSkeleton />;
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 space-y-4">
+    <div className="max-w-3xl mx-auto px-4 space-y-4">
       <div className="space-y-4">
         <ReplayControls
-          fixtures={PLAYED_FIXTURES}
+          fixtures={playedFixtures}
           currentIndex={replayIndex}
           onPrev={() => setReplayIndex((i) => Math.max(-1, i - 1))}
-          onNext={() => setReplayIndex((i) => Math.min(PLAYED_FIXTURES.length - 1, i + 1))}
+          onNext={() => setReplayIndex((i) => Math.min(playedFixtures.length - 1, i + 1))}
         />
 
         {isGuest && <SignUpPrompt />}
@@ -180,7 +189,7 @@ function SkeletonRow({ index }: { index: number }) {
 
 function LeaderboardSkeleton() {
   return (
-    <div className="max-w-2xl mx-auto px-4 space-y-2">
+    <div className="max-w-3xl mx-auto px-4 space-y-2">
       {SKELETON_NAME_WIDTHS.map((_, i) => (
         <SkeletonRow key={i} index={i} />
       ))}

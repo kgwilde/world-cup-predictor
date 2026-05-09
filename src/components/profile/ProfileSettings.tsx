@@ -124,7 +124,7 @@ export function ProfileSettings() {
   const hasPredictions = !!profile.predictionFileUrl;
 
   return (
-    <div className="max-w-sm mx-auto px-4 py-8 flex flex-col gap-4">
+    <div className="max-w-3xl mx-auto px-4 py-8 flex flex-col gap-4">
       {/* Profile card */}
       <div className="bg-wc-ink rounded-2xl p-5">
         <div className="flex items-center gap-4">

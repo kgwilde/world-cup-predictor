@@ -211,7 +211,7 @@ export default function PredictionsPage() {
 
   return (
     <main className="min-h-screen bg-wc-black px-4 py-6 text-white sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-5xl space-y-8">
+      <div className="mx-auto max-w-3xl space-y-8">
         <div>
           <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Match Predictions</h1>
           <p className="mt-2 max-w-lg text-sm text-white/55">

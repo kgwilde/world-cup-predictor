@@ -1,0 +1,34 @@
+name: Sync Scores
+
+on:
+  schedule:
+    # Every 5 minutes — well within the free tier rate limit (10 req/min)
+    - cron: '*/5 * * * *'
+  # Allows manual runs from the GitHub Actions tab for testing
+  workflow_dispatch:
+    inputs:
+      competition_id:
+        description: 'football-data.org competition ID (default: WC). Use WC2022 or a league code for testing.'
+        required: false
+        default: 'WC'
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Sync scores
+        run: node scripts/sync-scores.mjs
+        env:
+          FOOTBALL_DATA_API_KEY: ${{ secrets.FOOTBALL_DATA_API_KEY }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          FOOTBALL_DATA_COMPETITION_ID: ${{ inputs.competition_id || 'WC' }}

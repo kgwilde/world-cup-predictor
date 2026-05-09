@@ -34,6 +34,7 @@ export interface MatchResult {
   fixtureId: string;
   homeGoals: number;
   awayGoals: number;
+  status?: MatchStatus;
 }
 
 export interface Player {

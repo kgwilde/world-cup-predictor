@@ -4,8 +4,8 @@ import { onAuthStateChanged, signOut as firebaseSignOut, type User } from 'fireb
 import { create } from 'zustand';
 
 import { auth } from '@/lib/firebase';
-import { createUserProfile, getAllUsers, getUserProfile } from '@/lib/firestore';
-import type { UserProfile } from '@/lib/types';
+import { createUserProfile, getAllUsers, getResults, getUserProfile } from '@/lib/firestore';
+import type { MatchResult, UserProfile } from '@/lib/types';
 
 interface AuthState {
   user: User | null;
@@ -13,13 +13,16 @@ interface AuthState {
   loading: boolean;
   allUsers: UserProfile[];
   usersLoading: boolean;
+  results: MatchResult[];
+  resultsLoading: boolean;
   init: () => () => void;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
 
-// Module-level guard so we only ever fire one getAllUsers() request per session
+// Module-level guards so we only ever fire one request per session
 let allUsersFetchPromise: Promise<void> | null = null;
+let resultsFetchPromise: Promise<void> | null = null;
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
@@ -27,6 +30,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   loading: true,
   allUsers: [],
   usersLoading: true,
+  results: [],
+  resultsLoading: true,
 
   init: () => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -59,6 +64,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           .then((users) => set({ allUsers: users, usersLoading: false }))
           .catch(() => set({ usersLoading: false }));
       }
+
+      // Fetch match results once per session
+      if (!resultsFetchPromise) {
+        resultsFetchPromise = getResults()
+          .then((results) => set({ results, resultsLoading: false }))
+          .catch(() => set({ resultsLoading: false }));
+      }
     });
     return unsubscribe;
   },
@@ -72,6 +84,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const { user } = get();
     if (!user) return;
     const profile = await getUserProfile(user.uid);
-    set({ profile });
+    if (!profile) return;
+    set((state) => ({
+      profile,
+      allUsers: state.allUsers.map((u) => (u.uid === profile.uid ? profile : u)),
+    }));
   },
 }));
