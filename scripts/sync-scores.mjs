@@ -17,11 +17,44 @@ const COMPETITION_ID = process.env.FOOTBALL_DATA_COMPETITION_ID ?? 'WC';
 const API_KEY = process.env.FOOTBALL_DATA_API_KEY;
 const PROJECT_ID = process.env.FIREBASE_PROJECT_ID;
 const SERVICE_ACCOUNT = process.env.FIREBASE_SERVICE_ACCOUNT;
+const IS_TEST = process.argv.includes('--test');
 
-if (!API_KEY || !PROJECT_ID || !SERVICE_ACCOUNT) {
-  console.error('Missing required env vars: FOOTBALL_DATA_API_KEY, FIREBASE_PROJECT_ID, FIREBASE_SERVICE_ACCOUNT');
+if (!PROJECT_ID || !SERVICE_ACCOUNT) {
+  console.error('Missing required env vars: FIREBASE_PROJECT_ID, FIREBASE_SERVICE_ACCOUNT');
   process.exit(1);
 }
+if (!IS_TEST && !API_KEY) {
+  console.error('Missing required env var: FOOTBALL_DATA_API_KEY');
+  process.exit(1);
+}
+
+// Fake finished matches using real WC fixture teams — used with --test flag
+const TEST_MATCHES = [
+  {
+    status: 'FINISHED',
+    homeTeam: { name: 'Mexico' },
+    awayTeam: { name: 'South Africa' },
+    score: { fullTime: { home: 2, away: 1 } },
+  },
+  {
+    status: 'FINISHED',
+    homeTeam: { name: 'England' },
+    awayTeam: { name: 'Croatia' },
+    score: { fullTime: { home: 3, away: 0 } },
+  },
+  {
+    status: 'IN_PLAY',
+    homeTeam: { name: 'Brazil' },
+    awayTeam: { name: 'Morocco' },
+    score: { fullTime: { home: 1, away: 0 } },
+  },
+];
+
+const API_STATUS_MAP = {
+  'FINISHED': 'final',
+  'IN_PLAY': 'live',
+  'PAUSED': 'live',
+};
 
 // ─── Team name normalisation ──────────────────────────────────────────────────
 // Maps football-data.org team names → names used in our fixture lookup below.
@@ -144,18 +177,21 @@ async function main() {
   initializeApp({ credential: cert(serviceAccount), projectId: PROJECT_ID });
   const db = getFirestore();
 
-  // Fetch matches from football-data.org
-  const res = await fetch(`https://api.football-data.org/v4/competitions/${COMPETITION_ID}/matches`, {
-    headers: { 'X-Auth-Token': API_KEY },
-  });
-
-  if (!res.ok) {
-    console.error(`football-data.org returned ${res.status}: ${await res.text()}`);
-    process.exit(1);
+  let matches;
+  if (IS_TEST) {
+    console.log('Running in test mode — using mock match data');
+    matches = TEST_MATCHES;
+  } else {
+    const res = await fetch(`https://api.football-data.org/v4/competitions/${COMPETITION_ID}/matches`, {
+      headers: { 'X-Auth-Token': API_KEY },
+    });
+    if (!res.ok) {
+      console.error(`football-data.org returned ${res.status}: ${await res.text()}`);
+      process.exit(1);
+    }
+    ({ matches } = await res.json());
+    console.log(`Fetched ${matches.length} matches for competition ${COMPETITION_ID}`);
   }
-
-  const { matches } = await res.json();
-  console.log(`Fetched ${matches.length} matches for competition ${COMPETITION_ID}`);
 
   let written = 0;
   let skipped = 0;
@@ -187,7 +223,7 @@ async function main() {
       continue;
     }
 
-    const matchStatus = status === 'FINISHED' ? 'final' : 'live';
+    const matchStatus = API_STATUS_MAP[status];
 
     await db.collection('results').doc(fixtureId).set({
       fixtureId,

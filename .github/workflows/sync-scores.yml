@@ -8,9 +8,14 @@ on:
   workflow_dispatch:
     inputs:
       competition_id:
-        description: 'football-data.org competition ID (default: WC). Use WC2022 or a league code for testing.'
+        description: 'football-data.org competition ID (default: WC)'
         required: false
         default: 'WC'
+      test_mode:
+        description: 'Use mock data instead of the API — writes real WC fixture results to Firestore'
+        type: boolean
+        required: false
+        default: false
 
 jobs:
   sync:
@@ -26,7 +31,7 @@ jobs:
       - run: npm ci
 
       - name: Sync scores
-        run: node scripts/sync-scores.mjs
+        run: node scripts/sync-scores.mjs ${{ inputs.test_mode == 'true' && '--test' || '' }}
         env:
           FOOTBALL_DATA_API_KEY: ${{ secrets.FOOTBALL_DATA_API_KEY }}
           FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
