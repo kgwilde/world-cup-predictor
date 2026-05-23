@@ -1,7 +1,7 @@
 'use client';
 
 import { getIdToken } from 'firebase/auth';
-import { Download, Upload, X } from 'lucide-react';
+import { Clock, Download, FileSpreadsheet, Trash2, Upload, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 import { useAuthStore } from '@/app/stores/useAuthStore';
@@ -15,6 +15,7 @@ export function ProfileSettings() {
 
   const [avatarLoading, setAvatarLoading] = useState(false);
   const [predictionsLoading, setPredictionsLoading] = useState(false);
+  const [predictionsDeleting, setPredictionsDeleting] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
   const [predictionsError, setPredictionsError] = useState<string | null>(null);
   const [predictionsSuccess, setPredictionsSuccess] = useState(false);
@@ -33,10 +34,6 @@ export function ProfileSettings() {
   const uid = user.uid;
   const displayName = profile.displayName ?? user.email ?? 'You';
   const avatarSrc = resolveAvatarSrc(profile.avatarUrl, profile.avatarUpdatedAt);
-  const predictionDownloadUrl = profile.predictionFileUrl
-    ? `/api/blob-proxy?url=${encodeURIComponent(profile.predictionFileUrl)}&download`
-    : null;
-
   async function getToken(): Promise<string> {
     return getIdToken(user!);
   }
@@ -108,6 +105,7 @@ export function ProfileSettings() {
       const now = new Date().toISOString();
       await updateUserProfile(uid, {
         predictionFileUrl: data.url,
+        predictionFileName: data.originalName ?? file.name,
         predictionUploadedAt: now,
       });
       await refreshProfile();
@@ -117,6 +115,33 @@ export function ProfileSettings() {
     } finally {
       setPredictionsLoading(false);
       if (predictionsInputRef.current) predictionsInputRef.current.value = '';
+    }
+  }
+
+  async function handleDeletePredictions() {
+    if (!profile?.predictionFileUrl) return;
+    setPredictionsDeleting(true);
+    setPredictionsError(null);
+    setPredictionsSuccess(false);
+    try {
+      const idToken = await getToken();
+      const res = await fetch('/api/upload/predictions', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken, blobUrl: profile.predictionFileUrl }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? 'Delete failed');
+      await updateUserProfile(uid, {
+        predictionFileUrl: null,
+        predictionFileName: null,
+        predictionUploadedAt: null,
+      });
+      await refreshProfile();
+    } catch (err) {
+      setPredictionsError(err instanceof Error ? err.message : 'Delete failed');
+    } finally {
+      setPredictionsDeleting(false);
     }
   }
 
@@ -209,21 +234,51 @@ export function ProfileSettings() {
       <div className="bg-wc-ink rounded-2xl p-5">
         <div className="flex items-center justify-between mb-1">
           <p className="font-display font-bold text-sm text-wc-white">Predictions</p>
-          {hasPredictions && <StatusChip done={true} doneLabel="Uploaded" pendingLabel="" />}
+          <StatusChip
+            done={hasPredictions}
+            doneLabel="Uploaded"
+            pendingLabel="Not uploaded"
+          />
         </div>
-        <p className="text-wc-bone/60 text-xs mb-4">
+        <p className="text-wc-bone/60 text-xs mb-3">
           Download the template, fill in your scores, then upload before the tournament starts.
         </p>
 
-        <div className="flex flex-col gap-2">
-          <button
-            disabled
-            className="flex items-center justify-center gap-2 text-sm text-wc-white/30 border border-wc-white/10 rounded-lg px-4 py-2.5 cursor-not-allowed"
+        <DeadlineCountdown />
+
+        <div className="flex flex-col gap-2 mt-3">
+          <a
+            href="/predictions-template.xlsx"
+            download
+            className="flex items-center justify-center gap-2 text-sm text-wc-bone border border-wc-white/10 rounded-lg px-4 py-2.5 hover:border-wc-white/30 hover:text-wc-white transition-colors"
           >
             <Download size={14} />
             Download template
-            <span className="text-xs text-wc-white/20 ml-1">(coming soon)</span>
-          </button>
+          </a>
+
+          {hasPredictions && (
+            <div className="flex items-center gap-3 bg-wc-black/30 border border-wc-white/10 rounded-lg px-3 py-2.5">
+              <FileSpreadsheet size={16} className="text-wc-gold shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-wc-white text-xs font-medium truncate">
+                  {profile.predictionFileName ?? 'predictions file'}
+                </p>
+                {profile.predictionUploadedAt && (
+                  <p className="text-wc-bone/40 text-xs mt-0.5">
+                    Uploaded {formatDate(profile.predictionUploadedAt)}
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={handleDeletePredictions}
+                disabled={predictionsDeleting}
+                title="Delete prediction file"
+                className="shrink-0 flex items-center justify-center w-7 h-7 rounded-md text-red-400/60 hover:text-red-400 hover:bg-red-400/10 transition-colors disabled:opacity-40"
+              >
+                {predictionsDeleting ? <Spinner size={14} /> : <Trash2 size={14} />}
+              </button>
+            </div>
+          )}
 
           <input
             ref={predictionsInputRef}
@@ -234,29 +289,12 @@ export function ProfileSettings() {
           />
           <button
             onClick={() => predictionsInputRef.current?.click()}
-            disabled={predictionsLoading}
-            className="flex items-center justify-center gap-2 text-sm font-semibold bg-wc-gold text-wc-black rounded-lg px-4 py-2.5 hover:opacity-90 transition-opacity disabled:opacity-50"
+            disabled={predictionsLoading || hasPredictions}
+            className="flex items-center justify-center gap-2 text-sm font-semibold bg-wc-gold text-wc-black rounded-lg px-4 py-2.5 hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Upload size={14} />
-            {predictionsLoading
-              ? 'Uploading…'
-              : profile.predictionFileUrl
-                ? 'Replace file'
-                : 'Upload predictions'}
+            {predictionsLoading ? 'Uploading…' : 'Upload predictions'}
           </button>
-
-          {profile.predictionFileUrl && profile.predictionUploadedAt && (
-            <div className="flex items-center justify-between pt-1">
-              <p className="text-wc-bone/40 text-xs">
-                Uploaded {formatDate(profile.predictionUploadedAt)}
-              </p>
-              {predictionDownloadUrl && (
-                <a href={predictionDownloadUrl} className="text-wc-gold text-xs">
-                  Download
-                </a>
-              )}
-            </div>
-          )}
         </div>
 
         {predictionsError && <p className="text-red-400 text-xs mt-2">{predictionsError}</p>}
@@ -314,9 +352,12 @@ function Initials({ name, size }: { name: string; size: number }) {
   );
 }
 
-function Spinner() {
+function Spinner({ size = 24 }: { size?: number }) {
   return (
-    <div className="w-6 h-6 border-2 border-wc-white/30 border-t-wc-white rounded-full animate-spin" />
+    <div
+      className="border-2 border-wc-white/30 border-t-wc-white rounded-full animate-spin"
+      style={{ width: size, height: size }}
+    />
   );
 }
 
@@ -328,4 +369,57 @@ function formatDate(iso: string): string {
     hour: '2-digit',
     minute: '2-digit',
   });
+}
+
+// June 9 2026 00:00 Dublin time (IST = UTC+1 in summer)
+const PREDICTIONS_DEADLINE = new Date('2026-06-09T00:00:00+01:00');
+
+function getTimeLeft(deadline: Date) {
+  const diff = deadline.getTime() - Date.now();
+  if (diff <= 0) return null;
+  const days = Math.floor(diff / 86_400_000);
+  const hours = Math.floor((diff % 86_400_000) / 3_600_000);
+  const minutes = Math.floor((diff % 3_600_000) / 60_000);
+  return { days, hours, minutes };
+}
+
+function DeadlineCountdown() {
+  const [timeLeft, setTimeLeft] = useState(() => getTimeLeft(PREDICTIONS_DEADLINE));
+
+  useEffect(() => {
+    const id = setInterval(() => setTimeLeft(getTimeLeft(PREDICTIONS_DEADLINE)), 60_000);
+    return () => clearInterval(id);
+  }, []);
+
+  if (!timeLeft) {
+    return (
+      <div className="flex items-center gap-1.5 text-red-400 text-xs">
+        <Clock size={12} />
+        <span>Deadline has passed</span>
+      </div>
+    );
+  }
+
+  const { days, hours, minutes } = timeLeft;
+  const isUrgent = days < 1;
+  const isWarning = days < 7;
+
+  const colorClass = isUrgent ? 'text-red-400' : isWarning ? 'text-amber-400' : 'text-wc-bone/50';
+
+  const parts = [
+    days > 0 && `${days}d`,
+    (days > 0 || hours > 0) && `${hours}h`,
+    `${minutes}m`,
+  ].filter(Boolean);
+
+  return (
+    <div className={`flex items-center gap-1.5 text-xs ${colorClass}`}>
+      <Clock size={12} className="shrink-0" />
+      <span>
+        {parts.join(' · ')} remaining — deadline{' '}
+        {PREDICTIONS_DEADLINE.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })} at{' '}
+        {PREDICTIONS_DEADLINE.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false })}
+      </span>
+    </div>
+  );
 }

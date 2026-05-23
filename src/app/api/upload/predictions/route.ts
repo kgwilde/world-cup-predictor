@@ -1,4 +1,4 @@
-import { put } from '@vercel/blob';
+import { del, put } from '@vercel/blob';
 import { NextRequest, NextResponse } from 'next/server';
 
 const ALLOWED_TYPES = [
@@ -57,9 +57,33 @@ export async function POST(request: NextRequest) {
       addRandomSuffix: false,
     });
 
-    return NextResponse.json({ url: blob.url });
+    return NextResponse.json({ url: blob.url, originalName: file.name });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Upload failed';
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const { idToken, blobUrl } = await request.json();
+    if (!idToken || !blobUrl) {
+      return NextResponse.json({ error: 'Missing token or url' }, { status: 400 });
+    }
+
+    const uid = await verifyToken(idToken);
+    if (!uid) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    if (!blobUrl.includes(`predictions/${uid}/`)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    await del(blobUrl);
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Delete failed';
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

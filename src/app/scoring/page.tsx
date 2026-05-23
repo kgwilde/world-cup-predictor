@@ -7,6 +7,7 @@ type ScoringRule = {
   points: number;
   title: string;
   description: string;
+  multiplier?: boolean;
 };
 
 type ScoringNote = {
@@ -32,6 +33,13 @@ const POINT_RULES: ScoringRule[] = [
     title: 'Correct away team goals',
     description:
       'Awarded when the number of goals you predicted for the away team matches the actual final score.',
+  },
+  {
+    points: 2,
+    multiplier: true,
+    title: 'Multi chip',
+    description:
+      'Apply a multi chip to up to 10 matches in your predictions. Any points earned on that match are doubled.',
   },
 ];
 
@@ -59,7 +67,7 @@ function RuleCard({ rule }: { rule: ScoringRule }) {
         <div className="flex items-baseline justify-between gap-4">
           <h3 className="text-base font-semibold">{rule.title}</h3>
           <span className="shrink-0 text-xl font-bold tabular-nums text-wc-gold">
-            +{rule.points}
+            {rule.multiplier ? `×${rule.points}` : `+${rule.points}`}
           </span>
         </div>
         <p className="text-sm text-white/55">{rule.description}</p>
@@ -182,8 +190,9 @@ function getOutcomeLabel({ homeGoals, awayGoals }: Scoreline) {
 function ScoringCalculator() {
   const [prediction, setPrediction] = useState<Scoreline>({ homeGoals: 2, awayGoals: 1 });
   const [actual, setActual] = useState<Scoreline>({ homeGoals: 2, awayGoals: 1 });
+  const [multiChip, setMultiChip] = useState(false);
 
-  const breakdown = calculateScoreBreakdown(prediction, actual);
+  const breakdown = calculateScoreBreakdown(prediction, actual, multiChip);
 
   const predictedOutcome = getOutcomeLabel(prediction);
   const actualOutcome = getOutcomeLabel(actual);
@@ -195,6 +204,7 @@ function ScoringCalculator() {
   function reset() {
     setPrediction({ homeGoals: 0, awayGoals: 0 });
     setActual({ homeGoals: 0, awayGoals: 0 });
+    setMultiChip(false);
   }
 
   return (
@@ -221,6 +231,39 @@ function ScoringCalculator() {
       </div>
 
       <div className="border-t border-white/10 pt-4">
+        <button
+          type="button"
+          onClick={() => setMultiChip((v) => !v)}
+          className={`mb-4 flex w-full items-center justify-between rounded-xl border px-4 py-3 transition-colors ${
+            multiChip
+              ? 'border-wc-gold/40 bg-wc-gold/10'
+              : 'border-white/10 bg-white/5 hover:border-white/20'
+          }`}
+        >
+          <div className="flex items-center gap-3">
+            <span
+              className={`text-base font-bold leading-none ${multiChip ? 'text-wc-gold' : 'text-white/30'}`}
+            >
+              ×2
+            </span>
+            <div className="text-left">
+              <div
+                className={`text-sm font-semibold ${multiChip ? 'text-white' : 'text-white/50'}`}
+              >
+                Multi chip
+              </div>
+              <div className="text-xs text-white/35">Doubles points earned on this match</div>
+            </div>
+          </div>
+          <div
+            className={`h-5 w-9 rounded-full transition-colors ${multiChip ? 'bg-wc-gold' : 'bg-white/15'}`}
+          >
+            <div
+              className={`mt-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${multiChip ? 'translate-x-[18px]' : 'translate-x-0.5'}`}
+            />
+          </div>
+        </button>
+
         <div className="mb-1 flex items-center justify-between">
           <span className="text-xs uppercase tracking-wider text-white/40">Points earned</span>
           <span className="text-2xl font-bold tabular-nums text-wc-gold">
@@ -267,6 +310,20 @@ function ScoringCalculator() {
               </>
             }
           />
+          {multiChip && (
+            <CalculatorBreakdownLine
+              title="×2 Multi chip"
+              points={breakdown.multiChipBonus}
+              isAwarded={breakdown.multiChipBonus > 0}
+              detail={
+                breakdown.multiChipBonus > 0 ? (
+                  <>Doubles your {breakdown.total / 2} base {breakdown.total / 2 === 1 ? 'point' : 'points'}.</>
+                ) : (
+                  <>No base points to multiply.</>
+                )
+              }
+            />
+          )}
         </div>
       </div>
     </div>

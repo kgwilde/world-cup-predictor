@@ -93,6 +93,8 @@ export type ScoreBreakdown = {
   resultPoints: number;
   homeGoalsPoints: number;
   awayGoalsPoints: number;
+  multiChipBonus: number;
+  multiChipApplied: boolean;
   total: number;
 };
 
@@ -110,7 +112,11 @@ function getMatchOutcome({ homeGoals, awayGoals }: Scoreline) {
   return 'draw';
 }
 
-export function calculateScoreBreakdown(prediction: Scoreline, actual: Scoreline): ScoreBreakdown {
+export function calculateScoreBreakdown(
+  prediction: Scoreline,
+  actual: Scoreline,
+  multiChip = false
+): ScoreBreakdown {
   const isResultCorrect = getMatchOutcome(prediction) === getMatchOutcome(actual);
   const isHomeGoalsCorrect = prediction.homeGoals === actual.homeGoals;
   const isAwayGoalsCorrect = prediction.awayGoals === actual.awayGoals;
@@ -119,10 +125,15 @@ export function calculateScoreBreakdown(prediction: Scoreline, actual: Scoreline
   const homeGoalsPoints = isHomeGoalsCorrect ? HOME_GOALS_POINTS : 0;
   const awayGoalsPoints = isAwayGoalsCorrect ? AWAY_GOALS_POINTS : 0;
 
+  const base = resultPoints + homeGoalsPoints + awayGoalsPoints;
+  const multiChipBonus = multiChip ? base : 0;
+
   return {
     resultPoints,
     homeGoalsPoints,
     awayGoalsPoints,
-    total: resultPoints + homeGoalsPoints + awayGoalsPoints,
+    multiChipBonus,
+    multiChipApplied: multiChip,
+    total: base + multiChipBonus,
   };
 }
