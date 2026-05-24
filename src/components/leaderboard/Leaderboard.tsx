@@ -9,7 +9,8 @@ import { useStandings } from '@/components/hooks/use_standings';
 import LeaderboardRow from '@/components/leaderboard/LeaderboardRow';
 import ReplayControls from '@/components/leaderboard/ReplayControls';
 import { fixtures } from '@/data/fixtures';
-import { generateMockPredictions, mockResults } from '@/data/mockData';
+import { mockResults } from '@/data/mockData';
+import { predictions as staticPredictions } from '@/data/predictions';
 import { resolveAvatarSrc } from '@/lib/avatar';
 import type { MatchResult, Player, PlayerStanding, Prediction, PublicProfile } from '@/lib/types';
 
@@ -51,9 +52,9 @@ export default function Leaderboard() {
   }, [resultsLoading, playedFixtures.length]);
 
   const players: Player[] = firestoreUsers
-    .filter((u) => u.approved === true && !!u.teamName)
+    .filter((u) => u.approved === true)
     .map(userToPlayer);
-  const predictions: Prediction[] = IS_MOCK ? generateMockPredictions(players) : [];
+  const predictions: Prediction[] = IS_MOCK ? staticPredictions : [];
 
   const { currentStandings, previousStandings, currentFixture } = useStandings(
     players,
@@ -110,6 +111,11 @@ function getFixturePoints(standings: PlayerStanding[], playerId: string, fixture
   return standing?.matchPoints.find((mp) => mp.fixtureId === fixtureId)?.points ?? 0;
 }
 
+function getMultiChipApplied(standings: PlayerStanding[], playerId: string, fixtureId: string) {
+  const standing = standings.find((s) => s.player.id === playerId);
+  return standing?.matchPoints.find((mp) => mp.fixtureId === fixtureId)?.multiChipApplied ?? false;
+}
+
 function getRankChange(
   currentStandings: PlayerStanding[],
   previousStandings: PlayerStanding[] | null,
@@ -131,6 +137,7 @@ function buildMatchDelta(
   return {
     points: getFixturePoints(standings, playerId, currentFixtureId),
     rankChange: getRankChange(standings, previousStandings, playerId),
+    multiChipApplied: getMultiChipApplied(standings, playerId, currentFixtureId),
   };
 }
 

@@ -15,7 +15,9 @@ export function scoreMatch(prediction: Prediction, result: MatchResult): MatchPo
   const homeGoalsCorrect = prediction.homeGoals === result.homeGoals;
   const awayGoalsCorrect = prediction.awayGoals === result.awayGoals;
 
-  const points = (resultCorrect ? 3 : 0) + (homeGoalsCorrect ? 1 : 0) + (awayGoalsCorrect ? 1 : 0);
+  const base = (resultCorrect ? 3 : 0) + (homeGoalsCorrect ? 1 : 0) + (awayGoalsCorrect ? 1 : 0);
+  const multiChipApplied = !!prediction.multiChip;
+  const points = multiChipApplied ? base * 2 : base;
 
   return {
     playerId: prediction.playerId,
@@ -24,6 +26,7 @@ export function scoreMatch(prediction: Prediction, result: MatchResult): MatchPo
     resultCorrect,
     homeGoalsCorrect,
     awayGoalsCorrect,
+    multiChipApplied,
   };
 }
 

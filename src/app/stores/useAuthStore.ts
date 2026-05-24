@@ -11,6 +11,7 @@ interface AuthState {
   user: User | null;
   profile: UserProfile | null;
   loading: boolean;
+  profileError: boolean;
   allUsers: PublicProfile[];
   usersLoading: boolean;
   results: MatchResult[];
@@ -28,6 +29,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   profile: null,
   loading: true,
+  profileError: false,
   allUsers: [],
   usersLoading: true,
   results: [],
@@ -36,25 +38,32 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   init: () => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       // Always mark loading at the start so consumers don't render with stale profile
-      set({ loading: true });
+      set({ loading: true, profileError: false });
       if (user) {
-        let profile = await getUserProfile(user.uid);
-        if (!profile) {
-          profile = {
-            uid: user.uid,
-            displayName: user.displayName,
-            email: user.email,
-            avatarUrl: user.photoURL,
-            avatarUpdatedAt: null,
-            teamName: null,
-            predictionFileUrl: null,
-            predictionFileName: null,
-            predictionUploadedAt: null,
-            approved: false,
-          };
-          await createUserProfile(profile);
+        try {
+          // Ensure the auth token is flushed to Firestore before any write —
+          // onAuthStateChanged can fire before the SDK propagates the token internally.
+          await user.getIdToken();
+          let profile = await getUserProfile(user.uid);
+          if (!profile) {
+            profile = {
+              uid: user.uid,
+              displayName: user.displayName,
+              email: user.email,
+              avatarUrl: user.photoURL,
+              avatarUpdatedAt: null,
+              teamName: null,
+              predictionFileUrl: null,
+              predictionFileName: null,
+              predictionUploadedAt: null,
+              approved: false,
+            };
+            await createUserProfile(profile);
+          }
+          set({ user, profile, loading: false });
+        } catch {
+          set({ user, profile: null, loading: false, profileError: true });
         }
-        set({ user, profile, loading: false });
       } else {
         set({ user: null, profile: null, loading: false });
       }

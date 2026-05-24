@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    const uid = await verifyAdminToken(idToken);
+    const uid = verifyAdminToken(idToken);
     if (!uid) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

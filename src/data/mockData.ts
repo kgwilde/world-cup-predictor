@@ -1,28 +1,79 @@
-import type { MatchResult, Player, Prediction } from '@/lib/types';
+import type { MatchResult } from '@/lib/types';
 
-// A handful of plausible results for the first group-stage matches (fixture IDs from fixtures.ts)
 export const mockResults: MatchResult[] = [
+  // Matchday 1
   { fixtureId: 'm001', homeGoals: 2, awayGoals: 0 },
   { fixtureId: 'm002', homeGoals: 1, awayGoals: 1 },
-  { fixtureId: 'm003', homeGoals: 2, awayGoals: 2 },
-  { fixtureId: 'm004', homeGoals: 1, awayGoals: 2 },
+  { fixtureId: 'm003', homeGoals: 1, awayGoals: 0 },
+  { fixtureId: 'm004', homeGoals: 2, awayGoals: 0 },
+  { fixtureId: 'm005', homeGoals: 0, awayGoals: 2 },
+  { fixtureId: 'm006', homeGoals: 2, awayGoals: 1 },
+  { fixtureId: 'm007', homeGoals: 0, awayGoals: 2 },
+  { fixtureId: 'm008', homeGoals: 1, awayGoals: 1 },
+  { fixtureId: 'm009', homeGoals: 4, awayGoals: 0 },
+  { fixtureId: 'm010', homeGoals: 2, awayGoals: 1 },
+  { fixtureId: 'm011', homeGoals: 2, awayGoals: 1 },
+  { fixtureId: 'm012', homeGoals: 1, awayGoals: 0 },
+  { fixtureId: 'm013', homeGoals: 3, awayGoals: 0 },
+  { fixtureId: 'm014', homeGoals: 1, awayGoals: 0 },
+  { fixtureId: 'm015', homeGoals: 0, awayGoals: 2 },
+  { fixtureId: 'm016', homeGoals: 1, awayGoals: 0 },
+  { fixtureId: 'm017', homeGoals: 2, awayGoals: 0 },
+  { fixtureId: 'm018', homeGoals: 0, awayGoals: 2 },
+  { fixtureId: 'm019', homeGoals: 3, awayGoals: 0 },
+  { fixtureId: 'm020', homeGoals: 2, awayGoals: 0 },
+  { fixtureId: 'm021', homeGoals: 3, awayGoals: 0 },
+  { fixtureId: 'm022', homeGoals: 1, awayGoals: 0 },
+  { fixtureId: 'm023', homeGoals: 1, awayGoals: 1 },
+  { fixtureId: 'm024', homeGoals: 0, awayGoals: 1 },
+  // Matchday 2
+  { fixtureId: 'm025', homeGoals: 1, awayGoals: 0 },
+  { fixtureId: 'm026', homeGoals: 2, awayGoals: 0 },
+  { fixtureId: 'm027', homeGoals: 3, awayGoals: 1 },
+  { fixtureId: 'm028', homeGoals: 2, awayGoals: 1 },
+  { fixtureId: 'm029', homeGoals: 2, awayGoals: 0 },
+  { fixtureId: 'm030', homeGoals: 1, awayGoals: 1 },
+  { fixtureId: 'm031', homeGoals: 4, awayGoals: 0 },
+  { fixtureId: 'm032', homeGoals: 2, awayGoals: 0 },
+  { fixtureId: 'm033', homeGoals: 2, awayGoals: 0 },
+  { fixtureId: 'm034', homeGoals: 2, awayGoals: 1 },
+  { fixtureId: 'm035', homeGoals: 2, awayGoals: 0 },
+  { fixtureId: 'm036', homeGoals: 0, awayGoals: 2 },
+  { fixtureId: 'm037', homeGoals: 3, awayGoals: 0 },
+  { fixtureId: 'm038', homeGoals: 2, awayGoals: 0 },
+  { fixtureId: 'm039', homeGoals: 2, awayGoals: 0 },
+  { fixtureId: 'm040', homeGoals: 0, awayGoals: 1 },
+  { fixtureId: 'm041', homeGoals: 2, awayGoals: 0 },
+  { fixtureId: 'm042', homeGoals: 3, awayGoals: 0 },
+  { fixtureId: 'm043', homeGoals: 1, awayGoals: 1 },
+  { fixtureId: 'm044', homeGoals: 0, awayGoals: 1 },
+  { fixtureId: 'm045', homeGoals: 3, awayGoals: 0 },
+  { fixtureId: 'm046', homeGoals: 2, awayGoals: 1 },
+  { fixtureId: 'm047', homeGoals: 0, awayGoals: 2 },
+  { fixtureId: 'm048', homeGoals: 2, awayGoals: 0 },
+  // Matchday 3
+  { fixtureId: 'm049', homeGoals: 1, awayGoals: 1 },
+  { fixtureId: 'm050', homeGoals: 2, awayGoals: 0 },
+  { fixtureId: 'm051', homeGoals: 2, awayGoals: 0 },
+  { fixtureId: 'm052', homeGoals: 0, awayGoals: 2 },
+  { fixtureId: 'm053', homeGoals: 1, awayGoals: 1 },
+  { fixtureId: 'm054', homeGoals: 0, awayGoals: 1 },
+  { fixtureId: 'm055', homeGoals: 0, awayGoals: 2 },
+  { fixtureId: 'm056', homeGoals: 0, awayGoals: 2 },
+  { fixtureId: 'm057', homeGoals: 0, awayGoals: 2 },
+  { fixtureId: 'm058', homeGoals: 1, awayGoals: 0 },
+  { fixtureId: 'm059', homeGoals: 1, awayGoals: 1 },
+  { fixtureId: 'm060', homeGoals: 1, awayGoals: 0 },
+  { fixtureId: 'm061', homeGoals: 0, awayGoals: 1 },
+  { fixtureId: 'm062', homeGoals: 2, awayGoals: 0 },
+  { fixtureId: 'm063', homeGoals: 0, awayGoals: 1 },
+  { fixtureId: 'm064', homeGoals: 0, awayGoals: 2 },
+  { fixtureId: 'm065', homeGoals: 0, awayGoals: 3 },
+  { fixtureId: 'm066', homeGoals: 1, awayGoals: 0 },
+  { fixtureId: 'm067', homeGoals: 0, awayGoals: 3 },
+  { fixtureId: 'm068', homeGoals: 1, awayGoals: 0 },
+  { fixtureId: 'm069', homeGoals: 0, awayGoals: 2 },
+  { fixtureId: 'm070', homeGoals: 2, awayGoals: 1 },
+  { fixtureId: 'm071', homeGoals: 1, awayGoals: 1 },
+  { fixtureId: 'm072', homeGoals: 0, awayGoals: 3 },
 ];
-
-// Deterministic hash so predictions are stable across renders
-function hashInt(s: string): number {
-  let h = 0;
-  for (const c of s) h = (Math.imul(31, h) + c.charCodeAt(0)) | 0;
-  return Math.abs(h);
-}
-
-// Generate plausible predictions for whoever is signed up, keyed to mock results
-export function generateMockPredictions(players: Player[]): Prediction[] {
-  return players.flatMap((player) =>
-    mockResults.map(({ fixtureId }) => ({
-      playerId: player.id,
-      fixtureId,
-      homeGoals: hashInt(player.id + fixtureId + 'h') % 4,
-      awayGoals: hashInt(player.id + fixtureId + 'a') % 3,
-    })),
-  );
-}

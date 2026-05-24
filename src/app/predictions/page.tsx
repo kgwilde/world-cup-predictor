@@ -2,7 +2,8 @@
 
 import { useMemo, useRef, useState, useEffect } from 'react';
 import { fixtures } from '@/data/fixtures';
-import { generateMockPredictions, mockResults } from '@/data/mockData';
+import { mockResults } from '@/data/mockData';
+import { predictions as staticPredictions } from '@/data/predictions';
 import type { Fixture, MatchResult, Player, Prediction, PublicProfile } from '@/lib/types';
 import { groupPredictionsByScore } from '@/lib/predictions';
 import { scoreMatch } from '@/lib/scoring';
@@ -117,11 +118,11 @@ function MatchPredictionCard({
     if (!result) return predictionGroups;
     return [...predictionGroups].sort((a, b) => {
       const ptsA = scoreMatch(
-        { playerId: '', fixtureId: fixture.id, homeGoals: a.homeGoals, awayGoals: a.awayGoals },
+        { playerId: '', fixtureId: fixture.id, homeGoals: a.homeGoals, awayGoals: a.awayGoals, multiChip: a.multiChip },
         result
       ).points;
       const ptsB = scoreMatch(
-        { playerId: '', fixtureId: fixture.id, homeGoals: b.homeGoals, awayGoals: b.awayGoals },
+        { playerId: '', fixtureId: fixture.id, homeGoals: b.homeGoals, awayGoals: b.awayGoals, multiChip: b.multiChip },
         result
       ).points;
       if (ptsB !== ptsA) return ptsB - ptsA;
@@ -149,13 +150,14 @@ function MatchPredictionCard({
                     fixtureId: fixture.id,
                     homeGoals: group.homeGoals,
                     awayGoals: group.awayGoals,
+                    multiChip: group.multiChip,
                   },
                   result
                 ).points
               : undefined;
             return (
               <PredictionRow
-                key={`${group.homeGoals}-${group.awayGoals}`}
+                key={`${group.homeGoals}-${group.awayGoals}-${group.multiChip}`}
                 group={group}
                 fixture={fixture}
                 players={players}
@@ -188,8 +190,8 @@ export default function PredictionsPage() {
   );
 
   const allPredictions = useMemo<Prediction[]>(
-    () => (IS_MOCK ? generateMockPredictions(players) : []),
-    [players]
+    () => (IS_MOCK ? staticPredictions : []),
+    []
   );
 
   const fixturesForDay = useMemo(

@@ -47,9 +47,11 @@ function UsersTab({
 }) {
   const { user } = useAuthStore();
   const [approvingUids, setApprovingUids] = useState<Set<string>>(new Set());
+  const [approveError, setApproveError] = useState<string | null>(null);
 
   async function handleApprove(targetUid: string) {
     if (!user) return;
+    setApproveError(null);
     setApprovingUids((prev) => new Set(prev).add(targetUid));
     try {
       const idToken = await getIdToken(user);
@@ -58,8 +60,13 @@ function UsersTab({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ idToken, targetUid }),
       });
-      if (!res.ok) throw new Error('Failed to approve');
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error ?? `HTTP ${res.status}`);
+      }
       onUsersChange(users.map((u) => (u.uid === targetUid ? { ...u, approved: true } : u)));
+    } catch (e) {
+      setApproveError(e instanceof Error ? e.message : 'Failed to approve');
     } finally {
       setApprovingUids((prev) => {
         const next = new Set(prev);
@@ -106,6 +113,9 @@ function UsersTab({
 
   return (
     <div className="space-y-6">
+      {approveError && (
+        <p className="text-red-400 text-sm bg-red-400/10 rounded-lg px-4 py-3">{approveError}</p>
+      )}
       <section>
         <div className="flex items-center gap-2 mb-3">
           <h2 className="text-sm font-semibold text-wc-white/60 uppercase tracking-wider">
@@ -188,7 +198,12 @@ function ResultsTab({
     const awayRaw = awayInputs[fixtureId] ?? '';
     const homeGoals = parseInt(homeRaw, 10);
     const awayGoals = parseInt(awayRaw, 10);
-    if (!Number.isInteger(homeGoals) || homeGoals < 0 || !Number.isInteger(awayGoals) || awayGoals < 0) {
+    if (
+      !Number.isInteger(homeGoals) ||
+      homeGoals < 0 ||
+      !Number.isInteger(awayGoals) ||
+      awayGoals < 0
+    ) {
       return;
     }
     setSavingIds((prev) => new Set(prev).add(fixtureId));
@@ -313,13 +328,7 @@ function ResultsTab({
                         : 'bg-wc-gold text-wc-black hover:opacity-90'
                     }`}
                   >
-                    {isSaving ? (
-                      <TabSpinner />
-                    ) : isSaved ? (
-                      'Saved ✓'
-                    ) : (
-                      'Save'
-                    )}
+                    {isSaving ? <TabSpinner /> : isSaved ? 'Saved ✓' : 'Save'}
                   </button>
                 </div>
               </div>

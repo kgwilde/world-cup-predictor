@@ -91,6 +91,11 @@ export default function PredictionRow({ group, fixture, players, points }: Props
       </div>
 
       <div className="flex items-center gap-2 shrink-0">
+        {group.multiChip && (
+          <span className="text-[10px] font-bold text-wc-gold bg-wc-gold/10 border border-wc-gold/30 px-1.5 py-0.5 rounded">
+            ×2
+          </span>
+        )}
         <ScoreChip
           homeGoals={group.homeGoals}
           awayGoals={group.awayGoals}

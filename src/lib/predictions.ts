@@ -7,6 +7,7 @@ export type PredictionGroup = {
   awayGoals: number;
   resultType: MatchResultType;
   playerIds: string[];
+  multiChip: boolean;
 };
 
 export function getResultType(homeGoals: number, awayGoals: number): MatchResultType {
@@ -25,7 +26,8 @@ export function groupPredictionsByScore(predictions: Prediction[]): PredictionGr
   const groupsByScore = new Map<string, PredictionGroup>();
 
   for (const prediction of predictions) {
-    const scoreKey = `${prediction.homeGoals}-${prediction.awayGoals}`;
+    const multiChip = !!prediction.multiChip;
+    const scoreKey = `${prediction.homeGoals}-${prediction.awayGoals}-${multiChip}`;
     const existingGroup = groupsByScore.get(scoreKey);
 
     if (existingGroup) {
@@ -38,6 +40,7 @@ export function groupPredictionsByScore(predictions: Prediction[]): PredictionGr
       awayGoals: prediction.awayGoals,
       resultType: getResultType(prediction.homeGoals, prediction.awayGoals),
       playerIds: [prediction.playerId],
+      multiChip,
     });
   }
 

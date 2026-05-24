@@ -49,6 +49,7 @@ export interface Prediction {
   fixtureId: string;
   homeGoals: number;
   awayGoals: number;
+  multiChip?: boolean;
 }
 
 export interface MatchPoints {
@@ -58,6 +59,7 @@ export interface MatchPoints {
   resultCorrect: boolean;
   homeGoalsCorrect: boolean;
   awayGoalsCorrect: boolean;
+  multiChipApplied: boolean;
 }
 
 export interface PlayerStanding {

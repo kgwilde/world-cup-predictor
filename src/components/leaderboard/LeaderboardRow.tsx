@@ -4,7 +4,7 @@ import type { PlayerStanding } from '@/lib/types';
 interface Props {
   standing: PlayerStanding;
   isViewer: boolean;
-  matchDelta?: { points: number; rankChange: number } | null;
+  matchDelta?: { points: number; rankChange: number; multiChipApplied: boolean } | null;
 }
 
 function RankBadge({ rank }: { rank: number }) {
@@ -32,11 +32,36 @@ function Delta({ rankChange }: { rankChange: number }) {
   return <span className="text-wc-red text-xs font-bold">↓{Math.abs(rankChange)}</span>;
 }
 
-function PointsChip({ points }: { points: number }) {
-  if (points === 5) {
+const RAINBOW = 'linear-gradient(135deg, #f72585, #f8961e, #90be6d, #4cc9f0, #7209b7)';
+
+function PointsChip({ points, multiChipApplied }: { points: number; multiChipApplied?: boolean }) {
+  const showMulti = multiChipApplied && points > 0;
+
+  if (showMulti) {
+    let textClass: string;
+    if (points >= 5) textClass = 'text-wc-gold';
+    else if (points >= 3) textClass = 'text-wc-green';
+    else textClass = 'text-wc-white';
+
+    return (
+      <span
+        className="relative inline-flex shrink-0 rounded"
+        style={{ padding: 1.5, background: RAINBOW }}
+      >
+        <span className={`bg-wc-ink ${textClass} text-xs font-bold px-2 py-0.5 rounded-[3px] tabular-nums`}>
+          +{points}
+        </span>
+        <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-wc-gold text-[8px] font-bold leading-none text-wc-black">
+          ×2
+        </span>
+      </span>
+    );
+  }
+
+  if (points >= 5) {
     return (
       <span className="bg-wc-gold text-wc-black text-xs font-bold px-2 py-0.5 rounded tabular-nums">
-        +5
+        +{points}
       </span>
     );
   }
@@ -98,7 +123,7 @@ export default function LeaderboardRow({ standing, isViewer, matchDelta }: Props
 
       {matchDelta && (
         <div className="flex flex-col items-end gap-0.5">
-          <PointsChip points={matchDelta.points} />
+          <PointsChip points={matchDelta.points} multiChipApplied={matchDelta.multiChipApplied} />
           <Delta rankChange={matchDelta.rankChange} />
         </div>
       )}
