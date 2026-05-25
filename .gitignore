@@ -46,8 +46,8 @@ firestore.rules
 firebase.json
 .firebaserc
 
-# local data / output files
-*.xlsx
+match-predictions.xlsx
+wc2026-match-predictions.xlsx
 
 # local-only scripts
 scripts/generate-*.mjs
