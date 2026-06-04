@@ -10,13 +10,27 @@ interface Props {
 function RankBadge({ rank }: { rank: number }) {
   if (rank === 1) {
     return (
-      <span className="font-display font-bold text-wc-gold tabular-nums text-lg w-7 text-center">
-        🏆
+      <span className="font-display font-bold tabular-nums text-lg w-7 text-center text-wc-gold">
+        1
+      </span>
+    );
+  }
+  if (rank === 2) {
+    return (
+      <span className="font-display font-bold tabular-nums text-lg w-7 text-center text-wc-gold/60">
+        2
+      </span>
+    );
+  }
+  if (rank === 3) {
+    return (
+      <span className="font-display font-bold tabular-nums text-lg w-7 text-center text-wc-gold/40">
+        3
       </span>
     );
   }
   return (
-    <span className="font-display font-bold tabular-nums text-lg w-7 text-center text-wc-white/40">
+    <span className="font-display font-bold tabular-nums text-lg w-7 text-center text-wc-white/50">
       {rank}
     </span>
   );
@@ -86,24 +100,42 @@ function PointsChip({ points, multiChipApplied }: { points: number; multiChipApp
   );
 }
 
+const RANK_ROW: Record<number, string> = {
+  1: 'bg-gradient-to-r from-wc-gold/20 via-wc-gold/8 to-transparent border border-wc-gold/40',
+  2: 'bg-gradient-to-r from-wc-gold/12 via-wc-gold/5 to-transparent border border-wc-gold/25',
+  3: 'bg-gradient-to-r from-wc-gold/7 via-wc-gold/3 to-transparent border border-wc-gold/15',
+};
+
+const RANK_AVATAR_RING: Record<number, string> = {
+  1: 'ring-2 ring-wc-gold/80 ring-offset-2 ring-offset-wc-ink',
+  2: 'ring-2 ring-wc-gold/50',
+  3: 'ring-2 ring-wc-gold/30',
+};
+
+const RANK_POINTS_COLOR: Record<number, string> = {
+  1: 'text-wc-gold',
+  2: 'text-wc-gold/70',
+  3: 'text-wc-gold/50',
+};
+
 export default function LeaderboardRow({ standing, isViewer, matchDelta }: Props) {
-  const isFirst = standing.rank === 1;
+  const { rank } = standing;
+  const rowBg = RANK_ROW[rank] ?? 'bg-wc-ink border border-wc-white/10';
+  const avatarRing = RANK_AVATAR_RING[rank];
+  const pointsColor = RANK_POINTS_COLOR[rank] ?? 'text-wc-white/80';
 
   return (
     <div
-      className={[
-        'flex items-center gap-3 px-4 py-3 rounded-lg transition-all',
-        isFirst
-          ? 'bg-gradient-to-r from-wc-gold/15 via-wc-gold/5 to-transparent border border-wc-gold/30'
-          : 'bg-wc-ink border border-wc-white/10',
-        isViewer ? 'ring-1 ring-wc-teal/60' : '',
-      ]
-        .filter(Boolean)
-        .join(' ')}
+      className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${rowBg}`}
     >
-      <RankBadge rank={standing.rank} />
+      <RankBadge rank={rank} />
 
-      <Avatar name={standing.player.name} photoUrl={standing.player.photoUrl} size={40} />
+      <Avatar
+        name={standing.player.name}
+        photoUrl={standing.player.photoUrl}
+        size={40}
+        ringClass={avatarRing}
+      />
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5">
@@ -111,7 +143,7 @@ export default function LeaderboardRow({ standing, isViewer, matchDelta }: Props
             {standing.player.teamName ?? standing.player.name}
           </span>
           {isViewer && !standing.player.teamName && (
-            <span className="text-[9px] font-body font-semibold text-wc-teal bg-wc-teal/10 px-1.5 py-0.5 rounded uppercase tracking-wider shrink-0">
+            <span className="text-[9px] font-body font-semibold text-wc-gold bg-wc-gold/10 px-1.5 py-0.5 rounded uppercase tracking-wider shrink-0">
               you
             </span>
           )}
@@ -120,7 +152,7 @@ export default function LeaderboardRow({ standing, isViewer, matchDelta }: Props
           <div className="flex items-center gap-1.5">
             <p className="text-wc-white/40 text-xs font-body truncate">{standing.player.name}</p>
             {isViewer && (
-              <span className="text-[9px] font-body font-semibold text-wc-teal bg-wc-teal/10 px-1.5 py-0.5 rounded uppercase tracking-wider shrink-0">
+              <span className="text-[9px] font-body font-semibold text-wc-gold bg-wc-gold/10 px-1.5 py-0.5 rounded uppercase tracking-wider shrink-0">
                 you
               </span>
             )}
@@ -136,7 +168,7 @@ export default function LeaderboardRow({ standing, isViewer, matchDelta }: Props
       )}
 
       <div className="text-right shrink-0">
-        <div className="font-display text-wc-white font-bold text-2xl tabular-nums leading-tight">
+        <div className={`font-display font-bold text-2xl tabular-nums leading-tight ${pointsColor}`}>
           {standing.totalPoints}
         </div>
         <div className="text-wc-white/40 text-[10px] font-body uppercase tracking-wider">pts</div>

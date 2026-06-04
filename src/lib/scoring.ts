@@ -30,6 +30,23 @@ export function scoreMatch(prediction: Prediction, result: MatchResult): MatchPo
   };
 }
 
+function firstReachFixture(
+  matchPoints: MatchPoints[],
+  orderMap: Map<string, number>,
+  targetTotal: number
+): number {
+  if (targetTotal === 0) return -1;
+  const sorted = [...matchPoints].sort(
+    (a, b) => (orderMap.get(a.fixtureId) ?? 0) - (orderMap.get(b.fixtureId) ?? 0)
+  );
+  let running = 0;
+  for (const mp of sorted) {
+    running += mp.points;
+    if (running >= targetTotal) return orderMap.get(mp.fixtureId) ?? 0;
+  }
+  return orderMap.size;
+}
+
 export function calculateStandings(
   players: Player[],
   predictions: Prediction[],
@@ -50,6 +67,14 @@ export function calculateStandings(
 
   const resultMap = new Map(includedResults.map((r) => [r.fixtureId, r]));
 
+  const fixtureOrderMap: Map<string, number> = fixtures
+    ? new Map(
+        [...fixtures]
+          .sort((a, b) => new Date(a.kickoff).getTime() - new Date(b.kickoff).getTime())
+          .map((f, i) => [f.id, i])
+      )
+    : new Map();
+
   const standings: PlayerStanding[] = players.map((player) => {
     const playerPredictions = predictions.filter((p) => p.playerId === player.id);
 
@@ -66,22 +91,18 @@ export function calculateStandings(
     return { player, totalPoints, rank: 0, matchPoints };
   });
 
-  standings.sort((a, b) =>
-    b.totalPoints !== a.totalPoints
-      ? b.totalPoints - a.totalPoints
-      : a.player.name.localeCompare(b.player.name)
-  );
-
-  let currentRank = 1;
-  standings.forEach((s, i) => {
-    if (i === 0) {
-      s.rank = 1;
-    } else if (s.totalPoints === standings[i - 1].totalPoints) {
-      s.rank = standings[i - 1].rank;
-    } else {
-      s.rank = currentRank;
+  standings.sort((a, b) => {
+    if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
+    if (fixtureOrderMap.size > 0) {
+      const aReach = firstReachFixture(a.matchPoints, fixtureOrderMap, a.totalPoints);
+      const bReach = firstReachFixture(b.matchPoints, fixtureOrderMap, b.totalPoints);
+      if (aReach !== bReach) return aReach - bReach;
     }
-    currentRank = s.rank + 1;
+    return a.player.name.localeCompare(b.player.name);
+  });
+
+  standings.forEach((s, i) => {
+    s.rank = i + 1;
   });
 
   return standings;

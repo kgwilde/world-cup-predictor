@@ -14,14 +14,18 @@ interface Props {
   name: string;
   photoUrl?: string;
   size?: number;
+  ringClass?: string;
 }
 
-export default function Avatar({ name, photoUrl, size = 40 }: Props) {
+export default function Avatar({ name, photoUrl, size = 40, ringClass }: Props) {
   const [loaded, setLoaded] = useState(false);
   const initials = name.split(' ')[0].slice(0, 2).toUpperCase();
 
   return (
-    <div className="relative shrink-0" style={{ width: size, height: size }}>
+    <div
+      className={`relative shrink-0 rounded-full ${ringClass ?? ''}`}
+      style={{ width: size, height: size }}
+    >
       <div
         className={`${colorForName(name)} rounded-full flex items-center justify-center text-wc-white font-display font-bold absolute inset-0`}
         style={{ fontSize: size * 0.36 }}

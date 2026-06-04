@@ -40,31 +40,47 @@ export default function ReplayControls({ fixtures, currentIndex, onPrev, onNext 
   const currentFixture = fixtures[currentIndex];
   const isAtStart = currentIndex === -1;
   const isAtEnd = currentIndex === fixtures.length - 1;
+  const progressPct =
+    fixtures.length > 0 ? (Math.max(0, currentIndex + 1) / fixtures.length) * 100 : 0;
 
   const buttonClasses =
     'w-8 h-8 flex items-center justify-center rounded text-wc-white/40 hover:text-wc-white hover:bg-wc-white/5 cursor-pointer disabled:opacity-20 disabled:cursor-not-allowed transition-colors';
 
   return (
-    <div className="flex items-center gap-2 bg-wc-ink border border-wc-white/10 rounded-lg px-3 py-2">
-      <button
-        onClick={onPrev}
-        disabled={isAtStart}
-        className={buttonClasses}
-        aria-label="Previous match"
-      >
-        <ArrowLeft />
-      </button>
+    <div className="bg-wc-ink border border-wc-white/10 rounded-lg overflow-hidden">
+      <div className="flex items-center gap-2 px-3 py-2">
+        <button
+          onClick={onPrev}
+          disabled={isAtStart}
+          className={buttonClasses}
+          aria-label="Previous match"
+        >
+          <ArrowLeft />
+        </button>
 
-      <div className="flex-1 text-center min-w-0">
-        <StatusLine currentIndex={currentIndex} currentFixture={currentFixture} />
-        <div className="text-[10px] text-wc-white/30 uppercase tracking-wider">
-          MATCH: {Math.max(0, currentIndex + 1)} / {fixtures.length}
+        <div className="flex-1 text-center min-w-0">
+          <StatusLine currentIndex={currentIndex} currentFixture={currentFixture} />
+          <div className="text-[10px] text-wc-white/30 uppercase tracking-wider">
+            {Math.max(0, currentIndex + 1)} / {fixtures.length} matches
+          </div>
         </div>
+
+        <button
+          onClick={onNext}
+          disabled={isAtEnd}
+          className={buttonClasses}
+          aria-label="Next match"
+        >
+          <ArrowRight />
+        </button>
       </div>
 
-      <button onClick={onNext} disabled={isAtEnd} className={buttonClasses} aria-label="Next match">
-        <ArrowRight />
-      </button>
+      <div className="h-0.5 bg-wc-white/5">
+        <div
+          className="h-full bg-wc-gold/60 transition-all duration-500"
+          style={{ width: `${progressPct}%` }}
+        />
+      </div>
     </div>
   );
 }

@@ -131,18 +131,18 @@ function TeamHalf({ team, side }: TeamHalfProps) {
   const alignment = side === 'home' ? 'items-start' : 'items-end';
 
   return (
-    <div className={`flex flex-col gap-1.5 ${alignment}`}>
+    <div className={`flex w-full flex-col gap-1 ${alignment}`}>
       {FlagComponent ? (
         <FlagComponent
           title={team.name}
-          className="h-7 w-10 rounded-[2px] object-cover ring-1 ring-white/20 shadow-md"
+          className="h-6 w-9 rounded-[2px] object-cover ring-1 ring-white/20 shadow-md"
         />
       ) : (
-        <div className="h-7 w-10 rounded-[2px] bg-white/10 ring-1 ring-white/20" aria-hidden />
+        <div className="h-6 w-9 rounded-[2px] bg-white/10 ring-1 ring-white/20" aria-hidden />
       )}
       <span
-        className={`text-[13px] font-semibold leading-tight text-white ${
-          isPlaceholder ? 'max-w-[7rem] text-[11px] font-medium opacity-90' : ''
+        className={`w-full truncate text-[13px] font-semibold leading-tight text-white ${
+          isPlaceholder ? 'text-[11px] font-medium opacity-90' : ''
         } ${side === 'away' ? 'text-right' : ''}`}
       >
         {team.name}
@@ -177,7 +177,7 @@ export function FixtureCard({ fixture, now, isFullWidth, result }: FixtureCardPr
   return (
     <article className={`snap-start shrink-0 ${isFullWidth ? 'w-full' : 'w-[15rem] sm:w-[17rem]'}`}>
       <div
-        className="relative h-[11.5rem] overflow-hidden rounded-xl ring-1 ring-white/10 shadow-lg"
+        className="relative h-[9.5rem] overflow-hidden rounded-xl ring-1 ring-white/10 shadow-lg"
         style={{ background: cardBackground }}
       >
         <div
@@ -185,8 +185,8 @@ export function FixtureCard({ fixture, now, isFullWidth, result }: FixtureCardPr
           className="absolute inset-x-0 top-0 h-1"
           style={{ background: accentBar }}
         />
-        <div className="relative flex h-full flex-col gap-3.5 px-4 py-3.5">
-          <header className="flex h-[2.5rem] items-start justify-between gap-2">
+        <div className="relative flex h-full flex-col justify-between px-4 py-2.5">
+          <header className="flex items-start justify-between gap-2">
             <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/75">
               {stageLabel}
             </span>
@@ -209,16 +209,18 @@ export function FixtureCard({ fixture, now, isFullWidth, result }: FixtureCardPr
             )}
           </header>
 
-          <div className="flex items-center justify-between gap-2">
-            <TeamHalf team={fixture.homeTeam} side="home" />
+          <div className="flex items-center gap-2">
+            <div className="flex-1 min-w-0">
+              <TeamHalf team={fixture.homeTeam} side="home" />
+            </div>
             {result ? (
               <div className="flex flex-col items-center gap-0.5">
                 <div className="flex items-center gap-1.5">
-                  <span className="font-display font-bold text-2xl text-wc-white tabular-nums leading-none">
+                  <span className="font-display font-bold text-xl text-wc-white tabular-nums leading-none">
                     {result.homeGoals}
                   </span>
-                  <span className="text-wc-white/30 text-base">–</span>
-                  <span className="font-display font-bold text-2xl text-wc-white tabular-nums leading-none">
+                  <span className="text-wc-white/30 text-sm">–</span>
+                  <span className="font-display font-bold text-xl text-wc-white tabular-nums leading-none">
                     {result.awayGoals}
                   </span>
                 </div>
@@ -231,11 +233,13 @@ export function FixtureCard({ fixture, now, isFullWidth, result }: FixtureCardPr
                 vs
               </span>
             )}
-            <TeamHalf team={fixture.awayTeam} side="away" />
+            <div className="flex-1 min-w-0">
+              <TeamHalf team={fixture.awayTeam} side="away" />
+            </div>
           </div>
 
-          <footer className="mt-auto border-t border-white/15 pt-2">
-            <p className="text-[10px] leading-snug text-white/65 line-clamp-2 h-[1.75rem]">
+          <footer className="border-t border-white/15 pt-1.5">
+            <p className="text-[10px] leading-snug text-white/65 truncate">
               {fixture.venue}
             </p>
           </footer>
