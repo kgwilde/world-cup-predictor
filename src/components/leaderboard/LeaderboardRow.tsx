@@ -96,7 +96,7 @@ export default function LeaderboardRow({ standing, isViewer, matchDelta }: Props
         isFirst
           ? 'bg-gradient-to-r from-wc-gold/15 via-wc-gold/5 to-transparent border border-wc-gold/30'
           : 'bg-wc-ink border border-wc-white/10',
-        isViewer ? 'ring-1 ring-wc-gold/40' : '',
+        isViewer ? 'ring-1 ring-wc-teal/60' : '',
       ]
         .filter(Boolean)
         .join(' ')}
@@ -110,14 +110,21 @@ export default function LeaderboardRow({ standing, isViewer, matchDelta }: Props
           <span className="font-display text-wc-white font-bold text-lg leading-tight truncate">
             {standing.player.teamName ?? standing.player.name}
           </span>
-          {isViewer && (
-            <span className="text-[10px] font-body font-semibold text-wc-gold bg-wc-gold/10 px-1.5 py-0.5 rounded uppercase tracking-wider shrink-0">
+          {isViewer && !standing.player.teamName && (
+            <span className="text-[9px] font-body font-semibold text-wc-teal bg-wc-teal/10 px-1.5 py-0.5 rounded uppercase tracking-wider shrink-0">
               you
             </span>
           )}
         </div>
         {standing.player.teamName && (
-          <p className="text-wc-white/40 text-xs font-body truncate">{standing.player.name}</p>
+          <div className="flex items-center gap-1.5">
+            <p className="text-wc-white/40 text-xs font-body truncate">{standing.player.name}</p>
+            {isViewer && (
+              <span className="text-[9px] font-body font-semibold text-wc-teal bg-wc-teal/10 px-1.5 py-0.5 rounded uppercase tracking-wider shrink-0">
+                you
+              </span>
+            )}
+          </div>
         )}
       </div>
 

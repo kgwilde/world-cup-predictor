@@ -221,6 +221,7 @@ export default function PredictionsPage() {
           </p>
         </div>
 
+        <div className="space-y-4">
         <div className="no-scrollbar flex gap-2 overflow-x-auto pb-2">
           {availableDates.map((dateKey) => {
             const isActive = dateKey === selectedDate;
@@ -255,6 +256,7 @@ export default function PredictionsPage() {
               result={resultMap.get(fixture.id)}
             />
           ))}
+        </div>
         </div>
       </div>
     </main>
