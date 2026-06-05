@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import * as Flags from 'country-flag-icons/react/3x2';
 import type { Fixture, FixtureStage, MatchResult, Team } from '@/lib/types';
 
@@ -90,6 +90,15 @@ function formatCountdownToKickoff(kickoff: Date, now: Date) {
   }
 
   return `in ${hours}h ${minutes}m`;
+}
+
+function formatHeroCountdown(kickoff: Date, now: Date): string | null {
+  const ms = kickoff.getTime() - now.getTime();
+  if (ms <= 0) return null;
+  const hours = Math.floor(ms / MILLISECONDS_PER_HOUR);
+  const minutes = Math.floor((ms % MILLISECONDS_PER_HOUR) / MILLISECONDS_PER_MINUTE);
+  if (hours === 0) return `${Math.max(minutes, 1)}m`;
+  return `${hours}h ${minutes}m`;
 }
 
 function isFixtureLive(kickoff: Date, now: Date) {
@@ -239,9 +248,7 @@ export function FixtureCard({ fixture, now, isFullWidth, result }: FixtureCardPr
           </div>
 
           <footer className="border-t border-white/15 pt-1.5">
-            <p className="text-[10px] leading-snug text-white/65 truncate">
-              {fixture.venue}
-            </p>
+            <p className="text-[10px] leading-snug text-white/65 truncate">{fixture.venue}</p>
           </footer>
         </div>
       </div>
@@ -276,6 +283,8 @@ function useCurrentTime() {
 
 export function FixtureSlider() {
   const now = useCurrentTime();
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [scrollFraction, setScrollFraction] = useState(0);
 
   const upcomingFixtures = useMemo(() => {
     const nowTime = now.getTime();
@@ -296,6 +305,13 @@ export function FixtureSlider() {
     return futureFixtures;
   }, [now]);
 
+  function handleScroll() {
+    const el = scrollRef.current;
+    if (!el) return;
+    const max = el.scrollWidth - el.clientWidth;
+    setScrollFraction(max > 0 ? el.scrollLeft / max : 0);
+  }
+
   return (
     <>
       <style>{`
@@ -309,7 +325,9 @@ export function FixtureSlider() {
       `}</style>
       <div className="relative mt-2">
         <div
-          className="flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-px-4 px-4 pb-4 pt-1
+          ref={scrollRef}
+          onScroll={handleScroll}
+          className="flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-px-4 px-4 pb-3 pt-1
                      [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           role="region"
           aria-label="Fixtures"
@@ -318,6 +336,18 @@ export function FixtureSlider() {
             <FixtureCard key={fixture.id} fixture={fixture} now={now} />
           ))}
         </div>
+
+        {/* Scrubber */}
+        {upcomingFixtures.length > 1 && (
+          <div className="mx-4 mt-1.5 mb-1">
+            <div className="h-[2px] rounded-full bg-white/8 overflow-hidden">
+              <div
+                className="h-full rounded-full bg-wc-blue transition-[width] duration-100 ease-out"
+                style={{ width: `${scrollFraction * 100}%` }}
+              />
+            </div>
+          </div>
+        )}
       </div>
     </>
   );

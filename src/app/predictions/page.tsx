@@ -20,7 +20,7 @@ const MOCK_DATE_OVERRIDE: string | null = null;
 function userToPlayer(profile: PublicProfile): Player {
   return {
     id: profile.uid,
-    name: profile.displayName ?? 'Unknown',
+    name: (profile.displayName ?? 'Unknown').split(' ')[0],
     teamName: profile.teamName ?? undefined,
     photoUrl: resolveAvatarSrc(profile.avatarUrl, profile.avatarUpdatedAt),
   };

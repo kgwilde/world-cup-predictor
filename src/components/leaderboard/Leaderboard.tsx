@@ -19,7 +19,7 @@ const IS_MOCK = process.env.NEXT_PUBLIC_MOCK_RESULTS === 'true';
 function userToPlayer(profile: PublicProfile): Player {
   return {
     id: profile.uid,
-    name: profile.displayName ?? 'Unknown',
+    name: (profile.displayName ?? 'Unknown').split(' ')[0],
     teamName: profile.teamName ?? undefined,
     photoUrl: resolveAvatarSrc(profile.avatarUrl, profile.avatarUpdatedAt),
   };

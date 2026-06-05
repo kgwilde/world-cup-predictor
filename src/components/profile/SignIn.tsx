@@ -1,6 +1,7 @@
 'use client';
 
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { Trophy } from 'lucide-react';
 import { useState } from 'react';
 
 import { auth } from '@/lib/firebase';
@@ -21,10 +22,19 @@ export function SignIn() {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
-      <div className="w-full max-w-sm">
-        <h1 className="font-display font-bold text-3xl text-wc-white mb-1">Sign in</h1>
-        <p className="text-wc-bone text-sm mb-8">Sign in to access your predictions and profile.</p>
+    <div className="flex flex-col items-center justify-center min-h-[75vh] px-4">
+      <div className="w-full max-w-sm flex flex-col items-center text-center">
+        <div className="w-20 h-20 rounded-full bg-wc-gold/10 border border-wc-gold/20 flex items-center justify-center mb-6">
+          <Trophy size={36} className="text-wc-gold" />
+        </div>
+
+        <h1 className="font-display font-bold text-4xl text-wc-white mb-1">World Cup 2026</h1>
+        <p className="font-display font-bold text-base text-wc-gold tracking-[0.2em] mb-4">
+          PREDICT · COMPETE · WIN
+        </p>
+        <p className="text-wc-bone/50 text-sm mb-10 max-w-[260px]">
+          Sign in to submit your predictions and compete with your group on the leaderboard.
+        </p>
 
         <button
           onClick={handleGoogle}
@@ -35,7 +45,7 @@ export function SignIn() {
           {loading ? 'Redirecting…' : 'Continue with Google'}
         </button>
 
-        {error && <p className="text-red-400 text-sm mt-4 text-center">{error}</p>}
+        {error && <p className="text-red-400 text-sm mt-4">{error}</p>}
       </div>
     </div>
   );

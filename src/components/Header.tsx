@@ -5,6 +5,8 @@ import Link from 'next/link';
 
 import { useEffect, useState } from 'react';
 
+import { fixtures } from '@/data/fixtures';
+
 import { useMyStanding } from '@/components/hooks/use_my_standing';
 
 export function Header() {
@@ -148,7 +150,7 @@ export function WorldCupCountdown() {
     timeRemaining.seconds === 0;
 
   if (hasKickedOff) {
-    return <div className="font-display font-bold text-lg">Kick-off!</div>;
+    return <NextMatchCountdown />;
   }
 
   return (
@@ -157,6 +159,47 @@ export function WorldCupCountdown() {
       <CountdownUnit value={timeRemaining.hours} label="hours" />
       <CountdownUnit value={timeRemaining.minutes} label="mins" />
       <CountdownUnit value={timeRemaining.seconds} label="secs" />
+    </div>
+  );
+}
+
+function getNextFixtureTimestamp(): number | null {
+  const now = Date.now();
+  const upcoming = fixtures
+    .map(f => new Date(f.kickoff).getTime())
+    .filter(t => t > now)
+    .sort((a, b) => a - b);
+  return upcoming[0] ?? null;
+}
+
+function NextMatchCountdown() {
+  const [target, setTarget] = useState<number | null>(() => getNextFixtureTimestamp());
+  const [timeRemaining, setTimeRemaining] = useState<TimeRemaining | null>(null);
+
+  useEffect(() => {
+    function tick() {
+      const next = getNextFixtureTimestamp();
+      setTarget(next);
+      setTimeRemaining(next !== null ? getTimeRemaining(next) : null);
+    }
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  if (!target || !timeRemaining) return null;
+
+  return (
+    <div className="flex flex-col items-center shrink-0">
+      <span className="text-wc-bone/50 text-[10px] sm:text-xs font-body tracking-wider uppercase mb-1">
+        Next match
+      </span>
+      <div className="flex items-center gap-2 sm:gap-4">
+        {timeRemaining.days > 0 && <CountdownUnit value={timeRemaining.days} label="days" />}
+        <CountdownUnit value={timeRemaining.hours} label="hours" />
+        <CountdownUnit value={timeRemaining.minutes} label="mins" />
+        <CountdownUnit value={timeRemaining.seconds} label="secs" />
+      </div>
     </div>
   );
 }

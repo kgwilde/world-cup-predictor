@@ -2,11 +2,13 @@
 
 @theme {
   --color-wc-black: #0a0a0a;
-  --color-wc-ink: #1c1c1c;
+  --color-wc-navy: #020F2A;
+  --color-wc-ink: #0F1117;
   --color-wc-white: #ffffff;
   --color-wc-bone: #f4f1ea;
   --color-wc-gold: #efbf04;
   --color-wc-gold-deep: #8c6a23;
+  --color-wc-cyan: #00B8FF;
 
   --color-wc-red: #e4002b;
   --color-wc-green: #069e6c;

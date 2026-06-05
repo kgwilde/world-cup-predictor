@@ -7,30 +7,19 @@ interface Props {
   matchDelta?: { points: number; rankChange: number; multiChipApplied: boolean } | null;
 }
 
+const PODIUM_COLORS: Record<number, string> = {
+  1: '#efbf04',
+  2: '#C0C0C0',
+  3: '#CD7F32',
+};
+
 function RankBadge({ rank }: { rank: number }) {
-  if (rank === 1) {
-    return (
-      <span className="font-display font-bold tabular-nums text-lg w-7 text-center text-wc-gold">
-        1
-      </span>
-    );
-  }
-  if (rank === 2) {
-    return (
-      <span className="font-display font-bold tabular-nums text-lg w-7 text-center text-wc-gold/60">
-        2
-      </span>
-    );
-  }
-  if (rank === 3) {
-    return (
-      <span className="font-display font-bold tabular-nums text-lg w-7 text-center text-wc-gold/40">
-        3
-      </span>
-    );
-  }
+  const podiumColor = PODIUM_COLORS[rank];
   return (
-    <span className="font-display font-bold tabular-nums text-lg w-7 text-center text-wc-white/50">
+    <span
+      className={`font-display font-bold tabular-nums text-lg w-7 text-center ${!podiumColor ? 'text-wc-white/50' : ''}`}
+      style={podiumColor ? { color: podiumColor } : undefined}
+    >
       {rank}
     </span>
   );
@@ -108,21 +97,15 @@ const RANK_ROW: Record<number, string> = {
 
 const RANK_AVATAR_RING: Record<number, string> = {
   1: 'ring-2 ring-wc-gold/80 ring-offset-2 ring-offset-wc-ink',
-  2: 'ring-2 ring-wc-gold/50',
-  3: 'ring-2 ring-wc-gold/30',
+  2: 'ring-2 ring-[#C0C0C0]/70 ring-offset-2 ring-offset-wc-ink',
+  3: 'ring-2 ring-[#CD7F32]/70 ring-offset-1 ring-offset-wc-ink',
 };
 
-const RANK_POINTS_COLOR: Record<number, string> = {
-  1: 'text-wc-gold',
-  2: 'text-wc-gold/70',
-  3: 'text-wc-gold/50',
-};
 
 export default function LeaderboardRow({ standing, isViewer, matchDelta }: Props) {
   const { rank } = standing;
   const rowBg = RANK_ROW[rank] ?? 'bg-wc-ink border border-wc-white/10';
   const avatarRing = RANK_AVATAR_RING[rank];
-  const pointsColor = RANK_POINTS_COLOR[rank] ?? 'text-wc-white/80';
 
   return (
     <div
@@ -168,7 +151,7 @@ export default function LeaderboardRow({ standing, isViewer, matchDelta }: Props
       )}
 
       <div className="text-right shrink-0">
-        <div className={`font-display font-bold text-2xl tabular-nums leading-tight ${pointsColor}`}>
+        <div className="font-display font-bold text-2xl tabular-nums leading-tight text-wc-white/80">
           {standing.totalPoints}
         </div>
         <div className="text-wc-white/40 text-[10px] font-body uppercase tracking-wider">pts</div>

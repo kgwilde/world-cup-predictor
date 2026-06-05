@@ -18,7 +18,11 @@ function nameColor(name: string): string {
 
 function InitialsAvatar({ name }: { name: string }) {
   const color = nameColor(name ?? '?');
-  const initials = (name ?? '?').slice(0, 2).toUpperCase();
+  const words = (name ?? '?').trim().split(/\s+/).filter(Boolean);
+  const initials =
+    words.length >= 2
+      ? (words[0][0] + words[1][0]).toUpperCase()
+      : (words[0] ?? '?').slice(0, 2).toUpperCase();
   return (
     <div
       className={`${color} w-9 h-9 rounded-full flex items-center justify-center text-wc-white font-display font-bold text-sm shrink-0`}
@@ -88,7 +92,7 @@ function UsersTab({
   const approved = users.filter((u) => u.approved);
 
   function UserRow({ u, showApprove }: { u: UserProfile; showApprove: boolean }) {
-    const name = u.displayName ?? u.email ?? u.uid;
+    const name = (u.displayName ?? u.email ?? u.uid).split(' ')[0];
     const isApproving = approvingUids.has(u.uid);
     return (
       <div className="bg-wc-ink rounded-xl px-4 py-3 flex items-center gap-3">

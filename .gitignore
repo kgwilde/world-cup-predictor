@@ -51,3 +51,6 @@ wc2026-match-predictions.xlsx
 
 # local-only scripts
 scripts/generate-*.mjs
+
+.claude/*
+*.md

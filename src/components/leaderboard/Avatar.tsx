@@ -19,7 +19,11 @@ interface Props {
 
 export default function Avatar({ name, photoUrl, size = 40, ringClass }: Props) {
   const [loaded, setLoaded] = useState(false);
-  const initials = name.split(' ')[0].slice(0, 2).toUpperCase();
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  const initials =
+    words.length >= 2
+      ? (words[0][0] + words[1][0]).toUpperCase()
+      : (words[0] ?? '?').slice(0, 2).toUpperCase();
 
   return (
     <div
