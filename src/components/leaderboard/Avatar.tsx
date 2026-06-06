@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 
+import { preloadedAvatarUrls } from '@/lib/avatar';
+
 const PALETTE = ['bg-wc-teal', 'bg-wc-blue', 'bg-wc-magenta', 'bg-wc-red', 'bg-wc-green'];
 
 function colorForName(name: string) {
@@ -18,7 +20,7 @@ interface Props {
 }
 
 export default function Avatar({ name, photoUrl, size = 40, ringClass }: Props) {
-  const [loaded, setLoaded] = useState(false);
+  const [loaded, setLoaded] = useState(() => !!photoUrl && preloadedAvatarUrls.has(photoUrl));
   const words = name.trim().split(/\s+/).filter(Boolean);
   const initials =
     words.length >= 2
@@ -43,7 +45,10 @@ export default function Avatar({ name, photoUrl, size = 40, ringClass }: Props) 
           alt={name}
           width={size}
           height={size}
-          onLoad={() => setLoaded(true)}
+          onLoad={() => {
+            preloadedAvatarUrls.add(photoUrl);
+            setLoaded(true);
+          }}
           className={`rounded-full object-cover absolute inset-0 transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`}
           style={{ width: size, height: size }}
         />

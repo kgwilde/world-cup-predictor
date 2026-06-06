@@ -5,7 +5,28 @@ import { create } from 'zustand';
 
 import { auth } from '@/lib/firebase';
 import { createUserProfile, getAllUsers, getResults, getUserProfile } from '@/lib/firestore';
+import { preloadedAvatarUrls, resolveAvatarSrc } from '@/lib/avatar';
 import type { MatchResult, PublicProfile, UserProfile } from '@/lib/types';
+
+function preloadAvatars(users: PublicProfile[]): Promise<void> {
+  const urls = users
+    .map((u) => resolveAvatarSrc(u.avatarUrl, u.avatarUpdatedAt))
+    .filter((url): url is string => !!url);
+  return Promise.all(
+    urls.map(
+      (url) =>
+        new Promise<void>((resolve) => {
+          const img = new Image();
+          img.onload = () => {
+            preloadedAvatarUrls.add(url);
+            resolve();
+          };
+          img.onerror = () => resolve();
+          img.src = url;
+        }),
+    ),
+  ).then(() => undefined);
+}
 
 interface AuthState {
   user: User | null;
@@ -68,10 +89,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         set({ user: null, profile: null, loading: false });
       }
 
-      // Fetch approved players once per session — shared by Leaderboard and Predictions
+      // Fetch approved players once per session — shared by Leaderboard and Predictions.
+      // Preload avatars before clearing usersLoading so the skeleton stays up until images are cached.
       if (!allUsersFetchPromise) {
         allUsersFetchPromise = getAllUsers()
-          .then((users) => set({ allUsers: users, usersLoading: false }))
+          .then(async (users) => {
+            await preloadAvatars(users);
+            set({ allUsers: users, usersLoading: false });
+          })
           .catch(() => set({ usersLoading: false }));
       }
 
