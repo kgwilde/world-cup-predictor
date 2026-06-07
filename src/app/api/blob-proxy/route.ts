@@ -25,9 +25,8 @@ export async function GET(request: NextRequest) {
   }
 
   const contentType = res.headers.get('content-type') ?? 'application/octet-stream';
-  const buffer = await res.arrayBuffer();
 
-  return new NextResponse(buffer, {
+  return new NextResponse(res.body, {
     headers: {
       'Content-Type': contentType,
       'Cache-Control': 'private, max-age=3600',

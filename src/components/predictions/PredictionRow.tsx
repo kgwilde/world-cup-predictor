@@ -1,32 +1,15 @@
 import Avatar from '@/components/leaderboard/Avatar';
 import ScoreChip from './ScoreChip';
-import StackedAvatars from './StackedAvatars';
-import type { PredictionGroup } from '@/lib/predictions';
-import type { Fixture, Player } from '@/lib/types';
+import { getResultType } from '@/lib/predictions';
+import type { Fixture, Prediction, Player } from '@/lib/types';
 
 interface Props {
-  group: PredictionGroup;
+  prediction: Prediction;
+  player: Player | undefined;
   fixture: Fixture;
-  players: Player[];
   points?: number;
-}
-
-function getPlayer(players: Player[], playerId: string) {
-  return players.find((p) => p.id === playerId);
-}
-
-function getPlayerName(players: Player[], playerId: string) {
-  return getPlayer(players, playerId)?.name ?? 'Unknown';
-}
-
-function formatPlayerNames(players: Player[], playerIds: string[]) {
-  const names = playerIds.map((id) => getPlayerName(players, id));
-
-  if (names.length === 1) return names[0];
-  if (names.length === 2) return `${names[0]} & ${names[1]}`;
-
-  const allButLast = names.slice(0, -1).join(', ');
-  return `${allButLast} & ${names[names.length - 1]}`;
+  multiChipApplied?: boolean;
+  onPlayerClick?: (playerId: string) => void;
 }
 
 function PointsBadge({ points }: { points: number }) {
@@ -58,50 +41,38 @@ function PointsBadge({ points }: { points: number }) {
   );
 }
 
-export default function PredictionRow({ group, fixture, players, points }: Props) {
-  const isGrouped = group.playerIds.length > 1;
-
-  const bgClass = points === undefined && isGrouped ? 'bg-wc-teal/5' : '';
+export default function PredictionRow({
+  prediction,
+  player,
+  fixture,
+  points,
+  multiChipApplied,
+  onPlayerClick,
+}: Props) {
+  const name = player?.name ?? 'Unknown';
+  const resultType = getResultType(prediction.homeGoals, prediction.awayGoals);
 
   return (
-    <div
-      className={`flex items-center justify-between gap-3 border-b border-white/10 py-3 last:border-0 ${bgClass}`}
-    >
-      <div className="flex min-w-0 flex-1 items-center gap-3">
-        {isGrouped ? (
-          <StackedAvatars playerIds={group.playerIds} players={players} />
-        ) : (
-          <Avatar
-            name={getPlayerName(players, group.playerIds[0])}
-            photoUrl={getPlayer(players, group.playerIds[0])?.photoUrl}
-            size={30}
-          />
-        )}
-
-        <div className="flex min-w-0 flex-col gap-0.5">
-          <div className="text-sm font-medium leading-snug text-white/90">
-            {formatPlayerNames(players, group.playerIds)}
-          </div>
-          {isGrouped && points === undefined && (
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-wc-teal">
-              Aligned
-            </div>
-          )}
-        </div>
-      </div>
+    <div className="flex items-center justify-between gap-3 border-b border-white/10 py-3 last:border-0">
+      <button
+        type="button"
+        onClick={() => onPlayerClick?.(prediction.playerId)}
+        className="flex min-w-0 flex-1 items-center gap-3 cursor-pointer active:opacity-70 transition-opacity text-left"
+      >
+        <Avatar name={name} photoUrl={player?.photoUrl} size={30} />
+        <span className="text-sm font-medium leading-snug text-white/90 hover:text-white transition-colors truncate">
+          {name}
+        </span>
+      </button>
 
       <div className="flex items-center gap-2 shrink-0">
-        {group.multiChip && (
-          <span className="text-[10px] font-bold text-wc-gold bg-wc-gold/10 border border-wc-gold/30 px-1.5 py-0.5 rounded">
-            ×2
-          </span>
-        )}
         <ScoreChip
-          homeGoals={group.homeGoals}
-          awayGoals={group.awayGoals}
-          resultType={group.resultType}
+          homeGoals={prediction.homeGoals}
+          awayGoals={prediction.awayGoals}
+          resultType={resultType}
           homeAccentColor={fixture.homeTeam.accentColor}
           awayAccentColor={fixture.awayTeam.accentColor}
+          multiChip={multiChipApplied}
         />
         {points !== undefined && <PointsBadge points={points} />}
       </div>

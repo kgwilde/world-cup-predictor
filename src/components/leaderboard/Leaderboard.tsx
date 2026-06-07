@@ -6,12 +6,15 @@ import Link from 'next/link';
 
 import { useAuthStore } from '@/app/stores/useAuthStore';
 import { useStandings } from '@/components/hooks/use_standings';
+import { useMultiChips } from '@/components/hooks/use_multi_chips';
 import LeaderboardRow from '@/components/leaderboard/LeaderboardRow';
+import PlayerCardModal from '@/components/PlayerCardModal';
 import ReplayControls from '@/components/leaderboard/ReplayControls';
 import { fixtures } from '@/data/fixtures';
 import { mockResults } from '@/data/mockData';
 import { predictions as staticPredictions } from '@/data/predictions';
 import { resolveAvatarSrc } from '@/lib/avatar';
+import { calculateStandings } from '@/lib/scoring';
 import type { MatchResult, Player, PlayerStanding, Prediction, PublicProfile } from '@/lib/types';
 
 const IS_MOCK = process.env.NEXT_PUBLIC_MOCK_RESULTS === 'true';
@@ -44,6 +47,9 @@ export default function Leaderboard() {
   }, [activeResults]);
 
   const [replayIndex, setReplayIndex] = useState(-1);
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
+
+  const { chips: allChips } = useMultiChips();
 
   useEffect(() => {
     if (!resultsLoading) {
@@ -64,45 +70,80 @@ export default function Leaderboard() {
     replayIndex
   );
 
+  // Always use full standings (not replay-sliced) for the player card modal
+  const latestStandings = useMemo(
+    () => calculateStandings(players, predictions, activeResults),
+    [players, predictions, activeResults]
+  );
+
+  const selectedPlayer = useMemo(
+    () => players.find((p) => p.id === selectedPlayerId) ?? null,
+    [players, selectedPlayerId]
+  );
+
+  const selectedStanding = useMemo(
+    () => latestStandings.find((s) => s.player.id === selectedPlayerId) ?? null,
+    [latestStandings, selectedPlayerId]
+  );
+
+  const now = useMemo(() => new Date(), []);
+
   if (usersLoading || resultsLoading) {
     return <LeaderboardSkeleton />;
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-4 space-y-4">
-      <div className="space-y-4">
-        <ReplayControls
-          fixtures={playedFixtures}
-          currentIndex={replayIndex}
-          onPrev={() => setReplayIndex((i) => Math.max(-1, i - 1))}
-          onNext={() => setReplayIndex((i) => Math.min(playedFixtures.length - 1, i + 1))}
-        />
+    <>
+      <div className="max-w-3xl mx-auto px-4 space-y-4">
+        <div className="space-y-4">
+          <ReplayControls
+            fixtures={playedFixtures}
+            currentIndex={replayIndex}
+            onPrev={() => setReplayIndex((i) => Math.max(-1, i - 1))}
+            onNext={() => setReplayIndex((i) => Math.min(playedFixtures.length - 1, i + 1))}
+          />
 
-        {isGuest && <SignUpPrompt />}
+          {isGuest && <SignUpPrompt />}
 
-        {currentStandings.length === 0 && <EmptyState />}
+          {currentStandings.length === 0 && <EmptyState />}
 
-        <div className="space-y-2">
-          {currentStandings.map((standing: PlayerStanding) => (
-            <LeaderboardRow
-              key={standing.player.id}
-              standing={standing}
-              isViewer={standing.player.id === viewerId}
-              matchDelta={
-                currentFixture
-                  ? buildMatchDelta(
-                      currentStandings,
-                      previousStandings,
-                      currentFixture.id,
-                      standing.player.id
-                    )
-                  : null
-              }
-            />
-          ))}
+          <div className="space-y-2">
+            {currentStandings.map((standing: PlayerStanding) => (
+              <LeaderboardRow
+                key={standing.player.id}
+                standing={standing}
+                isViewer={standing.player.id === viewerId}
+                onClick={() => setSelectedPlayerId(standing.player.id)}
+                matchDelta={
+                  currentFixture
+                    ? buildMatchDelta(
+                        currentStandings,
+                        previousStandings,
+                        currentFixture.id,
+                        standing.player.id
+                      )
+                    : null
+                }
+              />
+            ))}
+          </div>
         </div>
       </div>
-    </div>
+
+      {selectedPlayer && (
+        <PlayerCardModal
+          player={selectedPlayer}
+          standing={selectedStanding}
+          predictions={predictions}
+          multiChips={allChips}
+          fixtures={fixtures}
+          results={activeResults}
+          now={now}
+          isViewer={selectedPlayer.id === viewerId}
+          onClose={() => setSelectedPlayerId(null)}
+        />
+      )}
+    </>
   );
 }
 

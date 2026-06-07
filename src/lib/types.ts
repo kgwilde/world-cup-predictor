@@ -87,3 +87,11 @@ export interface UserProfile {
 
 // Safe subset returned by getAllUsers() — email is never sent to the client for other users
 export type PublicProfile = Omit<UserProfile, 'email'>;
+
+// ─── Multi-chip ───────────────────────────────────────────────────────────────
+
+export interface MultiChip {
+  playerId: string;
+  fixtureId: string;
+  appliedAt: string; // ISO string
+}

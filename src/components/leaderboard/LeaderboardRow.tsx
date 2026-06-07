@@ -1,3 +1,7 @@
+'use client';
+
+import { useRef } from 'react';
+import { ChevronRight } from 'lucide-react';
 import Avatar from './Avatar';
 import type { PlayerStanding } from '@/lib/types';
 
@@ -5,6 +9,7 @@ interface Props {
   standing: PlayerStanding;
   isViewer: boolean;
   matchDelta?: { points: number; rankChange: number; multiChipApplied: boolean } | null;
+  onClick?: () => void;
 }
 
 const PODIUM_COLORS: Record<number, string> = {
@@ -101,15 +106,28 @@ const RANK_AVATAR_RING: Record<number, string> = {
   3: 'ring-2 ring-[#CD7F32]/70 ring-offset-1 ring-offset-wc-ink',
 };
 
-
-export default function LeaderboardRow({ standing, isViewer, matchDelta }: Props) {
+export default function LeaderboardRow({ standing, isViewer, matchDelta, onClick }: Props) {
   const { rank } = standing;
   const rowBg = RANK_ROW[rank] ?? 'bg-wc-ink border border-wc-white/10';
   const avatarRing = RANK_AVATAR_RING[rank];
 
+  const touchStartY = useRef(0);
+  const didScroll = useRef(false);
+
   return (
-    <div
-      className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${rowBg}`}
+    <button
+      type="button"
+      onClick={() => { if (!didScroll.current) onClick?.(); }}
+      onTouchStart={(e) => {
+        touchStartY.current = e.touches[0].clientY;
+        didScroll.current = false;
+      }}
+      onTouchMove={(e) => {
+        if (Math.abs(e.touches[0].clientY - touchStartY.current) > 8) {
+          didScroll.current = true;
+        }
+      }}
+      className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-left cursor-pointer hover:brightness-110 active:scale-[0.99] active:opacity-80 ${rowBg}`}
     >
       <RankBadge rank={rank} />
 
@@ -156,6 +174,8 @@ export default function LeaderboardRow({ standing, isViewer, matchDelta }: Props
         </div>
         <div className="text-wc-white/40 text-[10px] font-body uppercase tracking-wider">pts</div>
       </div>
-    </div>
+
+      <ChevronRight size={14} className="text-white/25 shrink-0 -ml-1" />
+    </button>
   );
 }

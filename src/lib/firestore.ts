@@ -1,7 +1,7 @@
-import { collection, doc, getDoc, getDocsFromServer, query, setDoc, updateDoc, where } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDoc, getDocsFromServer, query, setDoc, updateDoc, where } from 'firebase/firestore';
 
 import { db } from './firebase';
-import type { MatchResult, PublicProfile, UserProfile } from './types';
+import type { MatchResult, MultiChip, PublicProfile, UserProfile } from './types';
 
 export async function getUserProfile(uid: string): Promise<UserProfile | null> {
   const snap = await getDoc(doc(db, 'users', uid));
@@ -34,4 +34,21 @@ export async function getAllUsersAdmin(): Promise<UserProfile[]> {
 export async function getResults(): Promise<MatchResult[]> {
   const snap = await getDocsFromServer(collection(db, 'results'));
   return snap.docs.map((d) => d.data() as MatchResult);
+}
+
+export async function getAllMultiChips(): Promise<MultiChip[]> {
+  const snap = await getDocsFromServer(collection(db, 'multiChips'));
+  return snap.docs.map((d) => d.data() as MultiChip);
+}
+
+export async function applyMultiChip(uid: string, fixtureId: string): Promise<void> {
+  await setDoc(doc(db, 'multiChips', `${uid}_${fixtureId}`), {
+    playerId: uid,
+    fixtureId,
+    appliedAt: new Date().toISOString(),
+  });
+}
+
+export async function removeMultiChip(uid: string, fixtureId: string): Promise<void> {
+  await deleteDoc(doc(db, 'multiChips', `${uid}_${fixtureId}`));
 }

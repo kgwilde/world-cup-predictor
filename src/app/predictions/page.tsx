@@ -4,18 +4,24 @@ import { useMemo, useRef, useState, useEffect } from 'react';
 import { fixtures } from '@/data/fixtures';
 import { mockResults } from '@/data/mockData';
 import { predictions as staticPredictions } from '@/data/predictions';
-import type { Fixture, MatchResult, Player, Prediction, PublicProfile } from '@/lib/types';
-import { groupPredictionsByScore } from '@/lib/predictions';
-import { scoreMatch } from '@/lib/scoring';
+import type { Fixture, MatchResult, MultiChip, Player, Prediction, PublicProfile } from '@/lib/types';
+import { getResultType } from '@/lib/predictions';
+import { scoreMatch, calculateStandings } from '@/lib/scoring';
 import { resolveAvatarSrc } from '@/lib/avatar';
 import { useAuthStore } from '@/app/stores/useAuthStore';
+import { useMultiChips } from '@/components/hooks/use_multi_chips';
 import { FixtureCard } from '@/components/FixtureSlider';
 import Avatar from '@/components/leaderboard/Avatar';
 import PredictionRow from '@/components/predictions/PredictionRow';
+import ScoreChip from '@/components/predictions/ScoreChip';
+import PlayerCardModal from '@/components/PlayerCardModal';
 
 const IS_MOCK = process.env.NEXT_PUBLIC_MOCK_RESULTS === 'true';
 const ACTIVE_RESULTS: MatchResult[] = IS_MOCK ? mockResults : [];
 const MOCK_DATE_OVERRIDE: string | null = null;
+
+const GROUP_FIXTURE_IDS = new Set(fixtures.filter((f) => f.stage === 'group').map((f) => f.id));
+const GROUP_CHIP_LIMIT = 10;
 
 function userToPlayer(profile: PublicProfile): Player {
   return {
@@ -27,9 +33,7 @@ function userToPlayer(profile: PublicProfile): Player {
 }
 
 function getCurrentDate() {
-  if (MOCK_DATE_OVERRIDE) {
-    return new Date(MOCK_DATE_OVERRIDE);
-  }
+  if (MOCK_DATE_OVERRIDE) return new Date(MOCK_DATE_OVERRIDE);
   return new Date();
 }
 
@@ -41,52 +45,43 @@ function formatDateLabel(date: Date) {
   }).format(date);
 }
 
+function formatDateTile(dateKey: string): { weekday: string; day: string; month: string } {
+  const d = new Date(dateKey);
+  return {
+    weekday: new Intl.DateTimeFormat('en-IE', { weekday: 'short' }).format(d).toUpperCase(),
+    day: String(d.getDate()),
+    month: new Intl.DateTimeFormat('en-IE', { month: 'short' }).format(d).toUpperCase(),
+  };
+}
+
 function getFixtureDateKey(kickoffUtc: string) {
-  const kickoffDate = new Date(kickoffUtc);
-  const year = kickoffDate.getFullYear();
-  const month = String(kickoffDate.getMonth() + 1).padStart(2, '0');
-  const day = String(kickoffDate.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+  const d = new Date(kickoffUtc);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 function buildAvailableDates(allFixtures: Fixture[]) {
-  const uniqueDateKeys = [
-    ...new Set(allFixtures.map((fixture) => getFixtureDateKey(fixture.kickoff))),
-  ];
-  return uniqueDateKeys.sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+  return [...new Set(allFixtures.map((f) => getFixtureDateKey(f.kickoff)))].sort();
 }
 
 function getDefaultSelectedDate(dateKeys: string[], today: Date) {
   const todayKey = getFixtureDateKey(today.toISOString());
-
-  if (dateKeys.includes(todayKey)) {
-    return todayKey;
-  }
-
-  const pastDates = dateKeys.filter((key) => key < todayKey);
-  if (pastDates.length > 0) {
-    return pastDates[pastDates.length - 1];
-  }
-
-  return dateKeys[0];
+  if (dateKeys.includes(todayKey)) return todayKey;
+  const pastDates = dateKeys.filter((k) => k < todayKey);
+  return pastDates.length > 0 ? pastDates[pastDates.length - 1] : dateKeys[0];
 }
 
-function PlaceholderScoreChip() {
-  return (
-    <div className="rounded-lg border border-dashed border-white/20 px-3 py-1 text-sm font-semibold text-white/20 tabular-nums">
-      ? – ?
-    </div>
-  );
-}
+// ─── All Predictions tab ─────────────────────────────────────────────────────
 
-function UnpredictedRow({ player }: { player: Player }) {
+function PlaceholderRow({ player }: { player: Player }) {
   return (
     <div className="flex items-center justify-between gap-3 border-b border-white/10 py-3 last:border-0">
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <Avatar name={player.name} photoUrl={player.photoUrl} size={30} />
         <span className="text-sm font-medium leading-snug text-white/90">{player.name}</span>
       </div>
-      <PlaceholderScoreChip />
+      <div className="rounded-lg border border-dashed border-white/20 px-3 py-1 text-sm font-semibold text-white/20 tabular-nums">
+        ? – ?
+      </div>
     </div>
   );
 }
@@ -96,44 +91,50 @@ function MatchPredictionCard({
   now,
   players,
   allPredictions,
+  allChips,
   result,
+  onPlayerClick,
 }: {
   fixture: Fixture;
   now: Date;
   players: Player[];
   allPredictions: Prediction[];
+  allChips: MultiChip[];
   result?: MatchResult;
+  onPlayerClick: (playerId: string) => void;
 }) {
+  const hasStarted = new Date(fixture.kickoff) <= now;
+
   const fixturePredictions = useMemo(
     () => allPredictions.filter((p) => p.fixtureId === fixture.id),
     [fixture.id, allPredictions]
   );
 
-  const predictionGroups = useMemo(
-    () => groupPredictionsByScore(fixturePredictions),
-    [fixturePredictions]
+  const chipSet = useMemo(
+    () => new Set(allChips.filter((c) => c.fixtureId === fixture.id).map((c) => c.playerId)),
+    [allChips, fixture.id]
   );
 
-  const sortedGroups = useMemo(() => {
-    if (!result) return predictionGroups;
-    return [...predictionGroups].sort((a, b) => {
-      const ptsA = scoreMatch(
-        { playerId: '', fixtureId: fixture.id, homeGoals: a.homeGoals, awayGoals: a.awayGoals, multiChip: a.multiChip },
-        result
-      ).points;
-      const ptsB = scoreMatch(
-        { playerId: '', fixtureId: fixture.id, homeGoals: b.homeGoals, awayGoals: b.awayGoals, multiChip: b.multiChip },
-        result
-      ).points;
-      if (ptsB !== ptsA) return ptsB - ptsA;
-      return b.playerIds.length - a.playerIds.length;
+  const sortedPredictions = useMemo(() => {
+    if (!result) return [...fixturePredictions].sort((a, b) => {
+      const pa = players.find((p) => p.id === a.playerId);
+      const pb = players.find((p) => p.id === b.playerId);
+      return (pa?.name ?? '').localeCompare(pb?.name ?? '');
     });
-  }, [predictionGroups, result, fixture.id]);
+    return [...fixturePredictions].sort((a, b) => {
+      const hasChipA = chipSet.has(a.playerId);
+      const hasChipB = chipSet.has(b.playerId);
+      const ptsA = scoreMatch({ ...a, multiChip: hasChipA }, result).points;
+      const ptsB = scoreMatch({ ...b, multiChip: hasChipB }, result).points;
+      return ptsB - ptsA;
+    });
+  }, [fixturePredictions, result, players, chipSet]);
 
-  const unpredictedPlayers = useMemo(() => {
-    const predictingIds = new Set(fixturePredictions.map((p) => p.playerId));
-    return players.filter((p) => !predictingIds.has(p.id));
-  }, [fixturePredictions, players]);
+  const predictingIds = useMemo(() => new Set(fixturePredictions.map((p) => p.playerId)), [fixturePredictions]);
+  const unpredictedPlayers = useMemo(
+    () => players.filter((p) => !predictingIds.has(p.id)),
+    [players, predictingIds]
+  );
 
   return (
     <div className="overflow-hidden rounded-2xl bg-wc-ink">
@@ -142,31 +143,26 @@ function MatchPredictionCard({
       </div>
       <div className="border-t border-white/10">
         <div className="px-4">
-          {sortedGroups.map((group) => {
+          {sortedPredictions.map((prediction) => {
+            const hasChip = chipSet.has(prediction.playerId);
+            const showChip = hasChip && hasStarted;
             const pts = result
-              ? scoreMatch(
-                  {
-                    playerId: '',
-                    fixtureId: fixture.id,
-                    homeGoals: group.homeGoals,
-                    awayGoals: group.awayGoals,
-                    multiChip: group.multiChip,
-                  },
-                  result
-                ).points
+              ? scoreMatch({ ...prediction, multiChip: showChip }, result).points
               : undefined;
             return (
               <PredictionRow
-                key={`${group.homeGoals}-${group.awayGoals}-${group.multiChip}`}
-                group={group}
+                key={prediction.playerId}
+                prediction={prediction}
+                player={players.find((p) => p.id === prediction.playerId)}
                 fixture={fixture}
-                players={players}
                 points={pts}
+                multiChipApplied={showChip}
+                onPlayerClick={onPlayerClick}
               />
             );
           })}
           {unpredictedPlayers.map((player) => (
-            <UnpredictedRow key={player.id} player={player} />
+            <PlaceholderRow key={player.id} player={player} />
           ))}
         </div>
       </div>
@@ -174,15 +170,214 @@ function MatchPredictionCard({
   );
 }
 
+// ─── My Chips tab ─────────────────────────────────────────────────────────────
+
+function ChipCounter({ used }: { used: number }) {
+  const total = GROUP_CHIP_LIMIT;
+  return (
+    <div className="bg-wc-ink rounded-xl px-4 py-3.5">
+      <div className="flex items-center justify-between mb-2.5">
+        <span className="text-sm font-bold text-white">
+          {used} of {total} chips used
+        </span>
+        <span className="text-xs text-white/40">{total - used} remaining</span>
+      </div>
+      <div className="flex gap-1.5">
+        {Array.from({ length: total }).map((_, i) => (
+          <div
+            key={i}
+            className={`flex-1 h-2 rounded-full transition-colors ${i < used ? 'bg-wc-gold' : 'bg-white/12'}`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ChipFixtureRow({
+  fixture,
+  prediction,
+  hasChip,
+  chipsUsed,
+  hasStarted,
+  result,
+  onApply,
+  onRemove,
+}: {
+  fixture: Fixture;
+  prediction: Prediction | undefined;
+  hasChip: boolean;
+  chipsUsed: number;
+  hasStarted: boolean;
+  result?: MatchResult;
+  onApply: () => void;
+  onRemove: () => void;
+}) {
+  const showChipBadge = hasChip && hasStarted;
+  const resultType = prediction ? getResultType(prediction.homeGoals, prediction.awayGoals) : 'draw';
+  const pts = result && prediction
+    ? scoreMatch({ ...prediction, multiChip: showChipBadge }, result).points
+    : undefined;
+
+  return (
+    <div className="flex items-center gap-3 py-3 border-b border-white/8 last:border-0">
+      {/* Teams */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5 text-xs text-white/50 truncate">
+          <span>{fixture.homeTeam.name}</span>
+          <span className="text-white/25">vs</span>
+          <span>{fixture.awayTeam.name}</span>
+        </div>
+        {!hasStarted && (
+          <p className="text-[10px] text-white/25 mt-0.5 tabular-nums">
+            {new Intl.DateTimeFormat('en-IE', { hour: '2-digit', minute: '2-digit' }).format(
+              new Date(fixture.kickoff)
+            )}
+          </p>
+        )}
+      </div>
+
+      {/* Score chip */}
+      {prediction ? (
+        <ScoreChip
+          homeGoals={prediction.homeGoals}
+          awayGoals={prediction.awayGoals}
+          resultType={resultType}
+          homeAccentColor={fixture.homeTeam.accentColor}
+          awayAccentColor={fixture.awayTeam.accentColor}
+          multiChip={showChipBadge}
+        />
+      ) : (
+        <span className="text-xs text-white/20 italic">No prediction</span>
+      )}
+
+      {/* Points (if result exists) */}
+      {pts !== undefined && (
+        <span className={`text-xs font-semibold tabular-nums shrink-0 ${pts >= 5 ? 'text-wc-gold' : pts >= 3 ? 'text-green-300' : 'text-white/30'}`}>
+          {pts}pt
+        </span>
+      )}
+
+      {/* Chip toggle (upcoming only) */}
+      {prediction && !hasStarted && (
+        hasChip ? (
+          <button
+            type="button"
+            onClick={onRemove}
+            className="shrink-0 flex items-center gap-1 text-[11px] font-bold text-wc-gold bg-wc-gold/15 border border-wc-gold/40 rounded-full px-2.5 py-1 hover:bg-wc-gold/25 active:opacity-70 transition-colors"
+          >
+            ⚡ Applied
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={onApply}
+            disabled={chipsUsed >= GROUP_CHIP_LIMIT}
+            className="shrink-0 text-[11px] font-semibold text-white/50 border border-white/15 rounded-full px-2.5 py-1 hover:text-white/80 hover:border-white/30 active:opacity-70 transition-colors disabled:opacity-25 disabled:cursor-not-allowed"
+          >
+            + Chip
+          </button>
+        )
+      )}
+    </div>
+  );
+}
+
+function MyChipsTab({
+  viewerId,
+  allPredictions,
+  allChips,
+  results,
+  now,
+  onApply,
+  onRemove,
+}: {
+  viewerId: string;
+  allPredictions: Prediction[];
+  allChips: MultiChip[];
+  results: MatchResult[];
+  now: Date;
+  onApply: (fixtureId: string) => void;
+  onRemove: (fixtureId: string) => void;
+}) {
+  const myPredictions = useMemo(
+    () => new Map(allPredictions.filter((p) => p.playerId === viewerId).map((p) => [p.fixtureId, p])),
+    [allPredictions, viewerId]
+  );
+
+  const myChipIds = useMemo(
+    () => new Set(allChips.filter((c) => c.playerId === viewerId && GROUP_FIXTURE_IDS.has(c.fixtureId)).map((c) => c.fixtureId)),
+    [allChips, viewerId]
+  );
+
+  const resultMap = useMemo(() => new Map(results.map((r) => [r.fixtureId, r])), [results]);
+
+  const groupFixtures = useMemo(
+    () => fixtures.filter((f) => f.stage === 'group').sort((a, b) => new Date(a.kickoff).getTime() - new Date(b.kickoff).getTime()),
+    []
+  );
+
+  const fixturesByDate = useMemo(() => {
+    const map = new Map<string, Fixture[]>();
+    for (const fixture of groupFixtures) {
+      const key = getFixtureDateKey(fixture.kickoff);
+      const existing = map.get(key) ?? [];
+      existing.push(fixture);
+      map.set(key, existing);
+    }
+    return [...map.entries()].sort(([a], [b]) => a.localeCompare(b));
+  }, [groupFixtures]);
+
+  return (
+    <div className="space-y-4">
+      <ChipCounter used={myChipIds.size} />
+
+      {fixturesByDate.map(([dateKey, dayFixtures]) => (
+        <div key={dateKey} className="bg-wc-ink rounded-2xl overflow-hidden">
+          <div className="px-4 py-2 bg-white/[0.03] border-b border-white/8">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-white/35">
+              {formatDateLabel(new Date(dateKey))}
+            </span>
+          </div>
+          <div className="px-4">
+            {dayFixtures.map((fixture) => (
+              <ChipFixtureRow
+                key={fixture.id}
+                fixture={fixture}
+                prediction={myPredictions.get(fixture.id)}
+                hasChip={myChipIds.has(fixture.id)}
+                chipsUsed={myChipIds.size}
+                hasStarted={new Date(fixture.kickoff) <= now}
+                result={resultMap.get(fixture.id)}
+                onApply={() => onApply(fixture.id)}
+                onRemove={() => onRemove(fixture.id)}
+              />
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
+type Tab = 'all' | 'my-chips';
+
 export default function PredictionsPage() {
   const now = useMemo(() => getCurrentDate(), []);
   const availableDates = useMemo(() => buildAvailableDates(fixtures), []);
   const resultMap = useMemo(() => new Map(ACTIVE_RESULTS.map((r) => [r.fixtureId, r])), []);
   const firestoreUsers = useAuthStore((s) => s.allUsers);
+  const viewerId = useAuthStore((s) => s.user?.uid ?? null);
 
+  const [activeTab, setActiveTab] = useState<Tab>('all');
   const [selectedDate, setSelectedDate] = useState<string>(() =>
     getDefaultSelectedDate(availableDates, now)
   );
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
+
+  const { chips: allChips, apply: applyChip, remove: removeChip } = useMultiChips();
 
   const players = useMemo<Player[]>(
     () => firestoreUsers.filter((u) => u.approved && !!u.teamName).map(userToPlayer),
@@ -194,71 +389,153 @@ export default function PredictionsPage() {
     []
   );
 
+  const standings = useMemo(
+    () => calculateStandings(players, allPredictions, ACTIVE_RESULTS),
+    [players, allPredictions]
+  );
+
   const fixturesForDay = useMemo(
-    () => fixtures.filter((fixture) => getFixtureDateKey(fixture.kickoff) === selectedDate),
+    () => fixtures.filter((f) => getFixtureDateKey(f.kickoff) === selectedDate),
     [selectedDate]
+  );
+
+  const selectedPlayer = useMemo(
+    () => players.find((p) => p.id === selectedPlayerId) ?? null,
+    [players, selectedPlayerId]
+  );
+
+  const selectedStanding = useMemo(
+    () => standings.find((s) => s.player.id === selectedPlayerId) ?? null,
+    [standings, selectedPlayerId]
   );
 
   const activeButtonRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     if (activeButtonRef.current) {
-      activeButtonRef.current.scrollIntoView({
-        inline: 'center',
-        block: 'nearest',
-        behavior: 'smooth',
-      });
+      activeButtonRef.current.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
     }
   }, [selectedDate]);
 
   return (
-    <main className="min-h-screen bg-wc-black px-4 py-6 text-white sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-3xl space-y-8">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Match Predictions</h1>
-          <p className="mt-2 max-w-lg text-sm text-white/55">
-            Browse each match day and see how everyone predicted the scorelines.
-          </p>
-        </div>
+    <>
+      <main className="min-h-screen bg-wc-black px-4 py-6 text-white sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-3xl space-y-6">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Match Predictions</h1>
+            <p className="mt-2 max-w-lg text-sm text-white/55">
+              Browse each match day and see how everyone predicted the scorelines.
+            </p>
+          </div>
 
-        <div className="space-y-4">
-        <div className="no-scrollbar flex gap-2 overflow-x-auto pb-2">
-          {availableDates.map((dateKey) => {
-            const isActive = dateKey === selectedDate;
-            const date = new Date(dateKey);
-
-            return (
+          {/* Tab strip */}
+          <div className="flex w-full border-b border-white/10">
+            <button
+              type="button"
+              onClick={() => setActiveTab('all')}
+              className={`flex-1 text-center pb-3 pt-1 text-sm font-semibold transition-colors border-b-2 -mb-px ${
+                activeTab === 'all'
+                  ? 'text-white border-wc-gold'
+                  : 'text-white/40 border-transparent hover:text-white/70'
+              }`}
+            >
+              All Predictions
+            </button>
+            {viewerId && (
               <button
-                key={dateKey}
-                ref={isActive ? activeButtonRef : null}
                 type="button"
-                onClick={() => setSelectedDate(dateKey)}
-                className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition ${
-                  isActive
-                    ? 'bg-wc-gold text-wc-black'
-                    : 'bg-wc-ink text-white/60 hover:text-white/80'
+                onClick={() => setActiveTab('my-chips')}
+                className={`flex-1 text-center pb-3 pt-1 text-sm font-semibold transition-colors border-b-2 -mb-px ${
+                  activeTab === 'my-chips'
+                    ? 'text-white border-wc-gold'
+                    : 'text-white/40 border-transparent hover:text-white/70'
                 }`}
               >
-                {formatDateLabel(date)}
+                My Chips
               </button>
-            );
-          })}
-        </div>
+            )}
+          </div>
 
-        <div className="space-y-4">
-          {fixturesForDay.map((fixture) => (
-            <MatchPredictionCard
-              key={fixture.id}
-              fixture={fixture}
-              now={now}
-              players={players}
+          {activeTab === 'all' && (
+            <div className="space-y-4">
+              {/* Date strip */}
+              <div className="no-scrollbar flex items-center gap-1 overflow-x-auto pb-2">
+                {availableDates.map((dateKey, i) => {
+                  const isActive = dateKey === selectedDate;
+                  const { weekday, day, month } = formatDateTile(dateKey);
+                  const prevMonth = i > 0 ? formatDateTile(availableDates[i - 1]).month : null;
+                  const isMonthBoundary = i === 0 || month !== prevMonth;
+                  return (
+                    <div key={dateKey} className="flex items-center shrink-0 gap-1">
+                      {isMonthBoundary && (
+                        <span className={`text-[10px] font-bold tracking-widest text-white/25 px-1 ${i > 0 ? 'ml-1' : ''}`}>
+                          {month}
+                        </span>
+                      )}
+                      <button
+                        ref={isActive ? activeButtonRef : null}
+                        type="button"
+                        onClick={() => setSelectedDate(dateKey)}
+                        className={`flex flex-col items-center w-13 rounded-xl py-3 transition-colors ${
+                          isActive
+                            ? 'bg-wc-gold text-wc-black'
+                            : 'text-white/45 hover:text-white/80 hover:bg-white/5'
+                        }`}
+                      >
+                        <span className={`text-[10px] font-bold tracking-wider leading-none ${isActive ? 'text-wc-black/60' : 'text-white/30'}`}>
+                          {weekday}
+                        </span>
+                        <span className="text-base font-bold leading-tight mt-1">{day}</span>
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="space-y-4">
+                {fixturesForDay.map((fixture) => (
+                  <MatchPredictionCard
+                    key={fixture.id}
+                    fixture={fixture}
+                    now={now}
+                    players={players}
+                    allPredictions={allPredictions}
+                    allChips={allChips}
+                    result={resultMap.get(fixture.id)}
+                    onPlayerClick={setSelectedPlayerId}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'my-chips' && viewerId && (
+            <MyChipsTab
+              viewerId={viewerId}
               allPredictions={allPredictions}
-              result={resultMap.get(fixture.id)}
+              allChips={allChips}
+              results={ACTIVE_RESULTS}
+              now={now}
+              onApply={(fixtureId) => applyChip(viewerId, fixtureId)}
+              onRemove={(fixtureId) => removeChip(viewerId, fixtureId)}
             />
-          ))}
+          )}
         </div>
-        </div>
-      </div>
-    </main>
+      </main>
+
+      {selectedPlayer && (
+        <PlayerCardModal
+          player={selectedPlayer}
+          standing={selectedStanding}
+          predictions={allPredictions}
+          multiChips={allChips}
+          fixtures={fixtures}
+          results={ACTIVE_RESULTS}
+          now={now}
+          isViewer={selectedPlayer.id === viewerId}
+          onClose={() => setSelectedPlayerId(null)}
+        />
+      )}
+    </>
   );
 }
