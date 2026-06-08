@@ -1,5 +1,5 @@
-// June 9 2026 00:00 Dublin time (IST = UTC+1 in summer)
-export const PREDICTIONS_DEADLINE = new Date('2026-06-09T00:00:00+01:00');
+// June 9 2026 18:00 Dublin time (IST = UTC+1 in summer)
+export const PREDICTIONS_DEADLINE = new Date('2026-06-09T18:00:00+01:00');
 
 // One day past the deadline — used as the mock "current time" when IS_MOCK is true
 const MOCK_NOW = new Date('2026-06-10T12:00:00+01:00');

@@ -428,7 +428,9 @@ function PredictionsTracker({ hasPredictions }: { hasPredictions: boolean }) {
       done: hasPredictions,
     },
     {
-      label: deadlinePassed ? 'Deadline passed' : 'Submit before 9 Jun 2026',
+      label: deadlinePassed
+        ? 'Deadline passed'
+        : `Submit before ${PREDICTIONS_DEADLINE.toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })}`,
       description: deadlinePassed
         ? hasPredictions
           ? 'Predictions locked in'

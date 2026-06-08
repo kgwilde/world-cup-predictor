@@ -12,94 +12,81 @@ interface Props {
   onClick?: () => void;
 }
 
-const PODIUM_COLORS: Record<number, string> = {
-  1: '#efbf04',
-  2: '#C0C0C0',
-  3: '#CD7F32',
+const RANK_CONFIG: Record<
+  number,
+  { rankClass: string; ringClass: string; rowClass: string; shadowClass: string }
+> = {
+  1: {
+    rankClass: 'text-[#e6b94e]',
+    ringClass: 'ring-2 ring-[#e6b94e]/70 ring-offset-2 ring-offset-[#070a10]',
+    rowClass:
+      'bg-gradient-to-r from-[#e6b94e]/[0.12] to-[#131a26] border border-[#e6b94e]/50',
+    shadowClass: 'shadow-[0_8px_22px_-12px_rgba(230,185,78,0.4)]',
+  },
+  2: {
+    rankClass: 'text-[#c7d0dd]',
+    ringClass: 'ring-2 ring-[#c7d0dd]/60 ring-offset-2 ring-offset-[#070a10]',
+    rowClass:
+      'bg-gradient-to-r from-[#c7d0dd]/[0.08] to-[#131a26] border border-[#c7d0dd]/30',
+    shadowClass: 'shadow-[0_8px_22px_-12px_rgba(199,208,221,0.3)]',
+  },
+  3: {
+    rankClass: 'text-[#d08a4f]',
+    ringClass: 'ring-2 ring-[#d08a4f]/60 ring-offset-2 ring-offset-[#070a10]',
+    rowClass:
+      'bg-gradient-to-r from-[#d08a4f]/[0.09] to-[#131a26] border border-[#d08a4f]/35',
+    shadowClass: 'shadow-[0_8px_22px_-12px_rgba(208,138,79,0.3)]',
+  },
 };
-
-function RankBadge({ rank }: { rank: number }) {
-  const podiumColor = PODIUM_COLORS[rank];
-  return (
-    <span
-      className={`font-display font-bold tabular-nums text-lg w-7 text-center shrink-0 ${!podiumColor ? 'text-wc-white/50' : ''}`}
-      style={podiumColor ? { color: podiumColor } : undefined}
-    >
-      {rank}
-    </span>
-  );
-}
 
 const RAINBOW = 'linear-gradient(135deg, #f72585, #f8961e, #90be6d, #4cc9f0, #7209b7)';
 
-function PointsChip({ points, multiChipApplied }: { points: number; multiChipApplied?: boolean }) {
-  const showMulti = multiChipApplied && points > 0;
+const DEFAULT_RANK_CONFIG = {
+  rankClass: 'text-slate-400',
+  ringClass: 'ring-2 ring-white/15 ring-offset-2 ring-offset-[#070a10]',
+  rowClass: 'bg-gradient-to-r from-[#10151f] to-[#131a26] border border-white/[0.07]',
+  shadowClass: '',
+};
 
-  if (showMulti) {
-    let textClass: string;
-    if (points >= 5) textClass = 'text-wc-gold';
-    else if (points >= 3) textClass = 'text-wc-green';
-    else textClass = 'text-wc-white';
-
-    return (
-      <span
-        className="relative inline-flex shrink-0 rounded"
-        style={{ padding: 1.5, background: RAINBOW }}
-      >
-        <span className={`bg-wc-ink ${textClass} text-xs font-bold px-2 py-0.5 rounded-[3px] tabular-nums`}>
-          +{points}
+function RoundChangeChip({
+  points,
+  multiChipApplied,
+}: {
+  points: number;
+  multiChipApplied?: boolean;
+}) {
+  if (points > 0) {
+    if (multiChipApplied) {
+      return (
+        <span
+          className="relative inline-flex shrink-0 rounded-md"
+          style={{ padding: 1.5, background: RAINBOW }}
+        >
+          <span className="inline-flex items-center text-[11px] font-bold tabular-nums rounded-[5px] px-1.5 py-0.5 text-[#54d08a] bg-wc-ink">
+            +{points}
+          </span>
+          <span className="absolute -top-1.5 -right-1.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-wc-gold text-[7px] font-bold leading-none text-wc-black">
+            ×2
+          </span>
         </span>
-        <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-wc-gold text-[8px] font-bold leading-none text-wc-black">
-          ×2
-        </span>
-      </span>
-    );
-  }
-
-  if (points >= 5) {
+      );
+    }
     return (
-      <span className="bg-wc-gold text-wc-black text-xs font-bold px-2 py-0.5 rounded tabular-nums">
-        +{points}
-      </span>
-    );
-  }
-  if (points >= 3) {
-    return (
-      <span className="bg-wc-green/20 text-wc-green text-xs font-bold px-2 py-0.5 rounded tabular-nums">
-        +{points}
-      </span>
-    );
-  }
-  if (points >= 1) {
-    return (
-      <span className="bg-wc-white/10 text-wc-white text-xs font-bold px-2 py-0.5 rounded tabular-nums">
+      <span className="inline-flex items-center text-[11px] font-bold tabular-nums rounded-md px-1.5 py-0.5 text-[#54d08a] bg-emerald-500/[0.18]">
         +{points}
       </span>
     );
   }
   return (
-    <span className="bg-wc-white/5 text-wc-white/30 text-xs font-bold px-2 py-0.5 rounded tabular-nums">
+    <span className="text-[11px] font-bold tabular-nums rounded-md px-1.5 py-0.5 text-slate-400 bg-white/[0.06]">
       +0
     </span>
   );
 }
 
-const RANK_ROW: Record<number, string> = {
-  1: 'bg-gradient-to-r from-wc-gold/20 via-wc-gold/8 to-transparent border border-wc-gold/40',
-  2: 'bg-gradient-to-r from-wc-gold/12 via-wc-gold/5 to-transparent border border-wc-gold/25',
-  3: 'bg-gradient-to-r from-wc-gold/7 via-wc-gold/3 to-transparent border border-wc-gold/15',
-};
-
-const RANK_AVATAR_RING: Record<number, string> = {
-  1: 'ring-2 ring-wc-gold/80 ring-offset-2 ring-offset-wc-ink',
-  2: 'ring-2 ring-[#C0C0C0]/70 ring-offset-2 ring-offset-wc-ink',
-  3: 'ring-2 ring-[#CD7F32]/70 ring-offset-1 ring-offset-wc-ink',
-};
-
 export default function LeaderboardRow({ standing, isViewer, matchDelta, onClick }: Props) {
   const { rank } = standing;
-  const rowBg = RANK_ROW[rank] ?? 'bg-wc-ink border border-wc-white/10';
-  const avatarRing = RANK_AVATAR_RING[rank];
+  const cfg = RANK_CONFIG[rank] ?? DEFAULT_RANK_CONFIG;
   const displayName = standing.player.teamName ?? standing.player.name;
   const ownerName = standing.player.teamName ? standing.player.name : null;
 
@@ -109,7 +96,10 @@ export default function LeaderboardRow({ standing, isViewer, matchDelta, onClick
   return (
     <button
       type="button"
-      onClick={() => { if (!didScroll.current) onClick?.(); }}
+      aria-label={`${displayName}, rank ${rank}, ${standing.totalPoints} points`}
+      onClick={() => {
+        if (!didScroll.current) onClick?.();
+      }}
       onTouchStart={(e) => {
         touchStartY.current = e.touches[0].clientY;
         didScroll.current = false;
@@ -119,52 +109,64 @@ export default function LeaderboardRow({ standing, isViewer, matchDelta, onClick
           didScroll.current = true;
         }
       }}
-      className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-left cursor-pointer hover:brightness-110 active:scale-[0.99] active:opacity-80 ${rowBg}`}
+      className={`w-full flex items-center gap-3 rounded-2xl px-3 py-2.5 min-h-[44px] text-left cursor-pointer transition-all hover:-translate-y-px hover:border-white/20 active:scale-[0.99] active:opacity-80 ${cfg.rowClass} ${cfg.shadowClass}`}
     >
-      {/* Zone 1 — Rank + Avatar */}
-      <RankBadge rank={rank} />
+      {/* Rank */}
+      <span
+        className={`w-[18px] text-center text-base font-bold tabular-nums shrink-0 ${cfg.rankClass}`}
+      >
+        {rank}
+      </span>
+
+      {/* Avatar */}
       <Avatar
         name={standing.player.name}
         photoUrl={standing.player.photoUrl}
-        size={40}
-        ringClass={avatarRing}
+        size={42}
+        ringClass={cfg.ringClass}
       />
 
-      {/* Zone 2 — Identity */}
-      <div className="flex-1 min-w-0">
-        <p className="font-display text-wc-white font-bold text-lg leading-tight line-clamp-2">
+      {/* Name block */}
+      <div className="flex-1 min-w-0 flex flex-col gap-[3px]">
+        <span className="font-display text-base font-bold text-white whitespace-nowrap">
           {displayName}
-        </p>
+        </span>
         {(ownerName || isViewer) && (
-          <div className="flex items-center gap-1.5 mt-0.5">
+          <div className="flex items-center">
             {ownerName && (
-              <span className="text-wc-white/40 text-xs font-body truncate">{ownerName}</span>
+              <span className="font-body text-[12.5px] text-slate-400">{ownerName}</span>
             )}
             {isViewer && (
-              <span className="text-[9px] font-body font-semibold text-wc-gold bg-wc-gold/10 px-1.5 py-0.5 rounded uppercase tracking-wider shrink-0">
-                you
+              <span className="text-[9px] font-bold tracking-wide text-[#1a1407] bg-[#e6b94e] rounded px-1.5 py-0.5 ml-1.5 shrink-0">
+                YOU
               </span>
             )}
           </div>
         )}
       </div>
 
-      {/* Zone 3 — Score */}
-      <div className="flex flex-col items-end gap-0.5 shrink-0 w-24">
+      {/* Stat cluster */}
+      <div className="shrink-0 flex flex-col items-end gap-1">
         <div className="h-5 flex items-center justify-end">
           {matchDelta && (
-            <PointsChip points={matchDelta.points} multiChipApplied={matchDelta.multiChipApplied} />
+            <RoundChangeChip
+              points={matchDelta.points}
+              multiChipApplied={matchDelta.multiChipApplied}
+            />
           )}
         </div>
         <div className="flex items-baseline gap-1">
-          <span className="font-display font-bold text-2xl tabular-nums leading-tight text-wc-white/80">
+          <span className="font-display text-[22px] font-bold tabular-nums tracking-tight text-white">
             {standing.totalPoints}
           </span>
-          <span className="text-wc-white/40 text-[10px] font-body uppercase tracking-wider">pts</span>
+          <span className="font-body text-[10px] font-bold tracking-wide text-slate-500">
+            PTS
+          </span>
         </div>
       </div>
 
-      <ChevronRight size={14} className="text-white/25 shrink-0 -ml-1" />
+      {/* Chevron */}
+      <ChevronRight className="h-4 w-4 text-slate-500 shrink-0" />
     </button>
   );
 }
