@@ -14,6 +14,7 @@ import { fixtures } from '@/data/fixtures';
 import { mockResults } from '@/data/mockData';
 import { predictions as staticPredictions } from '@/data/predictions';
 import { resolveAvatarSrc } from '@/lib/avatar';
+import { getNow, PREDICTIONS_DEADLINE } from '@/lib/deadline';
 import { calculateStandings } from '@/lib/scoring';
 import type { MatchResult, Player, PlayerStanding, Prediction, PublicProfile } from '@/lib/types';
 
@@ -57,8 +58,10 @@ export default function Leaderboard() {
     }
   }, [resultsLoading, playedFixtures.length]);
 
+  const deadlinePassed = getNow() >= PREDICTIONS_DEADLINE;
   const players: Player[] = firestoreUsers
     .filter((u) => u.approved === true)
+    .filter((u) => !deadlinePassed || !!u.predictionFileUrl)
     .map(userToPlayer);
   const predictions: Prediction[] = IS_MOCK ? staticPredictions : [];
 
@@ -223,13 +226,18 @@ function SkeletonRow({ index }: { index: number }) {
     >
       <div className="w-7 h-5 rounded bg-wc-white/10 shrink-0" />
       <div className="w-10 h-10 rounded-full bg-wc-white/10 shrink-0" />
-      <div className="flex-1 min-w-0 space-y-2">
+      <div className="flex-1 min-w-0 space-y-1.5">
         <div className={`h-5 rounded bg-wc-white/10 ${SKELETON_NAME_WIDTHS[index]}`} />
-        <div className="h-3 rounded bg-wc-white/10 w-20" />
+        <div className="h-3 rounded bg-wc-white/10 w-16" />
       </div>
-      <div className="flex flex-col items-end gap-1 shrink-0">
-        <div className="w-8 h-7 rounded bg-wc-white/10" />
-        <div className="w-5 h-2.5 rounded bg-wc-white/10" />
+      <div className="flex flex-col items-end gap-0.5 shrink-0 w-24">
+        <div className="h-5 flex items-center justify-end">
+          <div className="w-8 h-4 rounded bg-wc-white/10" />
+        </div>
+        <div className="flex items-baseline gap-1">
+          <div className="w-9 h-7 rounded bg-wc-white/10" />
+          <div className="w-5 h-2.5 rounded bg-wc-white/10" />
+        </div>
       </div>
     </div>
   );

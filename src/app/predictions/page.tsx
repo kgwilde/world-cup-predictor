@@ -5,6 +5,7 @@ import { fixtures } from '@/data/fixtures';
 import { mockResults } from '@/data/mockData';
 import { predictions as staticPredictions } from '@/data/predictions';
 import type { Fixture, MatchResult, MultiChip, Player, Prediction, PublicProfile } from '@/lib/types';
+import { getNow, PREDICTIONS_DEADLINE } from '@/lib/deadline';
 import { getResultType } from '@/lib/predictions';
 import { scoreMatch, calculateStandings } from '@/lib/scoring';
 import { resolveAvatarSrc } from '@/lib/avatar';
@@ -18,8 +19,6 @@ import PlayerCardModal from '@/components/PlayerCardModal';
 
 const IS_MOCK = process.env.NEXT_PUBLIC_MOCK_RESULTS === 'true';
 const ACTIVE_RESULTS: MatchResult[] = IS_MOCK ? mockResults : [];
-const MOCK_DATE_OVERRIDE: string | null = null;
-
 const GROUP_FIXTURE_IDS = new Set(fixtures.filter((f) => f.stage === 'group').map((f) => f.id));
 const GROUP_CHIP_LIMIT = 10;
 
@@ -30,11 +29,6 @@ function userToPlayer(profile: PublicProfile): Player {
     teamName: profile.teamName ?? undefined,
     photoUrl: resolveAvatarSrc(profile.avatarUrl, profile.avatarUpdatedAt),
   };
-}
-
-function getCurrentDate() {
-  if (MOCK_DATE_OVERRIDE) return new Date(MOCK_DATE_OVERRIDE);
-  return new Date();
 }
 
 function formatDateLabel(date: Date) {
@@ -365,7 +359,7 @@ function MyChipsTab({
 type Tab = 'all' | 'my-chips';
 
 export default function PredictionsPage() {
-  const now = useMemo(() => getCurrentDate(), []);
+  const now = useMemo(() => getNow(), []);
   const availableDates = useMemo(() => buildAvailableDates(fixtures), []);
   const resultMap = useMemo(() => new Map(ACTIVE_RESULTS.map((r) => [r.fixtureId, r])), []);
   const firestoreUsers = useAuthStore((s) => s.allUsers);
@@ -379,9 +373,14 @@ export default function PredictionsPage() {
 
   const { chips: allChips, apply: applyChip, remove: removeChip } = useMultiChips();
 
+  const deadlinePassed = useMemo(() => getNow() >= PREDICTIONS_DEADLINE, []);
   const players = useMemo<Player[]>(
-    () => firestoreUsers.filter((u) => u.approved && !!u.teamName).map(userToPlayer),
-    [firestoreUsers]
+    () =>
+      firestoreUsers
+        .filter((u) => u.approved && !!u.teamName)
+        .filter((u) => !deadlinePassed || !!u.predictionFileUrl)
+        .map(userToPlayer),
+    [firestoreUsers, deadlinePassed]
   );
 
   const allPredictions = useMemo<Prediction[]>(

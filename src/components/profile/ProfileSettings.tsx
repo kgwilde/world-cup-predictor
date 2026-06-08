@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useAuthStore } from '@/app/stores/useAuthStore';
 import { useMyStanding } from '@/components/hooks/use_my_standing';
 import { resolveAvatarSrc } from '@/lib/avatar';
+import { getNow, PREDICTIONS_DEADLINE } from '@/lib/deadline';
 import { updateUserProfile } from '@/lib/firestore';
 
 const CARD_COLOR = '#253ecf'; // wc-blue — matches the header
@@ -49,6 +50,7 @@ export function ProfileSettings() {
   const accentColor = CARD_COLOR;
   const isApproved = profile.approved === true;
   const hasPredictions = !!profile.predictionFileUrl;
+  const deadlinePassed = getNow() >= PREDICTIONS_DEADLINE;
 
   async function getToken(): Promise<string> {
     return getIdToken(user!);
@@ -314,8 +316,9 @@ export function ProfileSettings() {
         />
         <StatTile
           label="Predictions"
-          value={hasPredictions ? 'Uploaded' : 'Not yet'}
+          value={hasPredictions ? 'Uploaded' : deadlinePassed ? 'Missed deadline' : 'Not yet'}
           highlight={hasPredictions}
+          error={!hasPredictions && deadlinePassed}
         />
       </div>
 
@@ -350,8 +353,8 @@ export function ProfileSettings() {
               </div>
               <button
                 onClick={handleDeletePredictions}
-                disabled={predictionsDeleting}
-                title="Delete prediction file"
+                disabled={predictionsDeleting || deadlinePassed}
+                title={deadlinePassed ? 'Predictions are locked after the deadline' : 'Delete prediction file'}
                 className="shrink-0 flex items-center justify-center w-7 h-7 rounded-md text-red-400/60 hover:text-red-400 hover:bg-red-400/10 transition-colors disabled:opacity-40"
               >
                 {predictionsDeleting ? <Spinner size={14} /> : <Trash2 size={14} />}
@@ -368,11 +371,11 @@ export function ProfileSettings() {
           />
           <button
             onClick={() => predictionsInputRef.current?.click()}
-            disabled={predictionsLoading || hasPredictions}
+            disabled={predictionsLoading || hasPredictions || deadlinePassed}
             className="flex items-center justify-center gap-2 text-sm font-semibold bg-wc-gold text-wc-black rounded-lg px-4 py-2.5 hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Upload size={14} />
-            {predictionsLoading ? 'Uploading…' : 'Upload predictions'}
+            {predictionsLoading ? 'Uploading…' : deadlinePassed && !hasPredictions ? 'Deadline closed' : 'Upload predictions'}
           </button>
         </div>
 
@@ -394,11 +397,8 @@ export function ProfileSettings() {
   );
 }
 
-// June 9 2026 00:00 Dublin time (IST = UTC+1 in summer)
-const PREDICTIONS_DEADLINE = new Date('2026-06-09T00:00:00+01:00');
-
 function getTimeLeft(deadline: Date) {
-  const diff = deadline.getTime() - Date.now();
+  const diff = deadline.getTime() - getNow().getTime();
   if (diff <= 0) return null;
   const days = Math.floor(diff / 86_400_000);
   const hours = Math.floor((diff % 86_400_000) / 3_600_000);
@@ -525,16 +525,18 @@ function StatTile({
   label,
   value,
   highlight,
+  error,
 }: {
   label: string;
   value: string;
   highlight?: boolean;
+  error?: boolean;
 }) {
   return (
     <div className="bg-wc-ink rounded-xl px-3 py-3.5 flex flex-col items-center gap-1">
       <p
         className="font-display font-bold text-lg leading-none tabular-nums"
-        style={{ color: highlight ? '#efbf04' : '#ffffff' }}
+        style={{ color: highlight ? '#efbf04' : error ? '#f87171' : '#ffffff' }}
       >
         {value}
       </p>

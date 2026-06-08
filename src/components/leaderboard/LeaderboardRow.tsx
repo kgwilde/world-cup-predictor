@@ -22,22 +22,12 @@ function RankBadge({ rank }: { rank: number }) {
   const podiumColor = PODIUM_COLORS[rank];
   return (
     <span
-      className={`font-display font-bold tabular-nums text-lg w-7 text-center ${!podiumColor ? 'text-wc-white/50' : ''}`}
+      className={`font-display font-bold tabular-nums text-lg w-7 text-center shrink-0 ${!podiumColor ? 'text-wc-white/50' : ''}`}
       style={podiumColor ? { color: podiumColor } : undefined}
     >
       {rank}
     </span>
   );
-}
-
-function Delta({ rankChange }: { rankChange: number }) {
-  if (rankChange === 0) {
-    return <span className="text-wc-white/30 text-xs">—</span>;
-  }
-  if (rankChange > 0) {
-    return <span className="text-wc-green text-xs font-bold">↑{rankChange}</span>;
-  }
-  return <span className="text-wc-red text-xs font-bold">↓{Math.abs(rankChange)}</span>;
 }
 
 const RAINBOW = 'linear-gradient(135deg, #f72585, #f8961e, #90be6d, #4cc9f0, #7209b7)';
@@ -110,6 +100,8 @@ export default function LeaderboardRow({ standing, isViewer, matchDelta, onClick
   const { rank } = standing;
   const rowBg = RANK_ROW[rank] ?? 'bg-wc-ink border border-wc-white/10';
   const avatarRing = RANK_AVATAR_RING[rank];
+  const displayName = standing.player.teamName ?? standing.player.name;
+  const ownerName = standing.player.teamName ? standing.player.name : null;
 
   const touchStartY = useRef(0);
   const didScroll = useRef(false);
@@ -129,8 +121,8 @@ export default function LeaderboardRow({ standing, isViewer, matchDelta, onClick
       }}
       className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-left cursor-pointer hover:brightness-110 active:scale-[0.99] active:opacity-80 ${rowBg}`}
     >
+      {/* Zone 1 — Rank + Avatar */}
       <RankBadge rank={rank} />
-
       <Avatar
         name={standing.player.name}
         photoUrl={standing.player.photoUrl}
@@ -138,20 +130,16 @@ export default function LeaderboardRow({ standing, isViewer, matchDelta, onClick
         ringClass={avatarRing}
       />
 
+      {/* Zone 2 — Identity */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5">
-          <span className="font-display text-wc-white font-bold text-lg leading-tight truncate">
-            {standing.player.teamName ?? standing.player.name}
-          </span>
-          {isViewer && !standing.player.teamName && (
-            <span className="text-[9px] font-body font-semibold text-wc-gold bg-wc-gold/10 px-1.5 py-0.5 rounded uppercase tracking-wider shrink-0">
-              you
-            </span>
-          )}
-        </div>
-        {standing.player.teamName && (
-          <div className="flex items-center gap-1.5">
-            <p className="text-wc-white/40 text-xs font-body truncate">{standing.player.name}</p>
+        <p className="font-display text-wc-white font-bold text-lg leading-tight line-clamp-2">
+          {displayName}
+        </p>
+        {(ownerName || isViewer) && (
+          <div className="flex items-center gap-1.5 mt-0.5">
+            {ownerName && (
+              <span className="text-wc-white/40 text-xs font-body truncate">{ownerName}</span>
+            )}
             {isViewer && (
               <span className="text-[9px] font-body font-semibold text-wc-gold bg-wc-gold/10 px-1.5 py-0.5 rounded uppercase tracking-wider shrink-0">
                 you
@@ -161,18 +149,19 @@ export default function LeaderboardRow({ standing, isViewer, matchDelta, onClick
         )}
       </div>
 
-      {matchDelta && (
-        <div className="flex flex-col items-end gap-0.5">
-          <PointsChip points={matchDelta.points} multiChipApplied={matchDelta.multiChipApplied} />
-          <Delta rankChange={matchDelta.rankChange} />
+      {/* Zone 3 — Score */}
+      <div className="flex flex-col items-end gap-0.5 shrink-0 w-24">
+        <div className="h-5 flex items-center justify-end">
+          {matchDelta && (
+            <PointsChip points={matchDelta.points} multiChipApplied={matchDelta.multiChipApplied} />
+          )}
         </div>
-      )}
-
-      <div className="text-right shrink-0">
-        <div className="font-display font-bold text-2xl tabular-nums leading-tight text-wc-white/80">
-          {standing.totalPoints}
+        <div className="flex items-baseline gap-1">
+          <span className="font-display font-bold text-2xl tabular-nums leading-tight text-wc-white/80">
+            {standing.totalPoints}
+          </span>
+          <span className="text-wc-white/40 text-[10px] font-body uppercase tracking-wider">pts</span>
         </div>
-        <div className="text-wc-white/40 text-[10px] font-body uppercase tracking-wider">pts</div>
       </div>
 
       <ChevronRight size={14} className="text-white/25 shrink-0 -ml-1" />

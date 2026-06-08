@@ -2,9 +2,54 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  AR, AT, AU, BA, BE, BR, CA, CD, CH, CI, CO, CV, CW, CZ, DE, DZ, EC, EG, ES, FR,
-  GH, HR, HT, IQ, IR, JO, JP, KR, MA, MX, NL, NO, NZ, PA, PT, PY, QA, SA, SE, SN,
-  TN, TR, US, UY, UZ, ZA,
+  AR,
+  AT,
+  AU,
+  BA,
+  BE,
+  BR,
+  CA,
+  CD,
+  CH,
+  CI,
+  CO,
+  CV,
+  CW,
+  CZ,
+  DE,
+  DZ,
+  EC,
+  EG,
+  ES,
+  FR,
+  GH,
+  HR,
+  HT,
+  IQ,
+  IR,
+  JO,
+  JP,
+  KR,
+  MA,
+  MX,
+  NL,
+  NO,
+  NZ,
+  PA,
+  PT,
+  PY,
+  QA,
+  SA,
+  SE,
+  SN,
+  TN,
+  TR,
+  US,
+  UY,
+  UZ,
+  ZA,
+  GB_ENG,
+  GB_SCT,
 } from 'country-flag-icons/react/3x2';
 import type { ComponentType } from 'react';
 import type { Fixture, FixtureStage, MatchResult, Team } from '@/lib/types';
@@ -31,9 +76,54 @@ const MILLISECONDS_PER_MINUTE = 1000 * 60;
 const COUNTDOWN_TICK_INTERVAL_MS = 30 * 1000;
 
 const FLAG_MAP: Record<string, ComponentType<{ title?: string; className?: string }>> = {
-  AR, AT, AU, BA, BE, BR, CA, CD, CH, CI, CO, CV, CW, CZ, DE, DZ, EC, EG, ES, FR,
-  GH, HR, HT, IQ, IR, JO, JP, KR, MA, MX, NL, NO, NZ, PA, PT, PY, QA, SA, SE, SN,
-  TN, TR, US, UY, UZ, ZA,
+  AR,
+  AT,
+  AU,
+  BA,
+  BE,
+  BR,
+  CA,
+  CD,
+  CH,
+  CI,
+  CO,
+  CV,
+  CW,
+  CZ,
+  DE,
+  DZ,
+  EC,
+  EG,
+  ES,
+  FR,
+  GH,
+  HR,
+  HT,
+  IQ,
+  IR,
+  JO,
+  JP,
+  KR,
+  MA,
+  MX,
+  NL,
+  NO,
+  NZ,
+  PA,
+  PT,
+  PY,
+  QA,
+  SA,
+  SE,
+  SN,
+  TN,
+  TR,
+  US,
+  UY,
+  UZ,
+  ZA,
+  GB_ENG,
+  GB_SCT,
 };
 
 function getFlagComponent(team: Team) {
@@ -295,7 +385,6 @@ function useCurrentTime() {
 export function FixtureSlider() {
   const now = useCurrentTime();
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [scrollFraction, setScrollFraction] = useState(0);
 
   const upcomingFixtures = useMemo(() => {
     const nowTime = now.getTime();
@@ -316,13 +405,6 @@ export function FixtureSlider() {
     return futureFixtures;
   }, [now]);
 
-  function handleScroll() {
-    const el = scrollRef.current;
-    if (!el) return;
-    const max = el.scrollWidth - el.clientWidth;
-    setScrollFraction(max > 0 ? el.scrollLeft / max : 0);
-  }
-
   return (
     <>
       <style>{`
@@ -337,7 +419,6 @@ export function FixtureSlider() {
       <div className="relative mt-2">
         <div
           ref={scrollRef}
-          onScroll={handleScroll}
           className="flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-px-4 px-4 pb-3 pt-1
                      [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           role="region"
@@ -347,18 +428,6 @@ export function FixtureSlider() {
             <FixtureCard key={fixture.id} fixture={fixture} now={now} />
           ))}
         </div>
-
-        {/* Scrubber */}
-        {upcomingFixtures.length > 1 && (
-          <div className="mx-4 mt-1.5 mb-1">
-            <div className="h-[2px] rounded-full bg-white/8 overflow-hidden">
-              <div
-                className="h-full rounded-full bg-wc-blue transition-[width] duration-100 ease-out"
-                style={{ width: `${scrollFraction * 100}%` }}
-              />
-            </div>
-          </div>
-        )}
       </div>
     </>
   );
