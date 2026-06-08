@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import localFont from 'next/font/local';
+import { Analytics } from '@vercel/analytics/next';
 
 import { ClientProviders } from '@/components/ClientProviders';
 import { Header } from '@/components/Header';
@@ -128,6 +129,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           <Navigation />
           <main>{children}</main>
         </div>
+        <Analytics />
       </body>
     </html>
   );
