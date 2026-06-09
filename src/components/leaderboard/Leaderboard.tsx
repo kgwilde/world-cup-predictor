@@ -105,7 +105,7 @@ export default function Leaderboard() {
 
   return (
     <>
-      <div className="max-w-3xl mx-auto px-4 space-y-4">
+      <div className="max-w-3xl mx-auto px-4 space-y-4 pb-8">
         <div className="space-y-4">
           <ReplayControls
             fixtures={playedFixtures}

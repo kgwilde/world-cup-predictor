@@ -3,7 +3,7 @@
 import { useState } from 'react';
 
 import { preloadedAvatarUrls } from '@/lib/avatar';
-import { getFlagByCode } from '@/lib/flags';
+import { getFlagByCode, getFlagByName } from '@/lib/flags';
 
 const PALETTE = ['bg-wc-teal', 'bg-wc-blue', 'bg-wc-magenta', 'bg-wc-red', 'bg-wc-green'];
 
@@ -57,7 +57,7 @@ export default function Avatar({ name, photoUrl, size = 40, ringClass, flagCode 
         />
       )}
       {flagCode && (() => {
-        const Flag = getFlagByCode(flagCode);
+        const Flag = getFlagByCode(flagCode) ?? getFlagByName(flagCode);
         if (!Flag) return null;
         const w = Math.round(size * 0.36);
         const h = Math.round(w * (2 / 3));

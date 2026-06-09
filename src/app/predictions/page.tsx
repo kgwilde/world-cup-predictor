@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useRef, useState, useEffect } from 'react';
+import { Fragment, useMemo, useRef, useState, useEffect } from 'react';
 import { Lock, X } from 'lucide-react';
 import { fixtures } from '@/data/fixtures';
 import { allPredictions, allTournamentPicks, allBonusPredictions } from '@/data/entries';
@@ -119,11 +119,17 @@ function MatchPredictionCard({
   );
 
   const sortedPredictions = useMemo(() => {
-    if (!result) return [...fixturePredictions].sort((a, b) => {
-      const pa = players.find((p) => p.id === a.playerId);
-      const pb = players.find((p) => p.id === b.playerId);
-      return (pa?.name ?? '').localeCompare(pb?.name ?? '');
-    });
+    if (!result) {
+      return [...fixturePredictions].sort((a, b) => {
+        const homeDiff = b.homeGoals - a.homeGoals;
+        if (homeDiff !== 0) return homeDiff;
+        const awayDiff = b.awayGoals - a.awayGoals;
+        if (awayDiff !== 0) return awayDiff;
+        const pa = players.find((p) => p.id === a.playerId);
+        const pb = players.find((p) => p.id === b.playerId);
+        return (pa?.name ?? '').localeCompare(pb?.name ?? '');
+      });
+    }
     return [...fixturePredictions].sort((a, b) => {
       const hasChipA = chipSet.has(a.playerId);
       const hasChipB = chipSet.has(b.playerId);
@@ -132,6 +138,19 @@ function MatchPredictionCard({
       return ptsB - ptsA;
     });
   }, [fixturePredictions, result, players, chipSet]);
+
+  const predictionGroups = useMemo(() => {
+    if (result) return null;
+    const groups: { key: string; predictions: Prediction[] }[] = [];
+    for (const pred of sortedPredictions) {
+      const key = `${pred.homeGoals}-${pred.awayGoals}`;
+      if (groups.length === 0 || groups[groups.length - 1].key !== key) {
+        groups.push({ key, predictions: [] });
+      }
+      groups[groups.length - 1].predictions.push(pred);
+    }
+    return groups.some((g) => g.predictions.length > 1) ? groups : null;
+  }, [sortedPredictions, result]);
 
   const predictingIds = useMemo(() => new Set(fixturePredictions.map((p) => p.playerId)), [fixturePredictions]);
   const unpredictedPlayers = useMemo(
@@ -145,29 +164,63 @@ function MatchPredictionCard({
         <FixtureCard fixture={fixture} now={now} isFullWidth result={result} />
       </div>
       <div className="border-t border-white/10">
-        <div className="px-4">
-          {sortedPredictions.map((prediction) => {
-            const hasChip = chipSet.has(prediction.playerId);
-            const showChip = hasChip && hasStarted;
-            const pts = result
-              ? scoreMatch({ ...prediction, multiChip: showChip }, result).points
-              : undefined;
-            return (
-              <PredictionRow
-                key={prediction.playerId}
-                prediction={prediction}
-                player={players.find((p) => p.id === prediction.playerId)}
-                fixture={fixture}
-                points={pts}
-                multiChipApplied={showChip}
-                onPlayerClick={onPlayerClick}
-              />
-            );
-          })}
-          {unpredictedPlayers.map((player) => (
-            <PlaceholderRow key={player.id} player={player} />
-          ))}
-        </div>
+        {predictionGroups ? (
+          <div className="px-3 pt-2 pb-3 flex flex-col gap-1.5">
+            {predictionGroups.map((group) => (
+              <div key={group.key} className="bg-white/[0.05] rounded-xl px-4">
+                {group.predictions.map((prediction) => {
+                  const hasChip = chipSet.has(prediction.playerId);
+                  const showChip = hasChip && hasStarted;
+                  return (
+                    <PredictionRow
+                      key={prediction.playerId}
+                      prediction={prediction}
+                      player={players.find((p) => p.id === prediction.playerId)}
+                      fixture={fixture}
+                      multiChipApplied={showChip}
+                      onPlayerClick={onPlayerClick}
+                    />
+                  );
+                })}
+              </div>
+            ))}
+            {unpredictedPlayers.length > 0 && (
+              <div className="bg-white/[0.03] rounded-xl px-4">
+                {unpredictedPlayers.map((player) => (
+                  <PlaceholderRow key={player.id} player={player} />
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="px-4">
+            {sortedPredictions.map((prediction) => {
+              const hasChip = chipSet.has(prediction.playerId);
+              const showChip = hasChip && hasStarted;
+              const pts = result
+                ? scoreMatch({ ...prediction, multiChip: showChip }, result).points
+                : undefined;
+              return (
+                <PredictionRow
+                  key={prediction.playerId}
+                  prediction={prediction}
+                  player={players.find((p) => p.id === prediction.playerId)}
+                  fixture={fixture}
+                  points={pts}
+                  multiChipApplied={showChip}
+                  onPlayerClick={onPlayerClick}
+                />
+              );
+            })}
+            {unpredictedPlayers.length > 0 && (
+              <div className={sortedPredictions.length > 0 ? 'border-t border-white/20 mt-1 pt-1' : ''}>
+                {unpredictedPlayers.map((player) => (
+                  <PlaceholderRow key={player.id} player={player} />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

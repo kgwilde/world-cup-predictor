@@ -6,8 +6,9 @@ import * as p3 from './player3';
 import * as p4 from './player4';
 import * as p5 from './player5';
 import * as p6 from './player6';
+import * as p7 from './player7';
 
-const players = [p1, p2, p3, p4, p5, p6];
+const players = [p1, p2, p3, p4, p5, p6, p7];
 
 export const allPredictions: Prediction[] = players.flatMap((p) => p.predictions);
 export const allTournamentPicks: TournamentPicks[] = players.map((p) => p.tournamentPicks);
