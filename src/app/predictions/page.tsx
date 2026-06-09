@@ -246,14 +246,20 @@ function ChipFixtureRow({
 
       {/* Score chip */}
       {prediction ? (
-        <ScoreChip
-          homeGoals={prediction.homeGoals}
-          awayGoals={prediction.awayGoals}
-          resultType={resultType}
-          homeAccentColor={fixture.homeTeam.accentColor}
-          awayAccentColor={fixture.awayTeam.accentColor}
-          multiChip={showChipBadge}
-        />
+        SHOW_PREDICTIONS ? (
+          <ScoreChip
+            homeGoals={prediction.homeGoals}
+            awayGoals={prediction.awayGoals}
+            resultType={resultType}
+            homeAccentColor={fixture.homeTeam.accentColor}
+            awayAccentColor={fixture.awayTeam.accentColor}
+            multiChip={showChipBadge}
+          />
+        ) : (
+          <div className="rounded-lg border border-dashed border-white/20 px-3 py-1 text-sm font-semibold text-white/20 tabular-nums">
+            ? – ?
+          </div>
+        )
       ) : (
         <span className="text-xs text-white/20 italic">No prediction</span>
       )}
@@ -409,7 +415,8 @@ export default function PredictionsPage() {
       firestoreUsers
         .filter((u) => u.approved && !!u.teamName)
         .filter((u) => !deadlinePassed || !!u.predictionFileUrl)
-        .map(userToPlayer),
+        .map(userToPlayer)
+        .sort((a, b) => a.name.localeCompare(b.name)),
     [firestoreUsers, deadlinePassed]
   );
 
