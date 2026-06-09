@@ -3,6 +3,7 @@
 import { useState } from 'react';
 
 import { preloadedAvatarUrls } from '@/lib/avatar';
+import { getFlagByCode } from '@/lib/flags';
 
 const PALETTE = ['bg-wc-teal', 'bg-wc-blue', 'bg-wc-magenta', 'bg-wc-red', 'bg-wc-green'];
 
@@ -12,14 +13,16 @@ function colorForName(name: string) {
   return PALETTE[Math.abs(hash) % PALETTE.length];
 }
 
+
 interface Props {
   name: string;
   photoUrl?: string;
   size?: number;
   ringClass?: string;
+  flagCode?: string;
 }
 
-export default function Avatar({ name, photoUrl, size = 40, ringClass }: Props) {
+export default function Avatar({ name, photoUrl, size = 40, ringClass, flagCode }: Props) {
   const [loaded, setLoaded] = useState(() => !!photoUrl && preloadedAvatarUrls.has(photoUrl));
   const words = name.trim().split(/\s+/).filter(Boolean);
   const initials =
@@ -53,6 +56,20 @@ export default function Avatar({ name, photoUrl, size = 40, ringClass }: Props) 
           style={{ width: size, height: size }}
         />
       )}
+      {flagCode && (() => {
+        const Flag = getFlagByCode(flagCode);
+        if (!Flag) return null;
+        const w = Math.round(size * 0.36);
+        const h = Math.round(w * (2 / 3));
+        return (
+          <div
+            className="absolute rounded-[2px] ring-1 ring-white/20 overflow-hidden"
+            style={{ width: w, height: h, bottom: -1, right: -1 }}
+          >
+            <Flag className="w-full h-full" />
+          </div>
+        );
+      })()}
     </div>
   );
 }

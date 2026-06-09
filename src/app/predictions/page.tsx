@@ -1,7 +1,9 @@
 'use client';
 
 import { useMemo, useRef, useState, useEffect } from 'react';
+import { Lock, X } from 'lucide-react';
 import { fixtures } from '@/data/fixtures';
+import { allPredictions, allTournamentPicks, allBonusPredictions } from '@/data/entries';
 import type {
   BonusPredictions,
   Fixture,
@@ -26,6 +28,7 @@ import SpecialsTab from '@/components/predictions/SpecialsTab';
 import PlayerCardModal from '@/components/PlayerCardModal';
 
 const GROUP_FIXTURE_IDS = new Set(fixtures.filter((f) => f.stage === 'group').map((f) => f.id));
+const SHOW_PREDICTIONS = process.env.NEXT_PUBLIC_SHOW_PREDICTIONS === 'true';
 const GROUP_CHIP_LIMIT = 10;
 
 function userToPlayer(profile: PublicProfile): Player {
@@ -262,15 +265,23 @@ function ChipFixtureRow({
         </span>
       )}
 
-      {/* Chip toggle (upcoming only) */}
-      {prediction && !hasStarted && (
-        hasChip ? (
+      {/* Chip toggle */}
+      {prediction && (
+        hasStarted ? (
+          hasChip ? (
+            <span className="shrink-0 flex items-center gap-1 text-[11px] font-bold text-wc-gold/60 bg-wc-gold/10 border border-wc-gold/20 rounded-full px-2 py-1">
+              <Lock size={10} />
+              Locked
+            </span>
+          ) : null
+        ) : hasChip ? (
           <button
             type="button"
             onClick={onRemove}
-            className="shrink-0 flex items-center gap-1 text-[11px] font-bold text-wc-gold bg-wc-gold/15 border border-wc-gold/40 rounded-full px-2.5 py-1 hover:bg-wc-gold/25 active:opacity-70 transition-colors"
+            className="shrink-0 flex items-center gap-1 text-[11px] font-bold rounded-full px-2 py-1 border transition-colors text-wc-gold bg-wc-gold/15 border-wc-gold/40 active:bg-red-500/15 active:border-red-500/40 active:text-red-400"
           >
             Applied
+            <X size={9} className="opacity-60" />
           </button>
         ) : (
           <button
@@ -402,13 +413,13 @@ export default function PredictionsPage() {
     [firestoreUsers, deadlinePassed]
   );
 
-  const allPredictions: Prediction[] = [];
-  const allTournamentPicks: TournamentPicks[] = [];
-  const allBonusPredictions: BonusPredictions[] = [];
+  const visiblePredictions = SHOW_PREDICTIONS ? allPredictions : [];
+  const visibleTournamentPicks = SHOW_PREDICTIONS ? allTournamentPicks : [];
+  const visibleBonusPredictions = SHOW_PREDICTIONS ? allBonusPredictions : [];
 
   const standings = useMemo(
-    () => calculateStandings(players, allPredictions, storeResults),
-    [players, storeResults]
+    () => calculateStandings(players, visiblePredictions, storeResults),
+    [players, visiblePredictions, storeResults]
   );
 
   const fixturesForDay = useMemo(
@@ -427,13 +438,13 @@ export default function PredictionsPage() {
   );
 
   const selectedTournamentPicks = useMemo(
-    () => allTournamentPicks.find((t) => t.playerId === selectedPlayerId) ?? null,
-    [allTournamentPicks, selectedPlayerId]
+    () => visibleTournamentPicks.find((t) => t.playerId === selectedPlayerId) ?? null,
+    [visibleTournamentPicks, selectedPlayerId]
   );
 
   const selectedBonusPredictions = useMemo(
-    () => allBonusPredictions.find((b) => b.playerId === selectedPlayerId) ?? null,
-    [allBonusPredictions, selectedPlayerId]
+    () => visibleBonusPredictions.find((b) => b.playerId === selectedPlayerId) ?? null,
+    [visibleBonusPredictions, selectedPlayerId]
   );
 
   const activeButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -500,11 +511,17 @@ export default function PredictionsPage() {
           </div>
 
           {activeTab === 'specials' && (
-            <SpecialsTab
-              players={players}
-              tournamentPicks={allTournamentPicks}
-              bonusPredictions={allBonusPredictions}
-            />
+            SHOW_PREDICTIONS ? (
+              <SpecialsTab
+                players={players}
+                tournamentPicks={visibleTournamentPicks}
+                bonusPredictions={visibleBonusPredictions}
+              />
+            ) : (
+              <p className="text-center text-white/30 text-sm py-16">
+                Predictions not yet revealed.
+              </p>
+            )
           )}
 
           {activeTab === 'matches' && (
@@ -550,7 +567,7 @@ export default function PredictionsPage() {
                     fixture={fixture}
                     now={now}
                     players={players}
-                    allPredictions={allPredictions}
+                    allPredictions={visiblePredictions}
                     allChips={allChips}
                     result={resultMap.get(fixture.id)}
                     onPlayerClick={setSelectedPlayerId}
@@ -578,7 +595,7 @@ export default function PredictionsPage() {
         <PlayerCardModal
           player={selectedPlayer}
           standing={selectedStanding}
-          predictions={allPredictions}
+          predictions={visiblePredictions}
           multiChips={allChips}
           fixtures={fixtures}
           results={storeResults}

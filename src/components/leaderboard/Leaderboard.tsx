@@ -11,6 +11,7 @@ import LeaderboardRow from '@/components/leaderboard/LeaderboardRow';
 import PlayerCardModal from '@/components/PlayerCardModal';
 import ReplayControls from '@/components/leaderboard/ReplayControls';
 import { fixtures } from '@/data/fixtures';
+import { allPredictions, allTournamentPicks, allBonusPredictions } from '@/data/entries';
 import { resolveAvatarSrc } from '@/lib/avatar';
 import { getNow, PREDICTIONS_DEADLINE } from '@/lib/deadline';
 import { calculateStandings } from '@/lib/scoring';
@@ -59,7 +60,7 @@ export default function Leaderboard() {
     .filter((u) => u.approved === true)
     .filter((u) => !deadlinePassed || !!u.predictionFileUrl)
     .map(userToPlayer);
-  const predictions: Prediction[] = [];
+  const predictions: Prediction[] = allPredictions;
 
   const { currentStandings, previousStandings, currentFixture } = useStandings(
     players,
@@ -85,16 +86,16 @@ export default function Leaderboard() {
     [latestStandings, selectedPlayerId]
   );
 
-  const allTournamentPicks: TournamentPicks[] = [];
-  const allBonusPredictions: BonusPredictions[] = [];
+  const tournamentPicksList: TournamentPicks[] = allTournamentPicks;
+  const bonusPredictionsList: BonusPredictions[] = allBonusPredictions;
 
   const selectedTournamentPicks = useMemo(
-    () => allTournamentPicks.find((t) => t.playerId === selectedPlayerId) ?? null,
+    () => tournamentPicksList.find((t) => t.playerId === selectedPlayerId) ?? null,
     [selectedPlayerId]
   );
 
   const selectedBonusPredictions = useMemo(
-    () => allBonusPredictions.find((b) => b.playerId === selectedPlayerId) ?? null,
+    () => bonusPredictionsList.find((b) => b.playerId === selectedPlayerId) ?? null,
     [selectedPlayerId]
   );
 
@@ -126,6 +127,7 @@ export default function Leaderboard() {
                   key={standing.player.id}
                   standing={standing}
                   isViewer={standing.player.id === viewerId}
+                  winnerPick={tournamentPicksList.find((t) => t.playerId === standing.player.id)?.winner}
                   onClick={() => setSelectedPlayerId(standing.player.id)}
                   matchDelta={
                     currentFixture

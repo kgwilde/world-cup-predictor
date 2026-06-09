@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 
 import { useAuthStore } from '@/app/stores/useAuthStore';
 import { fixtures } from '@/data/fixtures';
+import { allPredictions } from '@/data/entries';
 import { resolveAvatarSrc } from '@/lib/avatar';
 import { calculateStandings } from '@/lib/scoring';
 import type { Player, Prediction, PublicProfile } from '@/lib/types';
@@ -44,7 +45,7 @@ export function useMyStanding(): { rank: number; totalPoints: number } | null {
       return index === -1 ? null : { rank: index + 1, totalPoints: 0 };
     }
 
-    const predictions: Prediction[] = [];
+    const predictions: Prediction[] = allPredictions;
     const lastFixture = playedFixtures[playedFixtures.length - 1];
     const standings = calculateStandings(players, predictions, storeResults, lastFixture.id, fixtures);
     const mine = standings.find((s) => s.player.id === uid);

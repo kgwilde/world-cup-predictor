@@ -134,7 +134,7 @@ function KnockoutCard({
                   ) : typeof teams === 'string' ? (
                     <TeamChip code={teams} />
                   ) : (
-                    teams.map((code) => <TeamChip key={code} code={code} />)
+                    teams.map((code, i) => <TeamChip key={`${code}-${i}`} code={code} />)
                   )}
                 </PlayerRow>
               );
@@ -205,8 +205,8 @@ function BonusCard({
 }) {
   const rows: Array<{ label: string; getValue: (b: BonusPredictions) => string }> = [
     { label: 'Top Goalscorer', getValue: (b) => b.topScorer },
-    { label: 'Highest Scoring Team', getValue: (b) => teamName(b.highestScoringTeam) },
-    { label: 'Best Defence', getValue: (b) => teamName(b.bestDefence) },
+    { label: 'Group Stage Highest Scorers', getValue: (b) => teamName(b.highestScoringTeam) },
+    { label: 'Best Group Stage Defence', getValue: (b) => teamName(b.bestDefence) },
     { label: 'Yellow Cards', getValue: (b) => String(b.totalYellowCards) },
     { label: 'Red Cards', getValue: (b) => String(b.totalRedCards) },
     { label: 'Penalty Shootouts', getValue: (b) => String(b.penaltyShootouts) },

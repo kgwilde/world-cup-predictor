@@ -336,8 +336,8 @@ function PlayerSpecialsTab({
   const bonusRows: Array<{ label: string; value: string }> = bonusPredictions
     ? [
         { label: 'Top Goalscorer', value: bonusPredictions.topScorer },
-        { label: 'Highest Scoring Team', value: teamName(bonusPredictions.highestScoringTeam) },
-        { label: 'Best Defence', value: teamName(bonusPredictions.bestDefence) },
+        { label: 'Group Stage Highest Scorers', value: teamName(bonusPredictions.highestScoringTeam) },
+        { label: 'Best Group Stage Defence', value: teamName(bonusPredictions.bestDefence) },
         { label: 'Yellow Cards', value: String(bonusPredictions.totalYellowCards) },
         { label: 'Red Cards', value: String(bonusPredictions.totalRedCards) },
         { label: 'Penalty Shootouts', value: String(bonusPredictions.penaltyShootouts) },

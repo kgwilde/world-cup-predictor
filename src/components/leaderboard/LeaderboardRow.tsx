@@ -9,6 +9,7 @@ interface Props {
   standing: PlayerStanding;
   isViewer: boolean;
   matchDelta?: { points: number; rankChange: number; multiChipApplied: boolean } | null;
+  winnerPick?: string;
   onClick?: () => void;
 }
 
@@ -84,7 +85,7 @@ function RoundChangeChip({
   );
 }
 
-export default function LeaderboardRow({ standing, isViewer, matchDelta, onClick }: Props) {
+export default function LeaderboardRow({ standing, isViewer, matchDelta, winnerPick, onClick }: Props) {
   const { rank } = standing;
   const cfg = RANK_CONFIG[rank] ?? DEFAULT_RANK_CONFIG;
   const displayName = standing.player.teamName ?? standing.player.name;
@@ -124,6 +125,7 @@ export default function LeaderboardRow({ standing, isViewer, matchDelta, onClick
         photoUrl={standing.player.photoUrl}
         size={42}
         ringClass={cfg.ringClass}
+        flagCode={winnerPick}
       />
 
       {/* Name block */}

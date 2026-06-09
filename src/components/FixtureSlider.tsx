@@ -1,57 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  AR,
-  AT,
-  AU,
-  BA,
-  BE,
-  BR,
-  CA,
-  CD,
-  CH,
-  CI,
-  CO,
-  CV,
-  CW,
-  CZ,
-  DE,
-  DZ,
-  EC,
-  EG,
-  ES,
-  FR,
-  GH,
-  HR,
-  HT,
-  IQ,
-  IR,
-  JO,
-  JP,
-  KR,
-  MA,
-  MX,
-  NL,
-  NO,
-  NZ,
-  PA,
-  PT,
-  PY,
-  QA,
-  SA,
-  SE,
-  SN,
-  TN,
-  TR,
-  US,
-  UY,
-  UZ,
-  ZA,
-  GB_ENG,
-  GB_SCT,
-} from 'country-flag-icons/react/3x2';
-import type { ComponentType } from 'react';
+import { getFlagByCode } from '@/lib/flags';
 import type { Fixture, FixtureStage, MatchResult, Team } from '@/lib/types';
 
 import { fixtures } from '@/data/fixtures';
@@ -75,62 +25,9 @@ const MILLISECONDS_PER_HOUR = 1000 * 60 * 60;
 const MILLISECONDS_PER_MINUTE = 1000 * 60;
 const COUNTDOWN_TICK_INTERVAL_MS = 30 * 1000;
 
-const FLAG_MAP: Record<string, ComponentType<{ title?: string; className?: string }>> = {
-  AR,
-  AT,
-  AU,
-  BA,
-  BE,
-  BR,
-  CA,
-  CD,
-  CH,
-  CI,
-  CO,
-  CV,
-  CW,
-  CZ,
-  DE,
-  DZ,
-  EC,
-  EG,
-  ES,
-  FR,
-  GH,
-  HR,
-  HT,
-  IQ,
-  IR,
-  JO,
-  JP,
-  KR,
-  MA,
-  MX,
-  NL,
-  NO,
-  NZ,
-  PA,
-  PT,
-  PY,
-  QA,
-  SA,
-  SE,
-  SN,
-  TN,
-  TR,
-  US,
-  UY,
-  UZ,
-  ZA,
-  GB_ENG,
-  GB_SCT,
-};
-
 function getFlagComponent(team: Team) {
-  if (team.code === 'TBD') {
-    return null;
-  }
-  return FLAG_MAP[team.code] ?? null;
+  if (team.code === 'TBD') return null;
+  return getFlagByCode(team.code);
 }
 
 function getViewingDay(date: Date) {
