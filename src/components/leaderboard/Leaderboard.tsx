@@ -11,18 +11,10 @@ import LeaderboardRow from '@/components/leaderboard/LeaderboardRow';
 import PlayerCardModal from '@/components/PlayerCardModal';
 import ReplayControls from '@/components/leaderboard/ReplayControls';
 import { fixtures } from '@/data/fixtures';
-import { mockResults } from '@/data/mockData';
-import {
-  predictions as staticPredictions,
-  mockTournamentPicks,
-  mockBonusPredictions,
-} from '@/data/predictions';
 import { resolveAvatarSrc } from '@/lib/avatar';
 import { getNow, PREDICTIONS_DEADLINE } from '@/lib/deadline';
 import { calculateStandings } from '@/lib/scoring';
-import type { MatchResult, Player, PlayerStanding, Prediction, PublicProfile } from '@/lib/types';
-
-const IS_MOCK = process.env.NEXT_PUBLIC_MOCK_RESULTS === 'true';
+import type { BonusPredictions, MatchResult, Player, PlayerStanding, Prediction, PublicProfile, TournamentPicks } from '@/lib/types';
 
 function userToPlayer(profile: PublicProfile): Player {
   return {
@@ -42,7 +34,7 @@ export default function Leaderboard() {
   const storeResults = useAuthStore((s) => s.results);
   const resultsLoading = useAuthStore((s) => s.resultsLoading);
 
-  const activeResults: MatchResult[] = IS_MOCK ? mockResults : storeResults;
+  const activeResults: MatchResult[] = storeResults;
 
   const playedFixtures = useMemo(() => {
     const withResults = new Set(activeResults.map((r) => r.fixtureId));
@@ -67,7 +59,7 @@ export default function Leaderboard() {
     .filter((u) => u.approved === true)
     .filter((u) => !deadlinePassed || !!u.predictionFileUrl)
     .map(userToPlayer);
-  const predictions: Prediction[] = IS_MOCK ? staticPredictions : [];
+  const predictions: Prediction[] = [];
 
   const { currentStandings, previousStandings, currentFixture } = useStandings(
     players,
@@ -93,8 +85,8 @@ export default function Leaderboard() {
     [latestStandings, selectedPlayerId]
   );
 
-  const allTournamentPicks = IS_MOCK ? mockTournamentPicks : [];
-  const allBonusPredictions = IS_MOCK ? mockBonusPredictions : [];
+  const allTournamentPicks: TournamentPicks[] = [];
+  const allBonusPredictions: BonusPredictions[] = [];
 
   const selectedTournamentPicks = useMemo(
     () => allTournamentPicks.find((t) => t.playerId === selectedPlayerId) ?? null,

@@ -4,13 +4,9 @@ import { useMemo } from 'react';
 
 import { useAuthStore } from '@/app/stores/useAuthStore';
 import { fixtures } from '@/data/fixtures';
-import { mockResults } from '@/data/mockData';
-import { predictions as staticPredictions } from '@/data/predictions';
 import { resolveAvatarSrc } from '@/lib/avatar';
 import { calculateStandings } from '@/lib/scoring';
-import type { Player, PublicProfile } from '@/lib/types';
-
-const IS_MOCK = process.env.NEXT_PUBLIC_MOCK_RESULTS === 'true';
+import type { Player, Prediction, PublicProfile } from '@/lib/types';
 
 function userToPlayer(profile: PublicProfile): Player {
   return {
@@ -31,10 +27,8 @@ export function useMyStanding(): { rank: number; totalPoints: number } | null {
   return useMemo(() => {
     if (!uid || usersLoading || resultsLoading) return null;
 
-    const activeResults = IS_MOCK ? mockResults : storeResults;
-
     const playedFixtures = (() => {
-      const withResults = new Set(activeResults.map((r) => r.fixtureId));
+      const withResults = new Set(storeResults.map((r) => r.fixtureId));
       return fixtures
         .filter((f) => withResults.has(f.id))
         .sort((a, b) => new Date(a.kickoff).getTime() - new Date(b.kickoff).getTime());
@@ -50,9 +44,9 @@ export function useMyStanding(): { rank: number; totalPoints: number } | null {
       return index === -1 ? null : { rank: index + 1, totalPoints: 0 };
     }
 
-    const predictions = IS_MOCK ? staticPredictions : [];
+    const predictions: Prediction[] = [];
     const lastFixture = playedFixtures[playedFixtures.length - 1];
-    const standings = calculateStandings(players, predictions, activeResults, lastFixture.id, fixtures);
+    const standings = calculateStandings(players, predictions, storeResults, lastFixture.id, fixtures);
     const mine = standings.find((s) => s.player.id === uid);
 
     return mine ? { rank: mine.rank, totalPoints: mine.totalPoints } : null;

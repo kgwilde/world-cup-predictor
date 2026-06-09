@@ -2,12 +2,6 @@
 
 import { useMemo, useRef, useState, useEffect } from 'react';
 import { fixtures } from '@/data/fixtures';
-import { mockResults } from '@/data/mockData';
-import {
-  predictions as staticPredictions,
-  mockTournamentPicks,
-  mockBonusPredictions,
-} from '@/data/predictions';
 import type {
   BonusPredictions,
   Fixture,
@@ -31,8 +25,6 @@ import ScoreChip from '@/components/predictions/ScoreChip';
 import SpecialsTab from '@/components/predictions/SpecialsTab';
 import PlayerCardModal from '@/components/PlayerCardModal';
 
-const IS_MOCK = process.env.NEXT_PUBLIC_MOCK_RESULTS === 'true';
-const ACTIVE_RESULTS: MatchResult[] = IS_MOCK ? mockResults : [];
 const GROUP_FIXTURE_IDS = new Set(fixtures.filter((f) => f.stage === 'group').map((f) => f.id));
 const GROUP_CHIP_LIMIT = 10;
 
@@ -379,9 +371,10 @@ type Tab = 'matches' | 'specials' | 'my-chips';
 export default function PredictionsPage() {
   const now = useMemo(() => getNow(), []);
   const availableDates = useMemo(() => buildAvailableDates(fixtures), []);
-  const resultMap = useMemo(() => new Map(ACTIVE_RESULTS.map((r) => [r.fixtureId, r])), []);
   const firestoreUsers = useAuthStore((s) => s.allUsers);
   const viewerId = useAuthStore((s) => s.user?.uid ?? null);
+  const storeResults = useAuthStore((s) => s.results);
+  const resultMap = useMemo(() => new Map(storeResults.map((r) => [r.fixtureId, r])), [storeResults]);
 
   const [activeTab, setActiveTab] = useState<Tab>('matches');
   const [selectedDate, setSelectedDate] = useState<string>(() =>
@@ -409,24 +402,13 @@ export default function PredictionsPage() {
     [firestoreUsers, deadlinePassed]
   );
 
-  const allPredictions = useMemo<Prediction[]>(
-    () => (IS_MOCK ? staticPredictions : []),
-    []
-  );
-
-  const allTournamentPicks = useMemo<TournamentPicks[]>(
-    () => (IS_MOCK ? mockTournamentPicks : []),
-    []
-  );
-
-  const allBonusPredictions = useMemo<BonusPredictions[]>(
-    () => (IS_MOCK ? mockBonusPredictions : []),
-    []
-  );
+  const allPredictions: Prediction[] = [];
+  const allTournamentPicks: TournamentPicks[] = [];
+  const allBonusPredictions: BonusPredictions[] = [];
 
   const standings = useMemo(
-    () => calculateStandings(players, allPredictions, ACTIVE_RESULTS),
-    [players, allPredictions]
+    () => calculateStandings(players, allPredictions, storeResults),
+    [players, storeResults]
   );
 
   const fixturesForDay = useMemo(
@@ -583,7 +565,7 @@ export default function PredictionsPage() {
               viewerId={viewerId}
               allPredictions={allPredictions}
               allChips={allChips}
-              results={ACTIVE_RESULTS}
+              results={storeResults}
               now={now}
               onApply={(fixtureId) => applyChip(viewerId, fixtureId)}
               onRemove={(fixtureId) => removeChip(viewerId, fixtureId)}
@@ -599,7 +581,7 @@ export default function PredictionsPage() {
           predictions={allPredictions}
           multiChips={allChips}
           fixtures={fixtures}
-          results={ACTIVE_RESULTS}
+          results={storeResults}
           now={now}
           isViewer={selectedPlayer.id === viewerId}
           tournamentPicks={selectedTournamentPicks}
