@@ -127,4 +127,5 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       allUsers: state.allUsers.map((u) => (u.uid === profile.uid ? publicProfile : u)),
     }));
   },
+
 }));

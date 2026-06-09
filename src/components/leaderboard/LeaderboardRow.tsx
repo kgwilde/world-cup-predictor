@@ -18,24 +18,24 @@ const RANK_CONFIG: Record<
 > = {
   1: {
     rankClass: 'text-[#e6b94e]',
-    ringClass: 'ring-2 ring-[#e6b94e]/70 ring-offset-2 ring-offset-[#070a10]',
+    ringClass: 'ring-2 ring-[#e6b94e]/85 ring-offset-2 ring-offset-[#070a10]',
     rowClass:
-      'bg-gradient-to-r from-[#e6b94e]/[0.12] to-[#131a26] border border-[#e6b94e]/50',
-    shadowClass: 'shadow-[0_8px_22px_-12px_rgba(230,185,78,0.4)]',
+      'bg-gradient-to-r from-[#e6b94e]/[0.20] to-[#131a26] border border-[#e6b94e]/65',
+    shadowClass: 'shadow-[0_8px_22px_-12px_rgba(230,185,78,0.42)]',
   },
   2: {
     rankClass: 'text-[#c7d0dd]',
-    ringClass: 'ring-2 ring-[#c7d0dd]/60 ring-offset-2 ring-offset-[#070a10]',
+    ringClass: 'ring-2 ring-[#c7d0dd]/75 ring-offset-2 ring-offset-[#070a10]',
     rowClass:
-      'bg-gradient-to-r from-[#c7d0dd]/[0.08] to-[#131a26] border border-[#c7d0dd]/30',
-    shadowClass: 'shadow-[0_8px_22px_-12px_rgba(199,208,221,0.3)]',
+      'bg-gradient-to-r from-[#c7d0dd]/[0.13] to-[#131a26] border border-[#c7d0dd]/50',
+    shadowClass: 'shadow-[0_8px_22px_-12px_rgba(199,208,221,0.32)]',
   },
   3: {
     rankClass: 'text-[#d08a4f]',
-    ringClass: 'ring-2 ring-[#d08a4f]/60 ring-offset-2 ring-offset-[#070a10]',
+    ringClass: 'ring-2 ring-[#d08a4f]/75 ring-offset-2 ring-offset-[#070a10]',
     rowClass:
-      'bg-gradient-to-r from-[#d08a4f]/[0.09] to-[#131a26] border border-[#d08a4f]/35',
-    shadowClass: 'shadow-[0_8px_22px_-12px_rgba(208,138,79,0.3)]',
+      'bg-gradient-to-r from-[#d08a4f]/[0.15] to-[#131a26] border border-[#d08a4f]/52',
+    shadowClass: 'shadow-[0_8px_22px_-12px_rgba(208,138,79,0.32)]',
   },
 };
 

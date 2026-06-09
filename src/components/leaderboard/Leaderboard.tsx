@@ -12,7 +12,11 @@ import PlayerCardModal from '@/components/PlayerCardModal';
 import ReplayControls from '@/components/leaderboard/ReplayControls';
 import { fixtures } from '@/data/fixtures';
 import { mockResults } from '@/data/mockData';
-import { predictions as staticPredictions } from '@/data/predictions';
+import {
+  predictions as staticPredictions,
+  mockTournamentPicks,
+  mockBonusPredictions,
+} from '@/data/predictions';
 import { resolveAvatarSrc } from '@/lib/avatar';
 import { getNow, PREDICTIONS_DEADLINE } from '@/lib/deadline';
 import { calculateStandings } from '@/lib/scoring';
@@ -89,11 +93,22 @@ export default function Leaderboard() {
     [latestStandings, selectedPlayerId]
   );
 
+  const allTournamentPicks = IS_MOCK ? mockTournamentPicks : [];
+  const allBonusPredictions = IS_MOCK ? mockBonusPredictions : [];
+
+  const selectedTournamentPicks = useMemo(
+    () => allTournamentPicks.find((t) => t.playerId === selectedPlayerId) ?? null,
+    [selectedPlayerId]
+  );
+
+  const selectedBonusPredictions = useMemo(
+    () => allBonusPredictions.find((b) => b.playerId === selectedPlayerId) ?? null,
+    [selectedPlayerId]
+  );
+
   const now = useMemo(() => new Date(), []);
 
-  if (usersLoading || resultsLoading) {
-    return <LeaderboardSkeleton />;
-  }
+  const isLoading = usersLoading || resultsLoading;
 
   return (
     <>
@@ -106,29 +121,33 @@ export default function Leaderboard() {
             onNext={() => setReplayIndex((i) => Math.min(playedFixtures.length - 1, i + 1))}
           />
 
-          {isGuest && <SignUpPrompt />}
+          {!isLoading && isGuest && <SignUpPrompt />}
 
-          {currentStandings.length === 0 && <EmptyState />}
+          {!isLoading && currentStandings.length === 0 && <EmptyState />}
 
           <div className="space-y-2">
-            {currentStandings.map((standing: PlayerStanding) => (
-              <LeaderboardRow
-                key={standing.player.id}
-                standing={standing}
-                isViewer={standing.player.id === viewerId}
-                onClick={() => setSelectedPlayerId(standing.player.id)}
-                matchDelta={
-                  currentFixture
-                    ? buildMatchDelta(
-                        currentStandings,
-                        previousStandings,
-                        currentFixture.id,
-                        standing.player.id
-                      )
-                    : null
-                }
-              />
-            ))}
+            {isLoading ? (
+              SKELETON_NAME_WIDTHS.map((_, i) => <SkeletonRow key={i} index={i} />)
+            ) : (
+              currentStandings.map((standing: PlayerStanding) => (
+                <LeaderboardRow
+                  key={standing.player.id}
+                  standing={standing}
+                  isViewer={standing.player.id === viewerId}
+                  onClick={() => setSelectedPlayerId(standing.player.id)}
+                  matchDelta={
+                    currentFixture
+                      ? buildMatchDelta(
+                          currentStandings,
+                          previousStandings,
+                          currentFixture.id,
+                          standing.player.id
+                        )
+                      : null
+                  }
+                />
+              ))
+            )}
           </div>
         </div>
       </div>
@@ -143,6 +162,8 @@ export default function Leaderboard() {
           results={activeResults}
           now={now}
           isViewer={selectedPlayer.id === viewerId}
+          tournamentPicks={selectedTournamentPicks}
+          bonusPredictions={selectedBonusPredictions}
           onClose={() => setSelectedPlayerId(null)}
         />
       )}
@@ -216,7 +237,7 @@ function EmptyState() {
   );
 }
 
-const SKELETON_NAME_WIDTHS = ['w-36', 'w-24', 'w-32', 'w-28', 'w-40'];
+const SKELETON_NAME_WIDTHS = ['w-36', 'w-24', 'w-32', 'w-28', 'w-40', 'w-20'];
 
 function SkeletonRow({ index }: { index: number }) {
   return (
@@ -240,16 +261,6 @@ function SkeletonRow({ index }: { index: number }) {
         </div>
       </div>
       <div className="w-4 h-4 rounded bg-wc-white/10 shrink-0" />
-    </div>
-  );
-}
-
-function LeaderboardSkeleton() {
-  return (
-    <div className="max-w-3xl mx-auto px-4 space-y-2">
-      {SKELETON_NAME_WIDTHS.map((_, i) => (
-        <SkeletonRow key={i} index={i} />
-      ))}
     </div>
   );
 }

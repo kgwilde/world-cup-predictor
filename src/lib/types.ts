@@ -95,3 +95,33 @@ export interface MultiChip {
   fixtureId: string;
   appliedAt: string; // ISO string
 }
+
+// ─── Specials Predictions ────────────────────────────────────────────────────
+
+export type GroupCode = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K' | 'L';
+
+export interface GroupPicks {
+  winner: string;   // team code
+  runnerUp: string; // team code
+}
+
+export interface TournamentPicks {
+  playerId: string;
+  groups: Record<GroupCode, GroupPicks>;
+  bestThirdPlace: string[];   // 8 team codes
+  roundOf16: string[];        // 16 team codes
+  quarterFinalists: string[]; // 8 team codes
+  semiFinalists: string[];    // 4 team codes
+  finalists: string[];        // 2 team codes
+  winner: string;
+}
+
+export interface BonusPredictions {
+  playerId: string;
+  topScorer: string;
+  highestScoringTeam: string; // team code
+  bestDefence: string;        // team code
+  totalYellowCards: number;
+  totalRedCards: number;
+  penaltyShootouts: number;
+}

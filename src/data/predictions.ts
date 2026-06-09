@@ -1,4 +1,4 @@
-import type { Prediction } from '@/lib/types';
+import type { BonusPredictions, Prediction, TournamentPicks } from '@/lib/types';
 
 // hD3t2 — backs favourites, tends to predict higher-scoring games
 // cEuAUK — conservative, lots of 1-0 and 1-1
@@ -235,4 +235,109 @@ export const predictions: Prediction[] = [
   { playerId: 'b2ueBFHDCkRNtLBulYU1wXrbrFF3', fixtureId: 'm070', homeGoals: 1, awayGoals: 1 },
   { playerId: 'b2ueBFHDCkRNtLBulYU1wXrbrFF3', fixtureId: 'm071', homeGoals: 1, awayGoals: 1 },
   { playerId: 'b2ueBFHDCkRNtLBulYU1wXrbrFF3', fixtureId: 'm072', homeGoals: 0, awayGoals: 2 },
+];
+
+export const mockTournamentPicks: TournamentPicks[] = [
+  // hD3t2 — backs the big teams all the way
+  {
+    playerId: 'hD3t2Gqh7OZnndX4Scr1r4uGNaz2',
+    groups: {
+      A: { winner: 'MX', runnerUp: 'KR' },
+      B: { winner: 'CA', runnerUp: 'CH' },
+      C: { winner: 'BR', runnerUp: 'MA' },
+      D: { winner: 'US', runnerUp: 'AU' },
+      E: { winner: 'DE', runnerUp: 'CI' },
+      F: { winner: 'NL', runnerUp: 'JP' },
+      G: { winner: 'BE', runnerUp: 'EG' },
+      H: { winner: 'ES', runnerUp: 'UY' },
+      I: { winner: 'FR', runnerUp: 'SN' },
+      J: { winner: 'AR', runnerUp: 'AT' },
+      K: { winner: 'PT', runnerUp: 'CO' },
+      L: { winner: 'GB_ENG', runnerUp: 'HR' },
+    },
+    bestThirdPlace: ['MA', 'CH', 'TR', 'EC', 'IR', 'SA', 'NO', 'DZ'],
+    roundOf16: ['MX', 'KR', 'CA', 'CH', 'BR', 'MA', 'US', 'AU', 'DE', 'NL', 'BE', 'ES', 'FR', 'AR', 'PT', 'GB_ENG'],
+    quarterFinalists: ['BR', 'FR', 'AR', 'DE', 'ES', 'PT', 'NL', 'GB_ENG'],
+    semiFinalists: ['BR', 'FR', 'AR', 'ES'],
+    finalists: ['BR', 'FR'],
+    winner: 'FR',
+  },
+  // cEuAUK — conservative, picks the expected
+  {
+    playerId: 'cEuAUK2K9HX2s6mPc6nd2YvOsyC2',
+    groups: {
+      A: { winner: 'MX', runnerUp: 'CZ' },
+      B: { winner: 'CH', runnerUp: 'CA' },
+      C: { winner: 'BR', runnerUp: 'MA' },
+      D: { winner: 'US', runnerUp: 'TR' },
+      E: { winner: 'DE', runnerUp: 'EC' },
+      F: { winner: 'NL', runnerUp: 'JP' },
+      G: { winner: 'BE', runnerUp: 'EG' },
+      H: { winner: 'ES', runnerUp: 'UY' },
+      I: { winner: 'FR', runnerUp: 'SN' },
+      J: { winner: 'AR', runnerUp: 'AT' },
+      K: { winner: 'PT', runnerUp: 'CO' },
+      L: { winner: 'GB_ENG', runnerUp: 'HR' },
+    },
+    bestThirdPlace: ['MA', 'CA', 'TR', 'CI', 'IR', 'UY', 'NO', 'AT'],
+    roundOf16: ['MX', 'CZ', 'CH', 'CA', 'BR', 'MA', 'US', 'TR', 'DE', 'NL', 'BE', 'ES', 'FR', 'AR', 'PT', 'GB_ENG'],
+    quarterFinalists: ['BR', 'FR', 'AR', 'DE', 'ES', 'PT', 'NL', 'GB_ENG'],
+    semiFinalists: ['FR', 'AR', 'PT', 'DE'],
+    finalists: ['FR', 'AR'],
+    winner: 'AR',
+  },
+  // b2ueB — contrarian, loves an upset
+  {
+    playerId: 'b2ueBFHDCkRNtLBulYU1wXrbrFF3',
+    groups: {
+      A: { winner: 'KR', runnerUp: 'MX' },
+      B: { winner: 'CA', runnerUp: 'CH' },
+      C: { winner: 'MA', runnerUp: 'BR' },
+      D: { winner: 'AU', runnerUp: 'US' },
+      E: { winner: 'DE', runnerUp: 'CI' },
+      F: { winner: 'JP', runnerUp: 'NL' },
+      G: { winner: 'BE', runnerUp: 'IR' },
+      H: { winner: 'UY', runnerUp: 'ES' },
+      I: { winner: 'SN', runnerUp: 'FR' },
+      J: { winner: 'AR', runnerUp: 'DZ' },
+      K: { winner: 'CO', runnerUp: 'PT' },
+      L: { winner: 'HR', runnerUp: 'GB_ENG' },
+    },
+    bestThirdPlace: ['MX', 'BR', 'US', 'NL', 'ES', 'AT', 'NO', 'GH'],
+    roundOf16: ['KR', 'MX', 'CA', 'CH', 'MA', 'BR', 'AU', 'US', 'DE', 'JP', 'BE', 'UY', 'SN', 'AR', 'CO', 'HR'],
+    quarterFinalists: ['MA', 'CA', 'DE', 'JP', 'SN', 'AR', 'CO', 'HR'],
+    semiFinalists: ['MA', 'DE', 'AR', 'CO'],
+    finalists: ['MA', 'AR'],
+    winner: 'MA',
+  },
+];
+
+export const mockBonusPredictions: BonusPredictions[] = [
+  {
+    playerId: 'hD3t2Gqh7OZnndX4Scr1r4uGNaz2',
+    topScorer: 'Kylian Mbappé',
+    highestScoringTeam: 'BR',
+    bestDefence: 'FR',
+    totalYellowCards: 312,
+    totalRedCards: 18,
+    penaltyShootouts: 6,
+  },
+  {
+    playerId: 'cEuAUK2K9HX2s6mPc6nd2YvOsyC2',
+    topScorer: 'Lionel Messi',
+    highestScoringTeam: 'BR',
+    bestDefence: 'AR',
+    totalYellowCards: 280,
+    totalRedCards: 12,
+    penaltyShootouts: 4,
+  },
+  {
+    playerId: 'b2ueBFHDCkRNtLBulYU1wXrbrFF3',
+    topScorer: 'Achraf Hakimi',
+    highestScoringTeam: 'FR',
+    bestDefence: 'MA',
+    totalYellowCards: 345,
+    totalRedCards: 27,
+    penaltyShootouts: 9,
+  },
 ];

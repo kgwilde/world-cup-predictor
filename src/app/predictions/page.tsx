@@ -3,8 +3,21 @@
 import { useMemo, useRef, useState, useEffect } from 'react';
 import { fixtures } from '@/data/fixtures';
 import { mockResults } from '@/data/mockData';
-import { predictions as staticPredictions } from '@/data/predictions';
-import type { Fixture, MatchResult, MultiChip, Player, Prediction, PublicProfile } from '@/lib/types';
+import {
+  predictions as staticPredictions,
+  mockTournamentPicks,
+  mockBonusPredictions,
+} from '@/data/predictions';
+import type {
+  BonusPredictions,
+  Fixture,
+  MatchResult,
+  MultiChip,
+  Player,
+  Prediction,
+  PublicProfile,
+  TournamentPicks,
+} from '@/lib/types';
 import { getNow, PREDICTIONS_DEADLINE } from '@/lib/deadline';
 import { getResultType } from '@/lib/predictions';
 import { scoreMatch, calculateStandings } from '@/lib/scoring';
@@ -15,6 +28,7 @@ import { FixtureCard } from '@/components/FixtureSlider';
 import Avatar from '@/components/leaderboard/Avatar';
 import PredictionRow from '@/components/predictions/PredictionRow';
 import ScoreChip from '@/components/predictions/ScoreChip';
+import SpecialsTab from '@/components/predictions/SpecialsTab';
 import PlayerCardModal from '@/components/PlayerCardModal';
 
 const IS_MOCK = process.env.NEXT_PUBLIC_MOCK_RESULTS === 'true';
@@ -168,22 +182,26 @@ function MatchPredictionCard({
 
 function ChipCounter({ used }: { used: number }) {
   const total = GROUP_CHIP_LIMIT;
+  const remaining = total - used;
   return (
     <div className="bg-wc-ink rounded-xl px-4 py-3.5">
       <div className="flex items-center justify-between mb-2.5">
         <span className="text-sm font-bold text-white">
-          {used} of {total} chips used
+          {remaining} of {total} chips remaining
         </span>
-        <span className="text-xs text-white/40">{total - used} remaining</span>
+        <span className="text-xs text-white/60">{used} used</span>
       </div>
       <div className="flex gap-1.5">
         {Array.from({ length: total }).map((_, i) => (
           <div
             key={i}
-            className={`flex-1 h-2 rounded-full transition-colors ${i < used ? 'bg-wc-gold' : 'bg-white/12'}`}
+            className={`flex-1 h-2 rounded-full transition-colors ${i < remaining ? 'bg-wc-gold' : 'bg-white/12'}`}
           />
         ))}
       </div>
+      <p className="text-xs text-white/60 mt-3">
+        A chip doubles points for that prediction. More chips unlock after the group stage.
+      </p>
     </div>
   );
 }
@@ -217,13 +235,13 @@ function ChipFixtureRow({
     <div className="flex items-center gap-3 py-3 border-b border-white/8 last:border-0">
       {/* Teams */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5 text-xs text-white/50 truncate">
+        <div className="flex items-center gap-1.5 text-xs text-white/70 truncate">
           <span>{fixture.homeTeam.name}</span>
-          <span className="text-white/25">vs</span>
+          <span className="text-white/45">vs</span>
           <span>{fixture.awayTeam.name}</span>
         </div>
         {!hasStarted && (
-          <p className="text-[10px] text-white/25 mt-0.5 tabular-nums">
+          <p className="text-[10px] text-white/45 mt-0.5 tabular-nums">
             {new Intl.DateTimeFormat('en-IE', { hour: '2-digit', minute: '2-digit' }).format(
               new Date(fixture.kickoff)
             )}
@@ -260,7 +278,7 @@ function ChipFixtureRow({
             onClick={onRemove}
             className="shrink-0 flex items-center gap-1 text-[11px] font-bold text-wc-gold bg-wc-gold/15 border border-wc-gold/40 rounded-full px-2.5 py-1 hover:bg-wc-gold/25 active:opacity-70 transition-colors"
           >
-            ⚡ Applied
+            Applied
           </button>
         ) : (
           <button
@@ -329,7 +347,7 @@ function MyChipsTab({
       {fixturesByDate.map(([dateKey, dayFixtures]) => (
         <div key={dateKey} className="bg-wc-ink rounded-2xl overflow-hidden">
           <div className="px-4 py-2 bg-white/[0.03] border-b border-white/8">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-white/35">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-white/55">
               {formatDateLabel(new Date(dateKey))}
             </span>
           </div>
@@ -356,7 +374,7 @@ function MyChipsTab({
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-type Tab = 'all' | 'my-chips';
+type Tab = 'matches' | 'specials' | 'my-chips';
 
 export default function PredictionsPage() {
   const now = useMemo(() => getNow(), []);
@@ -365,13 +383,21 @@ export default function PredictionsPage() {
   const firestoreUsers = useAuthStore((s) => s.allUsers);
   const viewerId = useAuthStore((s) => s.user?.uid ?? null);
 
-  const [activeTab, setActiveTab] = useState<Tab>('all');
+  const [activeTab, setActiveTab] = useState<Tab>('matches');
   const [selectedDate, setSelectedDate] = useState<string>(() =>
     getDefaultSelectedDate(availableDates, now)
   );
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
 
   const { chips: allChips, apply: applyChip, remove: removeChip } = useMultiChips();
+
+  const myChipsRemaining = useMemo(() => {
+    if (!viewerId) return 0;
+    const used = allChips.filter(
+      (c) => c.playerId === viewerId && GROUP_FIXTURE_IDS.has(c.fixtureId)
+    ).length;
+    return GROUP_CHIP_LIMIT - used;
+  }, [allChips, viewerId]);
 
   const deadlinePassed = useMemo(() => getNow() >= PREDICTIONS_DEADLINE, []);
   const players = useMemo<Player[]>(
@@ -385,6 +411,16 @@ export default function PredictionsPage() {
 
   const allPredictions = useMemo<Prediction[]>(
     () => (IS_MOCK ? staticPredictions : []),
+    []
+  );
+
+  const allTournamentPicks = useMemo<TournamentPicks[]>(
+    () => (IS_MOCK ? mockTournamentPicks : []),
+    []
+  );
+
+  const allBonusPredictions = useMemo<BonusPredictions[]>(
+    () => (IS_MOCK ? mockBonusPredictions : []),
     []
   );
 
@@ -408,6 +444,16 @@ export default function PredictionsPage() {
     [standings, selectedPlayerId]
   );
 
+  const selectedTournamentPicks = useMemo(
+    () => allTournamentPicks.find((t) => t.playerId === selectedPlayerId) ?? null,
+    [allTournamentPicks, selectedPlayerId]
+  );
+
+  const selectedBonusPredictions = useMemo(
+    () => allBonusPredictions.find((b) => b.playerId === selectedPlayerId) ?? null,
+    [allBonusPredictions, selectedPlayerId]
+  );
+
   const activeButtonRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
@@ -421,9 +467,9 @@ export default function PredictionsPage() {
       <main className="min-h-screen bg-wc-black px-4 py-6 text-white sm:px-6 lg:px-8">
         <div className="mx-auto max-w-3xl space-y-6">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Match Predictions</h1>
+            <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Predictions</h1>
             <p className="mt-2 max-w-lg text-sm text-white/55">
-              Browse each match day and see how everyone predicted the scorelines.
+              Browse match predictions, specials, and manage your chips.
             </p>
           </div>
 
@@ -431,14 +477,25 @@ export default function PredictionsPage() {
           <div className="flex w-full border-b border-white/10">
             <button
               type="button"
-              onClick={() => setActiveTab('all')}
+              onClick={() => setActiveTab('matches')}
               className={`flex-1 text-center pb-3 pt-1 text-sm font-semibold transition-colors border-b-2 -mb-px ${
-                activeTab === 'all'
+                activeTab === 'matches'
                   ? 'text-white border-wc-gold'
                   : 'text-white/40 border-transparent hover:text-white/70'
               }`}
             >
-              All Predictions
+              Matches
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('specials')}
+              className={`flex-1 text-center pb-3 pt-1 text-sm font-semibold transition-colors border-b-2 -mb-px ${
+                activeTab === 'specials'
+                  ? 'text-white border-wc-gold'
+                  : 'text-white/40 border-transparent hover:text-white/70'
+              }`}
+            >
+              Specials
             </button>
             {viewerId && (
               <button
@@ -450,12 +507,25 @@ export default function PredictionsPage() {
                     : 'text-white/40 border-transparent hover:text-white/70'
                 }`}
               >
-                My Chips
+                <span className="inline-flex items-center justify-center gap-1.5">
+                  My Chips
+                  {myChipsRemaining > 0 && (
+                    <span className="w-2 h-2 rounded-full bg-wc-gold shrink-0" />
+                  )}
+                </span>
               </button>
             )}
           </div>
 
-          {activeTab === 'all' && (
+          {activeTab === 'specials' && (
+            <SpecialsTab
+              players={players}
+              tournamentPicks={allTournamentPicks}
+              bonusPredictions={allBonusPredictions}
+            />
+          )}
+
+          {activeTab === 'matches' && (
             <div className="space-y-4">
               {/* Date strip */}
               <div className="no-scrollbar flex items-center gap-1 overflow-x-auto pb-2">
@@ -532,6 +602,8 @@ export default function PredictionsPage() {
           results={ACTIVE_RESULTS}
           now={now}
           isViewer={selectedPlayer.id === viewerId}
+          tournamentPicks={selectedTournamentPicks}
+          bonusPredictions={selectedBonusPredictions}
           onClose={() => setSelectedPlayerId(null)}
         />
       )}

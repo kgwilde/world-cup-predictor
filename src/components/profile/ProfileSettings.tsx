@@ -10,7 +10,7 @@ import { resolveAvatarSrc } from '@/lib/avatar';
 import { getNow, PREDICTIONS_DEADLINE } from '@/lib/deadline';
 import { updateUserProfile } from '@/lib/firestore';
 
-const CARD_COLOR = '#253ecf'; // wc-blue — matches the header
+const CARD_COLOR = '#efbf04'; // wc-gold
 
 export function ProfileSettings() {
   const { user, profile, signOut, refreshProfile } = useAuthStore();
@@ -183,12 +183,20 @@ export function ProfileSettings() {
       <div
         className="relative rounded-2xl overflow-hidden"
         style={{
-          background: `linear-gradient(160deg, ${accentColor}50 0%, ${accentColor}22 35%, #020F2A 65%, #0a0a0a 100%)`,
-          border: `1px solid ${accentColor}40`,
+          background: `radial-gradient(ellipse 85% 110% at 50% 0%, ${accentColor}38 0%, transparent 55%), linear-gradient(165deg, ${accentColor}25 0%, ${accentColor}0e 50%, #020F2A 72%, #0a0a0a 100%)`,
+          border: `1px solid ${accentColor}38`,
         }}
       >
+        {/* Diagonal shimmer streak */}
+        <div
+          className="absolute inset-0 pointer-events-none rounded-2xl"
+          style={{
+            background: `linear-gradient(115deg, transparent 25%, ${accentColor}0c 48%, transparent 68%)`,
+          }}
+        />
+
         {/* Approval badge */}
-        <div className="absolute top-4 right-4">
+        <div className="absolute top-4 right-4 z-10">
           <span
             className={`inline-block text-xs px-2.5 py-1 rounded-full font-medium ${
               isApproved ? 'bg-wc-gold/20 text-wc-gold' : 'bg-wc-white/10 text-wc-white/40'
@@ -201,31 +209,31 @@ export function ProfileSettings() {
         <div className="flex flex-col items-center pt-8 pb-6 px-5">
           {/* Avatar */}
           <div className="relative mb-4">
-            <div
-              className="relative rounded-full"
-              style={{
-                width: 100,
-                height: 100,
-                boxShadow: `0 0 0 3px ${accentColor}80, 0 0 0 6px ${accentColor}25`,
-              }}
-            >
-              {/* Initials always rendered as the base layer */}
-              <Initials name={displayName} size={100} />
-              {/* Photo overlaid on top — hides itself on error, revealing initials */}
-              {avatarSrc && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={avatarSrc}
-                  alt={displayName}
-                  width={100}
-                  height={100}
-                  className="rounded-full object-cover absolute inset-0"
+            <div className="rounded-full p-[3px] bg-wc-gold">
+              <div className="rounded-full p-[2px] bg-[#0a0a0a]">
+                <div
+                  className="relative rounded-full"
                   style={{ width: 100, height: 100 }}
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = 'none';
-                  }}
-                />
-              )}
+                >
+                  {/* Initials always rendered as the base layer */}
+                  <Initials name={displayName} size={100} />
+                  {/* Photo overlaid on top — hides itself on error, revealing initials */}
+                  {avatarSrc && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={avatarSrc}
+                      alt={displayName}
+                      width={100}
+                      height={100}
+                      className="rounded-full object-cover absolute inset-0"
+                      style={{ width: 100, height: 100 }}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                  )}
+                </div>
+              </div>
             </div>
             {avatarLoading && (
               <div className="absolute inset-0 rounded-full bg-wc-black/70 flex items-center justify-center">
