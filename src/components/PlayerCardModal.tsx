@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ChevronDown, X } from 'lucide-react';
 import Avatar from '@/components/leaderboard/Avatar';
 import ScoreChip from '@/components/predictions/ScoreChip';
@@ -102,6 +102,13 @@ export default function PlayerCardModal({
   onClose,
 }: Props) {
   const [activeTab, setActiveTab] = useState<'matches' | 'specials'>('matches');
+  const [showFullImage, setShowFullImage] = useState(false);
+
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
+  }, []);
   const playerPredictions = useMemo(
     () => predictions.filter((p) => p.playerId === player.id),
     [predictions, player.id]
@@ -144,11 +151,16 @@ export default function PlayerCardModal({
   const rankColor = standing ? (PODIUM_COLORS[standing.rank] ?? '#ffffff') : '#ffffff';
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col">
+    <>
+    <div
+      className="fixed inset-0 z-50 flex flex-col"
+      style={{ animation: 'modal-fade-in 0.3s ease both' }}
+    >
       {/* Panel */}
       <div
         className="relative bg-wc-black flex flex-col overflow-hidden flex-1"
         onClick={(e) => e.stopPropagation()}
+        style={{ animation: 'modal-slide-up 0.45s cubic-bezier(0.32, 0.72, 0, 1) both' }}
       >
         {/* Gradient header card */}
         <div
@@ -175,13 +187,15 @@ export default function PlayerCardModal({
           </button>
 
           <div className="flex flex-col items-center pt-8 pb-5 px-4">
-            <div
-              className="rounded-full p-[3px] bg-wc-gold"
+            <button
+              type="button"
+              onClick={() => player.photoUrl && setShowFullImage(true)}
+              className={`rounded-full p-[3px] bg-wc-gold ${player.photoUrl ? 'active:scale-95 transition-transform' : ''}`}
             >
               <div className="rounded-full p-[2px] bg-wc-black">
                 <Avatar name={player.name} photoUrl={player.photoUrl} size={72} />
               </div>
-            </div>
+            </button>
             <p className="font-display font-bold text-xl text-white text-center leading-tight mt-3">
               {player.teamName ?? player.name}
             </p>
@@ -227,6 +241,30 @@ export default function PlayerCardModal({
             </button>
           ))}
         </div>
+
+        {/* Full-image lightbox */}
+        {showFullImage && player.photoUrl && (
+          <div
+            className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90"
+            onClick={() => setShowFullImage(false)}
+            style={{ animation: 'modal-fade-in 0.2s ease both' }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={player.photoUrl}
+              alt={player.name}
+              className="rounded-2xl object-contain"
+              style={{ maxWidth: '90vw', maxHeight: '90vh' }}
+            />
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); setShowFullImage(false); }}
+              className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-white/60 hover:text-white transition-colors"
+            >
+              <X size={18} />
+            </button>
+          </div>
+        )}
 
         {/* Scrollable content */}
         <div className="overflow-y-auto flex-1 pb-8">
@@ -290,6 +328,7 @@ export default function PlayerCardModal({
         </div>
       </div>
     </div>
+    </>
   );
 }
 

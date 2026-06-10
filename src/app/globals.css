@@ -33,3 +33,13 @@ html.dark {
 .tabular-nums {
   font-variant-numeric: tabular-nums;
 }
+
+@keyframes modal-slide-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes modal-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
