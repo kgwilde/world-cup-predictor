@@ -115,7 +115,13 @@ export default function PlayerCardModal({
   const resultMap = useMemo(() => new Map(results.map((r) => [r.fixtureId, r])), [results]);
   const fixtureMap = useMemo(() => new Map(fixtures.map((f) => [f.id, f])), [fixtures]);
 
-  const chipsUsed = playerChips.size;
+  const chipsUsed = useMemo(
+    () => [...playerChips].filter((id) => {
+      const f = fixtureMap.get(id);
+      return f && new Date(f.kickoff) <= now;
+    }).length,
+    [playerChips, fixtureMap, now]
+  );
 
   const grouped = useMemo(() => {
     const predictionsByDate = new Map<string, Array<{ prediction: Prediction; fixture: Fixture }>>();
