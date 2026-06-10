@@ -266,7 +266,7 @@ function MatchPredictionCard({
               const groupStyle = accentColor
                 ? { borderLeft: `2px solid ${accentColor}66`, background: `${accentColor}14` }
                 : undefined;
-              const drawClass = group.resultType === 'draw' ? 'bg-wc-gold/8 border-l-2 border-wc-gold/40' : '';
+              const drawClass = group.resultType === 'draw' ? 'bg-white/[0.04] border-l-2 border-white/20' : '';
               return (
               <div key={group.key} className={`rounded-xl px-4 ${drawClass}`} style={groupStyle}>
                 {group.predictions.length >= 2 ? (
