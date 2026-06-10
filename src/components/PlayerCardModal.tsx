@@ -45,7 +45,6 @@ interface Props {
   results: MatchResult[];
   now: Date;
   isViewer: boolean;
-  canViewPredictions?: boolean;
   tournamentPicks?: TournamentPicks | null;
   bonusPredictions?: BonusPredictions | null;
   onClose: () => void;
@@ -81,7 +80,10 @@ function ChipPips({ used, total = 10 }: { used: number; total?: number }) {
 function StatCell({ label, value, color }: { label: string; value: string; color?: string }) {
   return (
     <div className="flex flex-col items-center gap-0.5">
-      <span className="font-display font-bold text-lg tabular-nums leading-none" style={{ color: color ?? '#ffffff' }}>
+      <span
+        className="font-display font-bold text-lg tabular-nums leading-none"
+        style={{ color: color ?? '#ffffff' }}
+      >
         {value}
       </span>
       <span className="text-white/40 text-[10px] uppercase tracking-wider">{label}</span>
@@ -98,7 +100,6 @@ export default function PlayerCardModal({
   results,
   now,
   isViewer,
-  canViewPredictions = true,
   tournamentPicks = null,
   bonusPredictions = null,
   onClose,
@@ -109,7 +110,9 @@ export default function PlayerCardModal({
   useEffect(() => {
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = prev; };
+    return () => {
+      document.body.style.overflow = prev;
+    };
   }, []);
   const playerPredictions = useMemo(
     () => predictions.filter((p) => p.playerId === player.id),
@@ -125,15 +128,19 @@ export default function PlayerCardModal({
   const fixtureMap = useMemo(() => new Map(fixtures.map((f) => [f.id, f])), [fixtures]);
 
   const chipsUsed = useMemo(
-    () => [...playerChips].filter((id) => {
-      const f = fixtureMap.get(id);
-      return f && new Date(f.kickoff) <= now;
-    }).length,
+    () =>
+      [...playerChips].filter((id) => {
+        const f = fixtureMap.get(id);
+        return f && new Date(f.kickoff) <= now;
+      }).length,
     [playerChips, fixtureMap, now]
   );
 
   const grouped = useMemo(() => {
-    const predictionsByDate = new Map<string, Array<{ prediction: Prediction; fixture: Fixture }>>();
+    const predictionsByDate = new Map<
+      string,
+      Array<{ prediction: Prediction; fixture: Fixture }>
+    >();
     for (const prediction of playerPredictions) {
       const fixture = fixtureMap.get(prediction.fixtureId);
       if (!fixture) continue;
@@ -146,7 +153,9 @@ export default function PlayerCardModal({
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([dateKey, rows]) => ({
         dateKey,
-        rows: rows.sort((a, b) => new Date(a.fixture.kickoff).getTime() - new Date(b.fixture.kickoff).getTime()),
+        rows: rows.sort(
+          (a, b) => new Date(a.fixture.kickoff).getTime() - new Date(b.fixture.kickoff).getTime()
+        ),
       }));
   }, [playerPredictions, fixtureMap]);
 
@@ -154,157 +163,152 @@ export default function PlayerCardModal({
 
   return (
     <>
-    <div
-      className="fixed inset-0 z-50 flex flex-col"
-      style={{ animation: 'modal-fade-in 0.3s ease both' }}
-    >
-      {/* Panel */}
       <div
-        className="relative bg-wc-black flex flex-col overflow-hidden flex-1"
-        onClick={(e) => e.stopPropagation()}
-        style={{ animation: 'modal-slide-up 0.45s cubic-bezier(0.32, 0.72, 0, 1) both' }}
+        className="fixed inset-0 z-50 flex flex-col"
+        style={{ animation: 'modal-fade-in 0.3s ease both' }}
       >
-        {/* Gradient header card */}
+        {/* Panel */}
         <div
-          className="relative shrink-0 overflow-hidden"
-          style={{
-            background: `radial-gradient(ellipse 85% 110% at 50% 0%, ${CARD_COLOR}38 0%, transparent 55%), linear-gradient(165deg, ${CARD_COLOR}25 0%, ${CARD_COLOR}0e 50%, #020F2A 72%, #020F2A 100%)`,
-            borderBottom: `1px solid ${CARD_COLOR}38`,
-          }}
+          className="relative bg-wc-black flex flex-col overflow-hidden flex-1"
+          onClick={(e) => e.stopPropagation()}
+          style={{ animation: 'modal-slide-up 0.45s cubic-bezier(0.32, 0.72, 0, 1) both' }}
         >
-          {/* Diagonal shimmer streak */}
+          {/* Gradient header card */}
           <div
-            className="absolute inset-0 pointer-events-none"
+            className="relative shrink-0 overflow-hidden"
             style={{
-              background: `linear-gradient(115deg, transparent 25%, ${CARD_COLOR}0c 48%, transparent 68%)`,
+              background: `radial-gradient(ellipse 85% 110% at 50% 0%, ${CARD_COLOR}38 0%, transparent 55%), linear-gradient(165deg, ${CARD_COLOR}25 0%, ${CARD_COLOR}0e 50%, #020F2A 72%, #020F2A 100%)`,
+              borderBottom: `1px solid ${CARD_COLOR}38`,
             }}
-          />
-
-          <button
-            type="button"
-            onClick={onClose}
-            className="absolute top-4 right-4 z-10 flex items-center justify-center w-9 h-9 rounded-full bg-white/10 text-white/60 hover:text-white hover:bg-white/15 transition-colors"
           >
-            <X size={18} />
-          </button>
-
-          <div className="flex flex-col items-center pt-8 pb-5 px-4">
-            <button
-              type="button"
-              onClick={() => player.photoUrl && setShowFullImage(true)}
-              className={`rounded-full p-[3px] bg-wc-gold ${player.photoUrl ? 'active:scale-95 transition-transform' : ''}`}
-            >
-              <div className="rounded-full p-[2px] bg-wc-black">
-                <Avatar name={player.name} photoUrl={player.photoUrl} size={72} />
-              </div>
-            </button>
-            <p className="font-display font-bold text-xl text-white text-center leading-tight mt-3">
-              {player.teamName ?? player.name}
-            </p>
-            {player.teamName && (
-              <p className="text-white/40 text-xs mt-0.5">{player.name}</p>
-            )}
-          </div>
-        </div>
-
-        {/* Stats strip */}
-        <div className="shrink-0 grid grid-cols-3 items-center px-6 py-3 border-b border-white/10 bg-wc-black">
-          <StatCell
-            label="Rank"
-            value={standing ? `#${standing.rank}` : '—'}
-            color={rankColor}
-          />
-          <StatCell
-            label="Points"
-            value={standing ? String(standing.totalPoints) : '—'}
-          />
-          <div className="flex flex-col items-center gap-1">
-            <ChipPips used={chipsUsed} />
-            <span className="text-white/40 text-[10px] uppercase tracking-wider">
-              {10 - chipsUsed}/10 chips left
-            </span>
-          </div>
-        </div>
-
-        {/* Tab strip */}
-        <div className="shrink-0 flex border-b border-white/10 bg-wc-black">
-          {(['matches', 'specials'] as const).map((tab) => (
-            <button
-              key={tab}
-              type="button"
-              onClick={() => setActiveTab(tab)}
-              className={`flex-1 text-center pb-3 pt-2.5 text-sm font-semibold capitalize transition-colors border-b-2 -mb-px ${
-                activeTab === tab
-                  ? 'text-white border-wc-gold'
-                  : 'text-white/40 border-transparent hover:text-white/70'
-              }`}
-            >
-              {tab}
-            </button>
-          ))}
-        </div>
-
-        {/* Full-image lightbox */}
-        {showFullImage && player.photoUrl && (
-          <div
-            className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90"
-            onClick={() => setShowFullImage(false)}
-            style={{ animation: 'modal-fade-in 0.2s ease both' }}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={player.photoUrl}
-              alt={player.name}
-              className="rounded-2xl object-contain"
-              style={{ maxWidth: '90vw', maxHeight: '90vh' }}
+            {/* Diagonal shimmer streak */}
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                background: `linear-gradient(115deg, transparent 25%, ${CARD_COLOR}0c 48%, transparent 68%)`,
+              }}
             />
+
             <button
               type="button"
-              onClick={(e) => { e.stopPropagation(); setShowFullImage(false); }}
-              className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-white/60 hover:text-white transition-colors"
+              onClick={onClose}
+              className="absolute top-4 right-4 z-10 flex items-center justify-center w-9 h-9 rounded-full bg-white/10 text-white/60 hover:text-white hover:bg-white/15 transition-colors"
             >
               <X size={18} />
             </button>
+
+            <div className="flex flex-col items-center pt-8 pb-5 px-4">
+              <button
+                type="button"
+                onClick={() => player.photoUrl && setShowFullImage(true)}
+                className={`rounded-full p-[3px] bg-wc-gold ${player.photoUrl ? 'active:scale-95 transition-transform' : ''}`}
+              >
+                <div className="rounded-full p-[2px] bg-wc-black">
+                  <Avatar name={player.name} photoUrl={player.photoUrl} size={72} />
+                </div>
+              </button>
+              <p className="font-display font-bold text-xl text-white text-center leading-tight mt-3">
+                {player.teamName ?? player.name}
+              </p>
+              {player.teamName && <p className="text-white/40 text-xs mt-0.5">{player.name}</p>}
+            </div>
           </div>
-        )}
 
-        {/* Scrollable content */}
-        <div className="overflow-y-auto flex-1 pb-8">
-          {activeTab === 'matches' && (
-            grouped.length === 0 ? (
-              <p className="text-center text-white/30 text-sm py-10">No predictions yet</p>
-            ) : (
-              grouped.map(({ dateKey, rows }) => (
-                <div key={dateKey}>
-                  <div className="px-4 py-2 bg-white/[0.03] border-b border-white/5">
-                    <span className="text-[11px] font-semibold uppercase tracking-wider text-white/35">
-                      {formatDateLabel(dateKey)}
-                    </span>
-                  </div>
-                  <div className="px-4">
-                    {rows.map(({ prediction, fixture }) => {
-                      const hasStarted = new Date(fixture.kickoff) <= now;
-                      const hasChip = playerChips.has(fixture.id);
-                      const showChip = hasChip && (isViewer || hasStarted);
-                      const result = resultMap.get(fixture.id);
-                      const canSeeScore = canViewPredictions || isViewer;
-                      const pts = canSeeScore && result
-                        ? scoreMatch({ ...prediction, multiChip: showChip }, result).points
-                        : undefined;
-                      const resultType = getResultType(prediction.homeGoals, prediction.awayGoals);
+          {/* Stats strip */}
+          <div className="shrink-0 grid grid-cols-3 items-center px-6 py-3 border-b border-white/10 bg-wc-black">
+            <StatCell label="Rank" value={standing ? `#${standing.rank}` : '—'} color={rankColor} />
+            <StatCell label="Points" value={standing ? String(standing.totalPoints) : '—'} />
+            <div className="flex flex-col items-center gap-1">
+              <ChipPips used={chipsUsed} />
+              <span className="text-white/40 text-[10px] uppercase tracking-wider">
+                {10 - chipsUsed}/10 chips left
+              </span>
+            </div>
+          </div>
 
-                      return (
-                        <div
-                          key={fixture.id}
-                          className="flex items-center justify-between gap-3 py-3 border-b border-white/8 last:border-0"
-                        >
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs text-white/40 truncate">
-                              {fixture.homeTeam.name} vs {fixture.awayTeam.name}
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-2 shrink-0">
-                            {canSeeScore ? (
+          {/* Tab strip */}
+          <div className="shrink-0 flex border-b border-white/10 bg-wc-black">
+            {(['matches', 'specials'] as const).map((tab) => (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => setActiveTab(tab)}
+                className={`flex-1 text-center pb-3 pt-2.5 text-sm font-semibold capitalize transition-colors border-b-2 -mb-px ${
+                  activeTab === tab
+                    ? 'text-white border-wc-gold'
+                    : 'text-white/40 border-transparent hover:text-white/70'
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+
+          {/* Full-image lightbox */}
+          {showFullImage && player.photoUrl && (
+            <div
+              className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90"
+              onClick={() => setShowFullImage(false)}
+              style={{ animation: 'modal-fade-in 0.2s ease both' }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={player.photoUrl}
+                alt={player.name}
+                className="rounded-2xl object-contain"
+                style={{ maxWidth: '90vw', maxHeight: '90vh' }}
+              />
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowFullImage(false);
+                }}
+                className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-white/60 hover:text-white transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+          )}
+
+          {/* Scrollable content */}
+          <div className="overflow-y-auto flex-1 pb-8">
+            {activeTab === 'matches' &&
+              (grouped.length === 0 ? (
+                <p className="text-center text-white/30 text-sm py-10">No predictions yet</p>
+              ) : (
+                grouped.map(({ dateKey, rows }) => (
+                  <div key={dateKey}>
+                    <div className="px-4 py-2 bg-white/[0.03] border-b border-white/5">
+                      <span className="text-[11px] font-semibold uppercase tracking-wider text-white/35">
+                        {formatDateLabel(dateKey)}
+                      </span>
+                    </div>
+                    <div className="px-4">
+                      {rows.map(({ prediction, fixture }) => {
+                        const hasStarted = new Date(fixture.kickoff) <= now;
+                        const hasChip = playerChips.has(fixture.id);
+                        const showChip = hasChip && (isViewer || hasStarted);
+                        const result = resultMap.get(fixture.id);
+                        const pts = result
+                          ? scoreMatch({ ...prediction, multiChip: showChip }, result).points
+                          : undefined;
+                        const resultType = getResultType(
+                          prediction.homeGoals,
+                          prediction.awayGoals
+                        );
+
+                        return (
+                          <div
+                            key={fixture.id}
+                            className="flex items-center justify-between gap-3 py-3 border-b border-white/8 last:border-0"
+                          >
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs text-white/40 truncate">
+                                {fixture.homeTeam.name} vs {fixture.awayTeam.name}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
                               <ScoreChip
                                 homeGoals={prediction.homeGoals}
                                 awayGoals={prediction.awayGoals}
@@ -313,33 +317,25 @@ export default function PlayerCardModal({
                                 awayAccentColor={fixture.awayTeam.accentColor}
                                 multiChip={showChip}
                               />
-                            ) : (
-                              <div className="rounded-lg border border-dashed border-white/20 px-3 py-1 text-sm font-semibold text-white/20 tabular-nums">
-                                ? – ?
-                              </div>
-                            )}
-                            {pts !== undefined && (
-                              <ModalPointsBadge points={pts} />
-                            )}
+                              {pts !== undefined && <ModalPointsBadge points={pts} />}
+                            </div>
                           </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              ))
-            )
-          )}
+                ))
+              ))}
 
-          {activeTab === 'specials' && (
-            <PlayerSpecialsTab
-              tournamentPicks={canViewPredictions || isViewer ? tournamentPicks : null}
-              bonusPredictions={canViewPredictions || isViewer ? bonusPredictions : null}
-            />
-          )}
+            {activeTab === 'specials' && (
+              <PlayerSpecialsTab
+                tournamentPicks={tournamentPicks}
+                bonusPredictions={bonusPredictions}
+              />
+            )}
+          </div>
         </div>
       </div>
-    </div>
     </>
   );
 }
@@ -393,7 +389,10 @@ function PlayerSpecialsTab({
   const bonusRows: Array<{ label: string; value: string }> = bonusPredictions
     ? [
         { label: 'Top Goalscorer', value: bonusPredictions.topScorer },
-        { label: 'Group Stage Highest Scorers', value: teamName(bonusPredictions.highestScoringTeam) },
+        {
+          label: 'Group Stage Highest Scorers',
+          value: teamName(bonusPredictions.highestScoringTeam),
+        },
         { label: 'Best Group Stage Defence', value: teamName(bonusPredictions.bestDefence) },
         { label: 'Yellow Cards', value: String(bonusPredictions.totalYellowCards) },
         { label: 'Red Cards', value: String(bonusPredictions.totalRedCards) },

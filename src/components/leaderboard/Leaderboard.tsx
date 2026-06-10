@@ -15,7 +15,15 @@ import { allPredictions, allTournamentPicks, allBonusPredictions } from '@/data/
 import { resolveAvatarSrc } from '@/lib/avatar';
 import { getNow, PREDICTIONS_DEADLINE } from '@/lib/deadline';
 import { calculateStandings } from '@/lib/scoring';
-import type { BonusPredictions, MatchResult, Player, PlayerStanding, Prediction, PublicProfile, TournamentPicks } from '@/lib/types';
+import type {
+  BonusPredictions,
+  MatchResult,
+  Player,
+  PlayerStanding,
+  Prediction,
+  PublicProfile,
+  TournamentPicks,
+} from '@/lib/types';
 
 function userToPlayer(profile: PublicProfile): Player {
   return {
@@ -28,8 +36,6 @@ function userToPlayer(profile: PublicProfile): Player {
 
 export default function Leaderboard() {
   const viewerId = useAuthStore((s) => s.user?.uid ?? null);
-  const profile = useAuthStore((s) => s.profile);
-  const canViewPredictions = !!profile?.approved;
   const authLoading = useAuthStore((s) => s.loading);
   const isGuest = !authLoading && !viewerId;
   const firestoreUsers = useAuthStore((s) => s.allUsers);
@@ -121,29 +127,29 @@ export default function Leaderboard() {
           {!isLoading && currentStandings.length === 0 && <EmptyState />}
 
           <div className="space-y-2">
-            {isLoading ? (
-              SKELETON_NAME_WIDTHS.map((_, i) => <SkeletonRow key={i} index={i} />)
-            ) : (
-              currentStandings.map((standing: PlayerStanding) => (
-                <LeaderboardRow
-                  key={standing.player.id}
-                  standing={standing}
-                  isViewer={standing.player.id === viewerId}
-                  winnerPick={tournamentPicksList.find((t) => t.playerId === standing.player.id)?.winner}
-                  onClick={() => setSelectedPlayerId(standing.player.id)}
-                  matchDelta={
-                    currentFixture
-                      ? buildMatchDelta(
-                          currentStandings,
-                          previousStandings,
-                          currentFixture.id,
-                          standing.player.id
-                        )
-                      : null
-                  }
-                />
-              ))
-            )}
+            {isLoading
+              ? SKELETON_NAME_WIDTHS.map((_, i) => <SkeletonRow key={i} index={i} />)
+              : currentStandings.map((standing: PlayerStanding) => (
+                  <LeaderboardRow
+                    key={standing.player.id}
+                    standing={standing}
+                    isViewer={standing.player.id === viewerId}
+                    winnerPick={
+                      tournamentPicksList.find((t) => t.playerId === standing.player.id)?.winner
+                    }
+                    onClick={() => setSelectedPlayerId(standing.player.id)}
+                    matchDelta={
+                      currentFixture
+                        ? buildMatchDelta(
+                            currentStandings,
+                            previousStandings,
+                            currentFixture.id,
+                            standing.player.id
+                          )
+                        : null
+                    }
+                  />
+                ))}
           </div>
         </div>
       </div>
@@ -158,7 +164,6 @@ export default function Leaderboard() {
           results={activeResults}
           now={now}
           isViewer={selectedPlayer.id === viewerId}
-          canViewPredictions={canViewPredictions}
           tournamentPicks={selectedTournamentPicks}
           bonusPredictions={selectedBonusPredictions}
           onClose={() => setSelectedPlayerId(null)}

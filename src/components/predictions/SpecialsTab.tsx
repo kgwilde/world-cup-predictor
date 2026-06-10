@@ -62,13 +62,7 @@ function CardHeader({
   );
 }
 
-function CollapsibleSection({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
+function CollapsibleSection({ label, children }: { label: string; children: React.ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
   return (
     <div>
@@ -121,27 +115,28 @@ function KnockoutCard({
   return (
     <div className="overflow-hidden rounded-2xl bg-wc-ink">
       <CardHeader title="Knockout Bracket" isOpen={isOpen} onToggle={toggle} />
-      {isOpen && stages.map(({ label, getTeams }) => (
-        <CollapsibleSection key={label} label={label}>
-          <div className="px-4">
-            {players.map((player) => {
-              const picks = tournamentPicks.find((t) => t.playerId === player.id);
-              const teams = picks ? getTeams(picks) : null;
-              return (
-                <PlayerRow key={player.id} player={player}>
-                  {teams == null ? (
-                    <span className="text-xs text-white/40 italic pt-0.5">No picks</span>
-                  ) : typeof teams === 'string' ? (
-                    <TeamChip code={teams} />
-                  ) : (
-                    teams.map((code, i) => <TeamChip key={`${code}-${i}`} code={code} />)
-                  )}
-                </PlayerRow>
-              );
-            })}
-          </div>
-        </CollapsibleSection>
-      ))}
+      {isOpen &&
+        stages.map(({ label, getTeams }) => (
+          <CollapsibleSection key={label} label={label}>
+            <div className="px-4">
+              {players.map((player) => {
+                const picks = tournamentPicks.find((t) => t.playerId === player.id);
+                const teams = picks ? getTeams(picks) : null;
+                return (
+                  <PlayerRow key={player.id} player={player}>
+                    {teams == null ? (
+                      <span className="text-xs text-white/40 italic pt-0.5">No picks</span>
+                    ) : typeof teams === 'string' ? (
+                      <TeamChip code={teams} />
+                    ) : (
+                      teams.map((code, i) => <TeamChip key={`${code}-${i}`} code={code} />)
+                    )}
+                  </PlayerRow>
+                );
+              })}
+            </div>
+          </CollapsibleSection>
+        ))}
     </div>
   );
 }
@@ -159,39 +154,39 @@ function GroupStageCard({
     <div className="overflow-hidden rounded-2xl bg-wc-ink">
       <CardHeader title="Group Stage Picks" isOpen={isOpen} onToggle={toggle} />
 
-      {isOpen && GROUP_CODES.map((group) => (
-        <CollapsibleSection key={group} label={`Group ${group}`}>
-          <div className="px-4">
-            {players.map((player) => {
-              const picks = tournamentPicks.find((t) => t.playerId === player.id);
-              const gp = picks?.groups[group];
-              return (
-                <PlayerRow key={player.id} player={player}>
-                  {gp ? (
-                    <>
-                      <div className="flex items-center gap-1">
-                        <span className="text-[9px] font-bold uppercase tracking-wider text-white/50">
-                          1st
-                        </span>
-                        <TeamChip code={gp.winner} />
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <span className="text-[9px] font-bold uppercase tracking-wider text-white/50">
-                          2nd
-                        </span>
-                        <TeamChip code={gp.runnerUp} />
-                      </div>
-                    </>
-                  ) : (
-                    <span className="text-xs text-white/40 italic pt-0.5">No picks</span>
-                  )}
-                </PlayerRow>
-              );
-            })}
-          </div>
-        </CollapsibleSection>
-      ))}
-
+      {isOpen &&
+        GROUP_CODES.map((group) => (
+          <CollapsibleSection key={group} label={`Group ${group}`}>
+            <div className="px-4">
+              {players.map((player) => {
+                const picks = tournamentPicks.find((t) => t.playerId === player.id);
+                const gp = picks?.groups[group];
+                return (
+                  <PlayerRow key={player.id} player={player}>
+                    {gp ? (
+                      <>
+                        <div className="flex items-center gap-1">
+                          <span className="text-[9px] font-bold uppercase tracking-wider text-white/50">
+                            1st
+                          </span>
+                          <TeamChip code={gp.winner} />
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span className="text-[9px] font-bold uppercase tracking-wider text-white/50">
+                            2nd
+                          </span>
+                          <TeamChip code={gp.runnerUp} />
+                        </div>
+                      </>
+                    ) : (
+                      <span className="text-xs text-white/40 italic pt-0.5">No picks</span>
+                    )}
+                  </PlayerRow>
+                );
+              })}
+            </div>
+          </CollapsibleSection>
+        ))}
     </div>
   );
 }
@@ -217,29 +212,30 @@ function BonusCard({
   return (
     <div className="overflow-hidden rounded-2xl bg-wc-ink">
       <CardHeader title="Bonus Predictions" isOpen={isOpen} onToggle={toggle} />
-      {isOpen && rows.map(({ label, getValue }) => (
-        <CollapsibleSection key={label} label={label}>
-          <div className="px-4">
-            {players.map((player) => {
-              const bonus = bonusPredictions.find((b) => b.playerId === player.id);
-              return (
-                <div
-                  key={player.id}
-                  className="flex items-center gap-3 py-2.5 border-b border-white/8 last:border-0"
-                >
-                  <Avatar name={player.name} photoUrl={player.photoUrl} size={24} />
-                  <span className="text-xs text-white/70 flex-1">{player.name}</span>
-                  {bonus ? (
-                    <span className="text-sm font-medium text-white">{getValue(bonus)}</span>
-                  ) : (
-                    <span className="text-xs text-white/40">—</span>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </CollapsibleSection>
-      ))}
+      {isOpen &&
+        rows.map(({ label, getValue }) => (
+          <CollapsibleSection key={label} label={label}>
+            <div className="px-4">
+              {players.map((player) => {
+                const bonus = bonusPredictions.find((b) => b.playerId === player.id);
+                return (
+                  <div
+                    key={player.id}
+                    className="flex items-center gap-3 py-2.5 border-b border-white/8 last:border-0"
+                  >
+                    <Avatar name={player.name} photoUrl={player.photoUrl} size={24} />
+                    <span className="text-xs text-white/70 flex-1">{player.name}</span>
+                    {bonus ? (
+                      <span className="text-sm font-medium text-white">{getValue(bonus)}</span>
+                    ) : (
+                      <span className="text-xs text-white/40">—</span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </CollapsibleSection>
+        ))}
     </div>
   );
 }
@@ -251,15 +247,7 @@ interface Props {
   canViewPredictions?: boolean;
 }
 
-export default function SpecialsTab({ players, tournamentPicks, bonusPredictions, canViewPredictions = true }: Props) {
-  if (!canViewPredictions) {
-    return (
-      <div className="flex flex-col items-center justify-center py-16 gap-3">
-        <p className="text-white/30 text-sm text-center">Sign in and get approved to view specials predictions.</p>
-      </div>
-    );
-  }
-
+export default function SpecialsTab({ players, tournamentPicks, bonusPredictions }: Props) {
   if (players.length === 0) {
     return <p className="text-center text-white/30 text-sm py-16">No data yet.</p>;
   }

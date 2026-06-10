@@ -101,11 +101,7 @@ function AvatarStack({ players }: { players: Player[] }) {
   return (
     <div className="relative shrink-0" style={{ width: containerWidth, height: AVATAR_SIZE }}>
       {visible.map((player, i) => (
-        <div
-          key={player.id}
-          className="absolute"
-          style={{ left: i * AVATAR_OFFSET, zIndex: i }}
-        >
+        <div key={player.id} className="absolute" style={{ left: i * AVATAR_OFFSET, zIndex: i }}>
           <div className="rounded-full ring-2 ring-wc-ink">
             <Avatar name={player.name} photoUrl={player.photoUrl} size={AVATAR_SIZE} />
           </div>
@@ -179,7 +175,6 @@ function MatchPredictionCard({
   allChips,
   result,
   onPlayerClick,
-  canViewPredictions,
 }: {
   fixture: Fixture;
   now: Date;
@@ -188,7 +183,6 @@ function MatchPredictionCard({
   allChips: MultiChip[];
   result?: MatchResult;
   onPlayerClick: (playerId: string) => void;
-  canViewPredictions: boolean;
 }) {
   const hasStarted = new Date(fixture.kickoff) <= now;
 
@@ -225,13 +219,17 @@ function MatchPredictionCard({
 
   const predictionGroups = useMemo(() => {
     if (result) return null;
-    const groupMap = new Map<string, { h: number; a: number; chipped: boolean; predictions: Prediction[] }>();
+    const groupMap = new Map<
+      string,
+      { h: number; a: number; chipped: boolean; predictions: Prediction[] }
+    >();
     for (const pred of sortedPredictions) {
       const chipped = chipSet.has(pred.playerId) && hasStarted;
       const key = `${pred.homeGoals}-${pred.awayGoals}-${chipped}`;
       const existing = groupMap.get(key);
       if (existing) existing.predictions.push(pred);
-      else groupMap.set(key, { h: pred.homeGoals, a: pred.awayGoals, chipped, predictions: [pred] });
+      else
+        groupMap.set(key, { h: pred.homeGoals, a: pred.awayGoals, chipped, predictions: [pred] });
     }
     const outcomeOrder: Record<string, number> = { 'home-win': 0, draw: 1, 'away-win': 2 };
     const groups = [...groupMap.values()]
@@ -244,7 +242,10 @@ function MatchPredictionCard({
     return groups.some((g) => g.predictions.length > 1) ? groups : null;
   }, [sortedPredictions, result, chipSet, hasStarted]);
 
-  const predictingIds = useMemo(() => new Set(fixturePredictions.map((p) => p.playerId)), [fixturePredictions]);
+  const predictingIds = useMemo(
+    () => new Set(fixturePredictions.map((p) => p.playerId)),
+    [fixturePredictions]
+  );
   const unpredictedPlayers = useMemo(
     () => players.filter((p) => !predictingIds.has(p.id)),
     [players, predictingIds]
@@ -256,13 +257,7 @@ function MatchPredictionCard({
         <FixtureCard fixture={fixture} now={now} isFullWidth result={result} />
       </div>
       <div className="border-t border-white/10">
-        {!canViewPredictions ? (
-          <div className="px-4">
-            {players.map((player) => (
-              <PlaceholderRow key={player.id} player={player} />
-            ))}
-          </div>
-        ) : predictionGroups ? (
+        {predictionGroups ? (
           <div className="px-3 pt-2 pb-3 flex flex-col gap-1.5">
             {predictionGroups.map((group) => {
               const accentColor =
@@ -274,34 +269,35 @@ function MatchPredictionCard({
               const groupStyle = accentColor
                 ? { borderLeft: `2px solid ${accentColor}66`, background: `${accentColor}14` }
                 : undefined;
-              const drawClass = group.resultType === 'draw' ? 'bg-white/[0.04] border-l-2 border-white/20' : '';
+              const drawClass =
+                group.resultType === 'draw' ? 'bg-white/[0.04] border-l-2 border-white/20' : '';
               return (
-              <div key={group.key} className={`rounded-xl px-4 ${drawClass}`} style={groupStyle}>
-                {group.predictions.length >= 2 ? (
-                  <GroupedPredictionRow
-                    predictions={group.predictions}
-                    players={players}
-                    fixture={fixture}
-                    chipped={group.chipped}
-                    onPlayerClick={onPlayerClick}
-                  />
-                ) : (
-                  group.predictions.map((prediction) => {
-                    const hasChip = chipSet.has(prediction.playerId);
-                    const showChip = hasChip && hasStarted;
-                    return (
-                      <PredictionRow
-                        key={prediction.playerId}
-                        prediction={prediction}
-                        player={players.find((p) => p.id === prediction.playerId)}
-                        fixture={fixture}
-                        multiChipApplied={showChip}
-                        onPlayerClick={onPlayerClick}
-                      />
-                    );
-                  })
-                )}
-              </div>
+                <div key={group.key} className={`rounded-xl px-4 ${drawClass}`} style={groupStyle}>
+                  {group.predictions.length >= 2 ? (
+                    <GroupedPredictionRow
+                      predictions={group.predictions}
+                      players={players}
+                      fixture={fixture}
+                      chipped={group.chipped}
+                      onPlayerClick={onPlayerClick}
+                    />
+                  ) : (
+                    group.predictions.map((prediction) => {
+                      const hasChip = chipSet.has(prediction.playerId);
+                      const showChip = hasChip && hasStarted;
+                      return (
+                        <PredictionRow
+                          key={prediction.playerId}
+                          prediction={prediction}
+                          player={players.find((p) => p.id === prediction.playerId)}
+                          fixture={fixture}
+                          multiChipApplied={showChip}
+                          onPlayerClick={onPlayerClick}
+                        />
+                      );
+                    })
+                  )}
+                </div>
               );
             })}
             {unpredictedPlayers.length > 0 && (
@@ -333,7 +329,9 @@ function MatchPredictionCard({
               );
             })}
             {unpredictedPlayers.length > 0 && (
-              <div className={sortedPredictions.length > 0 ? 'border-t border-white/20 mt-1 pt-1' : ''}>
+              <div
+                className={sortedPredictions.length > 0 ? 'border-t border-white/20 mt-1 pt-1' : ''}
+              >
                 {unpredictedPlayers.map((player) => (
                   <PlaceholderRow key={player.id} player={player} />
                 ))}
@@ -394,10 +392,13 @@ function ChipFixtureRow({
   onRemove: () => void;
 }) {
   const showChipBadge = hasChip && hasStarted;
-  const resultType = prediction ? getResultType(prediction.homeGoals, prediction.awayGoals) : 'draw';
-  const pts = result && prediction
-    ? scoreMatch({ ...prediction, multiChip: showChipBadge }, result).points
-    : undefined;
+  const resultType = prediction
+    ? getResultType(prediction.homeGoals, prediction.awayGoals)
+    : 'draw';
+  const pts =
+    result && prediction
+      ? scoreMatch({ ...prediction, multiChip: showChipBadge }, result).points
+      : undefined;
 
   return (
     <div className="flex items-center gap-3 py-3 border-b border-white/8 last:border-0">
@@ -433,14 +434,16 @@ function ChipFixtureRow({
 
       {/* Points (if result exists) */}
       {pts !== undefined && (
-        <span className={`text-xs font-semibold tabular-nums shrink-0 ${pts >= 5 ? 'text-wc-gold' : pts >= 3 ? 'text-green-300' : 'text-white/30'}`}>
+        <span
+          className={`text-xs font-semibold tabular-nums shrink-0 ${pts >= 5 ? 'text-wc-gold' : pts >= 3 ? 'text-green-300' : 'text-white/30'}`}
+        >
           {pts}pt
         </span>
       )}
 
       {/* Chip toggle */}
-      {prediction && (
-        hasStarted ? (
+      {prediction &&
+        (hasStarted ? (
           hasChip ? (
             <span className="shrink-0 flex items-center gap-1 text-[11px] font-bold text-wc-gold/60 bg-wc-gold/10 border border-wc-gold/20 rounded-full px-2 py-1">
               <Lock size={10} />
@@ -465,8 +468,7 @@ function ChipFixtureRow({
           >
             + Chip
           </button>
-        )
-      )}
+        ))}
     </div>
   );
 }
@@ -489,19 +491,28 @@ function MyChipsTab({
   onRemove: (fixtureId: string) => void;
 }) {
   const myPredictions = useMemo(
-    () => new Map(allPredictions.filter((p) => p.playerId === viewerId).map((p) => [p.fixtureId, p])),
+    () =>
+      new Map(allPredictions.filter((p) => p.playerId === viewerId).map((p) => [p.fixtureId, p])),
     [allPredictions, viewerId]
   );
 
   const myChipIds = useMemo(
-    () => new Set(allChips.filter((c) => c.playerId === viewerId && GROUP_FIXTURE_IDS.has(c.fixtureId)).map((c) => c.fixtureId)),
+    () =>
+      new Set(
+        allChips
+          .filter((c) => c.playerId === viewerId && GROUP_FIXTURE_IDS.has(c.fixtureId))
+          .map((c) => c.fixtureId)
+      ),
     [allChips, viewerId]
   );
 
   const resultMap = useMemo(() => new Map(results.map((r) => [r.fixtureId, r])), [results]);
 
   const groupFixtures = useMemo(
-    () => fixtures.filter((f) => f.stage === 'group').sort((a, b) => new Date(a.kickoff).getTime() - new Date(b.kickoff).getTime()),
+    () =>
+      fixtures
+        .filter((f) => f.stage === 'group')
+        .sort((a, b) => new Date(a.kickoff).getTime() - new Date(b.kickoff).getTime()),
     []
   );
 
@@ -557,10 +568,11 @@ export default function PredictionsPage() {
   const availableDates = useMemo(() => buildAvailableDates(fixtures), []);
   const firestoreUsers = useAuthStore((s) => s.allUsers);
   const viewerId = useAuthStore((s) => s.user?.uid ?? null);
-  const profile = useAuthStore((s) => s.profile);
-  const canViewPredictions = !!profile?.approved;
   const storeResults = useAuthStore((s) => s.results);
-  const resultMap = useMemo(() => new Map(storeResults.map((r) => [r.fixtureId, r])), [storeResults]);
+  const resultMap = useMemo(
+    () => new Map(storeResults.map((r) => [r.fixtureId, r])),
+    [storeResults]
+  );
 
   const [activeTab, setActiveTab] = useState<Tab>('matches');
   const [selectedDate, setSelectedDate] = useState<string>(() =>
@@ -627,7 +639,11 @@ export default function PredictionsPage() {
 
   useEffect(() => {
     if (activeButtonRef.current) {
-      activeButtonRef.current.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+      activeButtonRef.current.scrollIntoView({
+        inline: 'center',
+        block: 'nearest',
+        behavior: 'smooth',
+      });
     }
   }, [selectedDate]);
 
@@ -691,7 +707,6 @@ export default function PredictionsPage() {
               players={players}
               tournamentPicks={visibleTournamentPicks}
               bonusPredictions={visibleBonusPredictions}
-              canViewPredictions={canViewPredictions}
             />
           )}
 
@@ -707,7 +722,9 @@ export default function PredictionsPage() {
                   return (
                     <div key={dateKey} className="flex items-center shrink-0 gap-1">
                       {isMonthBoundary && (
-                        <span className={`text-[10px] font-bold tracking-widest text-white/25 px-1 ${i > 0 ? 'ml-1' : ''}`}>
+                        <span
+                          className={`text-[10px] font-bold tracking-widest text-white/25 px-1 ${i > 0 ? 'ml-1' : ''}`}
+                        >
                           {month}
                         </span>
                       )}
@@ -721,7 +738,9 @@ export default function PredictionsPage() {
                             : 'text-white/45 hover:text-white/80 hover:bg-white/5'
                         }`}
                       >
-                        <span className={`text-[10px] font-bold tracking-wider leading-none ${isActive ? 'text-wc-black/60' : 'text-white/30'}`}>
+                        <span
+                          className={`text-[10px] font-bold tracking-wider leading-none ${isActive ? 'text-wc-black/60' : 'text-white/30'}`}
+                        >
                           {weekday}
                         </span>
                         <span className="text-base font-bold leading-tight mt-1">{day}</span>
@@ -742,7 +761,6 @@ export default function PredictionsPage() {
                     allChips={allChips}
                     result={resultMap.get(fixture.id)}
                     onPlayerClick={setSelectedPlayerId}
-                    canViewPredictions={canViewPredictions}
                   />
                 ))}
               </div>
@@ -773,7 +791,6 @@ export default function PredictionsPage() {
           results={storeResults}
           now={now}
           isViewer={selectedPlayer.id === viewerId}
-          canViewPredictions={canViewPredictions}
           tournamentPicks={selectedTournamentPicks}
           bonusPredictions={selectedBonusPredictions}
           onClose={() => setSelectedPlayerId(null)}

@@ -99,7 +99,7 @@ export function Navigation() {
   return (
     <>
       <nav className="hidden sm:block bg-wc-ink border-b border-wc-white/10 sticky top-[88px] z-10">
-        <div className="max-w-2xl mx-auto px-4 flex items-center gap-2">
+        <div className="max-w-3xl mx-auto px-4 flex items-center justify-center gap-2">
           {navItems.map((item) => {
             return (
               <NavLink
