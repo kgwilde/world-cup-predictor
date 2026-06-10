@@ -88,6 +88,89 @@ function PlaceholderRow({ player }: { player: Player }) {
   );
 }
 
+const AVATAR_SIZE = 26;
+const AVATAR_OFFSET = 16;
+const AVATAR_MAX_VISIBLE = 4;
+
+function AvatarStack({ players }: { players: Player[] }) {
+  const visible = players.slice(0, AVATAR_MAX_VISIBLE);
+  const overflow = players.length - AVATAR_MAX_VISIBLE;
+  const slots = visible.length + (overflow > 0 ? 1 : 0);
+  const containerWidth = AVATAR_SIZE + (slots - 1) * AVATAR_OFFSET;
+
+  return (
+    <div className="relative shrink-0" style={{ width: containerWidth, height: AVATAR_SIZE }}>
+      {visible.map((player, i) => (
+        <div
+          key={player.id}
+          className="absolute"
+          style={{ left: i * AVATAR_OFFSET, zIndex: i }}
+        >
+          <div className="rounded-full ring-2 ring-wc-ink">
+            <Avatar name={player.name} photoUrl={player.photoUrl} size={AVATAR_SIZE} />
+          </div>
+        </div>
+      ))}
+      {overflow > 0 && (
+        <div
+          className="absolute flex items-center justify-center rounded-full bg-white/15 ring-2 ring-wc-ink text-white font-bold"
+          style={{
+            left: visible.length * AVATAR_OFFSET,
+            width: AVATAR_SIZE,
+            height: AVATAR_SIZE,
+            fontSize: AVATAR_SIZE * 0.32,
+            zIndex: visible.length,
+          }}
+        >
+          +{overflow}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function GroupedPredictionRow({
+  predictions,
+  players,
+  fixture,
+  chipped,
+  onPlayerClick,
+}: {
+  predictions: Prediction[];
+  players: Player[];
+  fixture: Fixture;
+  chipped: boolean;
+  onPlayerClick: (playerId: string) => void;
+}) {
+  const groupPlayers = predictions
+    .map((p) => players.find((pl) => pl.id === p.playerId))
+    .filter((p): p is Player => !!p);
+  const first = predictions[0];
+  const resultType = getResultType(first.homeGoals, first.awayGoals);
+  const names = groupPlayers.map((p) => p.name).join(' · ');
+
+  return (
+    <div className="flex items-center justify-between gap-3 border-b border-white/10 py-3 last:border-0">
+      <button
+        type="button"
+        onClick={() => onPlayerClick(predictions[0].playerId)}
+        className="flex min-w-0 flex-1 flex-col gap-1.5 text-left active:opacity-70 transition-opacity"
+      >
+        <AvatarStack players={groupPlayers} />
+        <span className="text-xs text-white/50 truncate leading-none">{names}</span>
+      </button>
+      <ScoreChip
+        homeGoals={first.homeGoals}
+        awayGoals={first.awayGoals}
+        resultType={resultType}
+        homeAccentColor={fixture.homeTeam.accentColor}
+        awayAccentColor={fixture.awayTeam.accentColor}
+        multiChip={chipped}
+      />
+    </div>
+  );
+}
+
 function MatchPredictionCard({
   fixture,
   now,
@@ -140,23 +223,24 @@ function MatchPredictionCard({
 
   const predictionGroups = useMemo(() => {
     if (result) return null;
-    const groupMap = new Map<string, Prediction[]>();
+    const groupMap = new Map<string, { h: number; a: number; chipped: boolean; predictions: Prediction[] }>();
     for (const pred of sortedPredictions) {
-      const key = `${pred.homeGoals}-${pred.awayGoals}`;
+      const chipped = chipSet.has(pred.playerId) && hasStarted;
+      const key = `${pred.homeGoals}-${pred.awayGoals}-${chipped}`;
       const existing = groupMap.get(key);
-      if (existing) existing.push(pred);
-      else groupMap.set(key, [pred]);
+      if (existing) existing.predictions.push(pred);
+      else groupMap.set(key, { h: pred.homeGoals, a: pred.awayGoals, chipped, predictions: [pred] });
     }
     const outcomeOrder: Record<string, number> = { 'home-win': 0, draw: 1, 'away-win': 2 };
-    const groups = [...groupMap.entries()]
-      .map(([key, predictions]) => {
-        const [h, a] = key.split('-').map(Number);
+    const groups = [...groupMap.values()]
+      .map(({ h, a, chipped, predictions }) => {
         const resultType = getResultType(h, a);
-        return { key, predictions, resultType, outcomeOrder: outcomeOrder[resultType] };
+        const key = `${h}-${a}-${chipped}`;
+        return { key, predictions, resultType, chipped, outcomeOrder: outcomeOrder[resultType] };
       })
-      .sort((a, b) => a.outcomeOrder - b.outcomeOrder);
+      .sort((a, b) => a.outcomeOrder - b.outcomeOrder || (a.chipped ? 1 : -1));
     return groups.some((g) => g.predictions.length > 1) ? groups : null;
-  }, [sortedPredictions, result]);
+  }, [sortedPredictions, result, chipSet, hasStarted]);
 
   const predictingIds = useMemo(() => new Set(fixturePredictions.map((p) => p.playerId)), [fixturePredictions]);
   const unpredictedPlayers = useMemo(
@@ -185,25 +269,30 @@ function MatchPredictionCard({
               const drawClass = group.resultType === 'draw' ? 'bg-wc-gold/8 border-l-2 border-wc-gold/40' : '';
               return (
               <div key={group.key} className={`rounded-xl px-4 ${drawClass}`} style={groupStyle}>
-                {group.predictions.length >= 2 && (
-                  <p className="pt-2 text-[10px] font-semibold uppercase tracking-widest text-wc-green/70">
-                    Aligned
-                  </p>
+                {group.predictions.length >= 2 ? (
+                  <GroupedPredictionRow
+                    predictions={group.predictions}
+                    players={players}
+                    fixture={fixture}
+                    chipped={group.chipped}
+                    onPlayerClick={onPlayerClick}
+                  />
+                ) : (
+                  group.predictions.map((prediction) => {
+                    const hasChip = chipSet.has(prediction.playerId);
+                    const showChip = hasChip && hasStarted;
+                    return (
+                      <PredictionRow
+                        key={prediction.playerId}
+                        prediction={prediction}
+                        player={players.find((p) => p.id === prediction.playerId)}
+                        fixture={fixture}
+                        multiChipApplied={showChip}
+                        onPlayerClick={onPlayerClick}
+                      />
+                    );
+                  })
                 )}
-                {group.predictions.map((prediction) => {
-                  const hasChip = chipSet.has(prediction.playerId);
-                  const showChip = hasChip && hasStarted;
-                  return (
-                    <PredictionRow
-                      key={prediction.playerId}
-                      prediction={prediction}
-                      player={players.find((p) => p.id === prediction.playerId)}
-                      fixture={fixture}
-                      multiChipApplied={showChip}
-                      onPlayerClick={onPlayerClick}
-                    />
-                  );
-                })}
               </div>
               );
             })}
