@@ -20,7 +20,6 @@ import type {
 } from '@/lib/types';
 
 const GROUP_CODES: GroupCode[] = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
-const SHOW_PREDICTIONS = process.env.NEXT_PUBLIC_SHOW_PREDICTIONS === 'true';
 
 function teamName(code: string): string {
   return getTeamByCode(code)?.name ?? code;
@@ -258,20 +257,14 @@ export default function PlayerCardModal({
                             </p>
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
-                            {SHOW_PREDICTIONS ? (
-                              <ScoreChip
-                                homeGoals={prediction.homeGoals}
-                                awayGoals={prediction.awayGoals}
-                                resultType={resultType}
-                                homeAccentColor={fixture.homeTeam.accentColor}
-                                awayAccentColor={fixture.awayTeam.accentColor}
-                                multiChip={showChip}
-                              />
-                            ) : (
-                              <div className="rounded-lg border border-dashed border-white/20 px-3 py-1 text-sm font-semibold text-white/20 tabular-nums">
-                                ? – ?
-                              </div>
-                            )}
+                            <ScoreChip
+                              homeGoals={prediction.homeGoals}
+                              awayGoals={prediction.awayGoals}
+                              resultType={resultType}
+                              homeAccentColor={fixture.homeTeam.accentColor}
+                              awayAccentColor={fixture.awayTeam.accentColor}
+                              multiChip={showChip}
+                            />
                             {pts !== undefined && (
                               <ModalPointsBadge points={pts} />
                             )}

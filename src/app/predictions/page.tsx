@@ -28,7 +28,6 @@ import SpecialsTab from '@/components/predictions/SpecialsTab';
 import PlayerCardModal from '@/components/PlayerCardModal';
 
 const GROUP_FIXTURE_IDS = new Set(fixtures.filter((f) => f.stage === 'group').map((f) => f.id));
-const SHOW_PREDICTIONS = process.env.NEXT_PUBLIC_SHOW_PREDICTIONS === 'true';
 const GROUP_CHIP_LIMIT = 10;
 
 function userToPlayer(profile: PublicProfile): Player {
@@ -141,14 +140,21 @@ function MatchPredictionCard({
 
   const predictionGroups = useMemo(() => {
     if (result) return null;
-    const groups: { key: string; predictions: Prediction[] }[] = [];
+    const groupMap = new Map<string, Prediction[]>();
     for (const pred of sortedPredictions) {
       const key = `${pred.homeGoals}-${pred.awayGoals}`;
-      if (groups.length === 0 || groups[groups.length - 1].key !== key) {
-        groups.push({ key, predictions: [] });
-      }
-      groups[groups.length - 1].predictions.push(pred);
+      const existing = groupMap.get(key);
+      if (existing) existing.push(pred);
+      else groupMap.set(key, [pred]);
     }
+    const outcomeOrder: Record<string, number> = { 'home-win': 0, draw: 1, 'away-win': 2 };
+    const groups = [...groupMap.entries()]
+      .map(([key, predictions]) => {
+        const [h, a] = key.split('-').map(Number);
+        const resultType = getResultType(h, a);
+        return { key, predictions, resultType, outcomeOrder: outcomeOrder[resultType] };
+      })
+      .sort((a, b) => a.outcomeOrder - b.outcomeOrder);
     return groups.some((g) => g.predictions.length > 1) ? groups : null;
   }, [sortedPredictions, result]);
 
@@ -166,8 +172,24 @@ function MatchPredictionCard({
       <div className="border-t border-white/10">
         {predictionGroups ? (
           <div className="px-3 pt-2 pb-3 flex flex-col gap-1.5">
-            {predictionGroups.map((group) => (
-              <div key={group.key} className="bg-white/[0.05] rounded-xl px-4">
+            {predictionGroups.map((group) => {
+              const accentColor =
+                group.resultType === 'home-win'
+                  ? fixture.homeTeam.accentColor
+                  : group.resultType === 'away-win'
+                    ? fixture.awayTeam.accentColor
+                    : null;
+              const groupStyle = accentColor
+                ? { borderLeft: `2px solid ${accentColor}66`, background: `${accentColor}14` }
+                : undefined;
+              const drawClass = group.resultType === 'draw' ? 'bg-wc-gold/8 border-l-2 border-wc-gold/40' : '';
+              return (
+              <div key={group.key} className={`rounded-xl px-4 ${drawClass}`} style={groupStyle}>
+                {group.predictions.length >= 2 && (
+                  <p className="pt-2 text-[10px] font-semibold uppercase tracking-widest text-wc-green/70">
+                    Aligned
+                  </p>
+                )}
                 {group.predictions.map((prediction) => {
                   const hasChip = chipSet.has(prediction.playerId);
                   const showChip = hasChip && hasStarted;
@@ -183,7 +205,8 @@ function MatchPredictionCard({
                   );
                 })}
               </div>
-            ))}
+              );
+            })}
             {unpredictedPlayers.length > 0 && (
               <div className="bg-white/[0.03] rounded-xl px-4">
                 {unpredictedPlayers.map((player) => (
@@ -299,20 +322,14 @@ function ChipFixtureRow({
 
       {/* Score chip */}
       {prediction ? (
-        SHOW_PREDICTIONS ? (
-          <ScoreChip
-            homeGoals={prediction.homeGoals}
-            awayGoals={prediction.awayGoals}
-            resultType={resultType}
-            homeAccentColor={fixture.homeTeam.accentColor}
-            awayAccentColor={fixture.awayTeam.accentColor}
-            multiChip={showChipBadge}
-          />
-        ) : (
-          <div className="rounded-lg border border-dashed border-white/20 px-3 py-1 text-sm font-semibold text-white/20 tabular-nums">
-            ? – ?
-          </div>
-        )
+        <ScoreChip
+          homeGoals={prediction.homeGoals}
+          awayGoals={prediction.awayGoals}
+          resultType={resultType}
+          homeAccentColor={fixture.homeTeam.accentColor}
+          awayAccentColor={fixture.awayTeam.accentColor}
+          multiChip={showChipBadge}
+        />
       ) : (
         <span className="text-xs text-white/20 italic">No prediction</span>
       )}
@@ -473,9 +490,9 @@ export default function PredictionsPage() {
     [firestoreUsers, deadlinePassed]
   );
 
-  const visiblePredictions = SHOW_PREDICTIONS ? allPredictions : [];
-  const visibleTournamentPicks = SHOW_PREDICTIONS ? allTournamentPicks : [];
-  const visibleBonusPredictions = SHOW_PREDICTIONS ? allBonusPredictions : [];
+  const visiblePredictions = allPredictions;
+  const visibleTournamentPicks = allTournamentPicks;
+  const visibleBonusPredictions = allBonusPredictions;
 
   const standings = useMemo(
     () => calculateStandings(players, visiblePredictions, storeResults),
@@ -571,17 +588,11 @@ export default function PredictionsPage() {
           </div>
 
           {activeTab === 'specials' && (
-            SHOW_PREDICTIONS ? (
-              <SpecialsTab
-                players={players}
-                tournamentPicks={visibleTournamentPicks}
-                bonusPredictions={visibleBonusPredictions}
-              />
-            ) : (
-              <p className="text-center text-white/30 text-sm py-16">
-                Predictions not yet revealed.
-              </p>
-            )
+            <SpecialsTab
+              players={players}
+              tournamentPicks={visibleTournamentPicks}
+              bonusPredictions={visibleBonusPredictions}
+            />
           )}
 
           {activeTab === 'matches' && (
