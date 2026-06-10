@@ -45,6 +45,7 @@ interface Props {
   results: MatchResult[];
   now: Date;
   isViewer: boolean;
+  canViewPredictions?: boolean;
   tournamentPicks?: TournamentPicks | null;
   bonusPredictions?: BonusPredictions | null;
   onClose: () => void;
@@ -97,6 +98,7 @@ export default function PlayerCardModal({
   results,
   now,
   isViewer,
+  canViewPredictions = true,
   tournamentPicks = null,
   bonusPredictions = null,
   onClose,
@@ -285,7 +287,8 @@ export default function PlayerCardModal({
                       const hasChip = playerChips.has(fixture.id);
                       const showChip = hasChip && (isViewer || hasStarted);
                       const result = resultMap.get(fixture.id);
-                      const pts = result
+                      const canSeeScore = canViewPredictions || isViewer;
+                      const pts = canSeeScore && result
                         ? scoreMatch({ ...prediction, multiChip: showChip }, result).points
                         : undefined;
                       const resultType = getResultType(prediction.homeGoals, prediction.awayGoals);
@@ -301,14 +304,20 @@ export default function PlayerCardModal({
                             </p>
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
-                            <ScoreChip
-                              homeGoals={prediction.homeGoals}
-                              awayGoals={prediction.awayGoals}
-                              resultType={resultType}
-                              homeAccentColor={fixture.homeTeam.accentColor}
-                              awayAccentColor={fixture.awayTeam.accentColor}
-                              multiChip={showChip}
-                            />
+                            {canSeeScore ? (
+                              <ScoreChip
+                                homeGoals={prediction.homeGoals}
+                                awayGoals={prediction.awayGoals}
+                                resultType={resultType}
+                                homeAccentColor={fixture.homeTeam.accentColor}
+                                awayAccentColor={fixture.awayTeam.accentColor}
+                                multiChip={showChip}
+                              />
+                            ) : (
+                              <div className="rounded-lg border border-dashed border-white/20 px-3 py-1 text-sm font-semibold text-white/20 tabular-nums">
+                                ? – ?
+                              </div>
+                            )}
                             {pts !== undefined && (
                               <ModalPointsBadge points={pts} />
                             )}
@@ -323,7 +332,10 @@ export default function PlayerCardModal({
           )}
 
           {activeTab === 'specials' && (
-            <PlayerSpecialsTab tournamentPicks={tournamentPicks} bonusPredictions={bonusPredictions} />
+            <PlayerSpecialsTab
+              tournamentPicks={canViewPredictions || isViewer ? tournamentPicks : null}
+              bonusPredictions={canViewPredictions || isViewer ? bonusPredictions : null}
+            />
           )}
         </div>
       </div>

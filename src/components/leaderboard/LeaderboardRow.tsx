@@ -18,25 +18,18 @@ const RANK_CONFIG: Record<
   { rankClass: string; ringClass: string; rowClass: string; shadowClass: string }
 > = {
   1: {
-    rankClass: 'text-[#e6b94e]',
-    ringClass: 'ring-2 ring-[#e6b94e]/85 ring-offset-2 ring-offset-[#070a10]',
+    rankClass: 'text-[#FFD000]',
+    ringClass: 'ring-2 ring-[#FFD000] ring-offset-2 ring-offset-[#070a10]',
     rowClass:
-      'bg-gradient-to-r from-[#e6b94e]/[0.20] to-[#131a26] border border-[#e6b94e]/65',
-    shadowClass: 'shadow-[0_8px_22px_-12px_rgba(230,185,78,0.42)]',
+      'bg-gradient-to-r from-[#FFD000]/[0.20] to-[#131a26] border border-[#FFD000]/80',
+    shadowClass: 'shadow-[0_8px_22px_-12px_rgba(255,208,0,0.42)]',
   },
   2: {
-    rankClass: 'text-[#c7d0dd]',
-    ringClass: 'ring-2 ring-[#c7d0dd]/75 ring-offset-2 ring-offset-[#070a10]',
+    rankClass: 'text-[#E2E8F0]',
+    ringClass: 'ring-2 ring-[#E2E8F0]/90 ring-offset-2 ring-offset-[#070a10]',
     rowClass:
-      'bg-gradient-to-r from-[#c7d0dd]/[0.13] to-[#131a26] border border-[#c7d0dd]/50',
-    shadowClass: 'shadow-[0_8px_22px_-12px_rgba(199,208,221,0.32)]',
-  },
-  3: {
-    rankClass: 'text-[#d08a4f]',
-    ringClass: 'ring-2 ring-[#d08a4f]/75 ring-offset-2 ring-offset-[#070a10]',
-    rowClass:
-      'bg-gradient-to-r from-[#d08a4f]/[0.15] to-[#131a26] border border-[#d08a4f]/52',
-    shadowClass: 'shadow-[0_8px_22px_-12px_rgba(208,138,79,0.32)]',
+      'bg-gradient-to-r from-[#E2E8F0]/[0.13] to-[#131a26] border border-[#E2E8F0]/65',
+    shadowClass: 'shadow-[0_8px_22px_-12px_rgba(226,232,240,0.32)]',
   },
 };
 

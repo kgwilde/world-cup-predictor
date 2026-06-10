@@ -248,9 +248,18 @@ interface Props {
   players: Player[];
   tournamentPicks: TournamentPicks[];
   bonusPredictions: BonusPredictions[];
+  canViewPredictions?: boolean;
 }
 
-export default function SpecialsTab({ players, tournamentPicks, bonusPredictions }: Props) {
+export default function SpecialsTab({ players, tournamentPicks, bonusPredictions, canViewPredictions = true }: Props) {
+  if (!canViewPredictions) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 gap-3">
+        <p className="text-white/30 text-sm text-center">Sign in and get approved to view specials predictions.</p>
+      </div>
+    );
+  }
+
   if (players.length === 0) {
     return <p className="text-center text-white/30 text-sm py-16">No data yet.</p>;
   }

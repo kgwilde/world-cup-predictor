@@ -28,6 +28,8 @@ function userToPlayer(profile: PublicProfile): Player {
 
 export default function Leaderboard() {
   const viewerId = useAuthStore((s) => s.user?.uid ?? null);
+  const profile = useAuthStore((s) => s.profile);
+  const canViewPredictions = !!profile?.approved;
   const authLoading = useAuthStore((s) => s.loading);
   const isGuest = !authLoading && !viewerId;
   const firestoreUsers = useAuthStore((s) => s.allUsers);
@@ -156,6 +158,7 @@ export default function Leaderboard() {
           results={activeResults}
           now={now}
           isViewer={selectedPlayer.id === viewerId}
+          canViewPredictions={canViewPredictions}
           tournamentPicks={selectedTournamentPicks}
           bonusPredictions={selectedBonusPredictions}
           onClose={() => setSelectedPlayerId(null)}

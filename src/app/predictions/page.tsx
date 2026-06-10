@@ -179,6 +179,7 @@ function MatchPredictionCard({
   allChips,
   result,
   onPlayerClick,
+  canViewPredictions,
 }: {
   fixture: Fixture;
   now: Date;
@@ -187,6 +188,7 @@ function MatchPredictionCard({
   allChips: MultiChip[];
   result?: MatchResult;
   onPlayerClick: (playerId: string) => void;
+  canViewPredictions: boolean;
 }) {
   const hasStarted = new Date(fixture.kickoff) <= now;
 
@@ -254,7 +256,13 @@ function MatchPredictionCard({
         <FixtureCard fixture={fixture} now={now} isFullWidth result={result} />
       </div>
       <div className="border-t border-white/10">
-        {predictionGroups ? (
+        {!canViewPredictions ? (
+          <div className="px-4">
+            {players.map((player) => (
+              <PlaceholderRow key={player.id} player={player} />
+            ))}
+          </div>
+        ) : predictionGroups ? (
           <div className="px-3 pt-2 pb-3 flex flex-col gap-1.5">
             {predictionGroups.map((group) => {
               const accentColor =
@@ -549,6 +557,8 @@ export default function PredictionsPage() {
   const availableDates = useMemo(() => buildAvailableDates(fixtures), []);
   const firestoreUsers = useAuthStore((s) => s.allUsers);
   const viewerId = useAuthStore((s) => s.user?.uid ?? null);
+  const profile = useAuthStore((s) => s.profile);
+  const canViewPredictions = !!profile?.approved;
   const storeResults = useAuthStore((s) => s.results);
   const resultMap = useMemo(() => new Map(storeResults.map((r) => [r.fixtureId, r])), [storeResults]);
 
@@ -681,6 +691,7 @@ export default function PredictionsPage() {
               players={players}
               tournamentPicks={visibleTournamentPicks}
               bonusPredictions={visibleBonusPredictions}
+              canViewPredictions={canViewPredictions}
             />
           )}
 
@@ -731,6 +742,7 @@ export default function PredictionsPage() {
                     allChips={allChips}
                     result={resultMap.get(fixture.id)}
                     onPlayerClick={setSelectedPlayerId}
+                    canViewPredictions={canViewPredictions}
                   />
                 ))}
               </div>
@@ -761,6 +773,7 @@ export default function PredictionsPage() {
           results={storeResults}
           now={now}
           isViewer={selectedPlayer.id === viewerId}
+          canViewPredictions={canViewPredictions}
           tournamentPicks={selectedTournamentPicks}
           bonusPredictions={selectedBonusPredictions}
           onClose={() => setSelectedPlayerId(null)}
