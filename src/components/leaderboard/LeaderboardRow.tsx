@@ -20,15 +20,13 @@ const RANK_CONFIG: Record<
   1: {
     rankClass: 'text-[#FFD000]',
     ringClass: 'ring-2 ring-[#FFD000] ring-offset-2 ring-offset-[#070a10]',
-    rowClass:
-      'bg-gradient-to-r from-[#FFD000]/[0.20] to-[#131a26] border border-[#FFD000]/80',
+    rowClass: 'bg-gradient-to-r from-[#FFD000]/[0.20] to-[#131a26] border border-[#FFD000]/80',
     shadowClass: 'shadow-[0_8px_22px_-12px_rgba(255,208,0,0.42)]',
   },
   2: {
     rankClass: 'text-[#E2E8F0]',
     ringClass: 'ring-2 ring-[#E2E8F0]/90 ring-offset-2 ring-offset-[#070a10]',
-    rowClass:
-      'bg-gradient-to-r from-[#E2E8F0]/[0.13] to-[#131a26] border border-[#E2E8F0]/65',
+    rowClass: 'bg-gradient-to-r from-[#E2E8F0]/[0.13] to-[#131a26] border border-[#E2E8F0]/65',
     shadowClass: 'shadow-[0_8px_22px_-12px_rgba(226,232,240,0.32)]',
   },
 };
@@ -98,7 +96,13 @@ function RoundChangeChip({
   );
 }
 
-export default function LeaderboardRow({ standing, isViewer, matchDelta, winnerPick, onClick }: Props) {
+export default function LeaderboardRow({
+  standing,
+  isViewer,
+  matchDelta,
+  winnerPick,
+  onClick,
+}: Props) {
   const { rank } = standing;
   const cfg = RANK_CONFIG[rank] ?? DEFAULT_RANK_CONFIG;
   const displayName = standing.player.teamName ?? standing.player.name;
@@ -143,7 +147,7 @@ export default function LeaderboardRow({ standing, isViewer, matchDelta, winnerP
 
       {/* Name block */}
       <div className="flex-1 min-w-0 flex flex-col gap-[3px]">
-        <span className="font-display text-base font-bold text-white whitespace-nowrap">
+        <span className="font-display text-[14.5px] font-bold text-white whitespace-nowrap">
           {displayName}
         </span>
         {(ownerName || isViewer) && (
@@ -175,9 +179,7 @@ export default function LeaderboardRow({ standing, isViewer, matchDelta, winnerP
           <span className="font-display text-[22px] font-bold tabular-nums tracking-tight text-white">
             {standing.totalPoints}
           </span>
-          <span className="font-body text-[10px] font-bold tracking-wide text-slate-500">
-            PTS
-          </span>
+          <span className="font-body text-[10px] font-bold tracking-wide text-slate-500">PTS</span>
         </div>
       </div>
 
