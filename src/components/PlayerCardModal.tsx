@@ -315,7 +315,7 @@ export default function PlayerCardModal({
                             className="flex items-center justify-between gap-3 py-3 border-b border-white/8 last:border-0"
                           >
                             <div className="flex-1 min-w-0">
-                              <p className="text-xs text-white/40 truncate">
+                              <p className="text-xs text-white/90 truncate">
                                 {fixture.homeTeam.name} vs {fixture.awayTeam.name}
                               </p>
                             </div>
