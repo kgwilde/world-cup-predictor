@@ -308,8 +308,32 @@ export function FixtureSlider({ initialResults }: { initialResults?: MatchResult
     [],
   );
 
-  // useLayoutEffect fires before the browser paints — with initialResults already
-  // populated, the scroll runs immediately on mount with accurate data.
+  const [extraFuture, setExtraFuture] = useState(0);
+  const viewMoreAnchorRef = useRef<number>(-1);
+
+  // Render all past fixtures + the next 20 upcoming ones to keep initial mount fast.
+  // allFixtures is sorted ascending so this is always a leading slice — indices are
+  // identical between allFixtures and renderedFixtures, so scroll logic is unaffected.
+  const renderedFixtures = useMemo(() => {
+    const nowTime = getNow().getTime();
+    const firstFutureIdx = allFixtures.findIndex(
+      (f) => new Date(f.kickoff).getTime() > nowTime,
+    );
+    if (firstFutureIdx < 0) return allFixtures;
+    return allFixtures.slice(0, firstFutureIdx + 20 + extraFuture);
+  }, [allFixtures, extraFuture]);
+
+  // After "View more" expands the list, scroll back to the card that was last before expansion
+  useLayoutEffect(() => {
+    const anchorIndex = viewMoreAnchorRef.current;
+    if (anchorIndex < 0) return;
+    viewMoreAnchorRef.current = -1;
+    const container = scrollRef.current;
+    if (!container) return;
+    const card = container.children[anchorIndex] as HTMLElement | undefined;
+    card?.scrollIntoView({ behavior: 'instant', inline: 'start', block: 'nearest' });
+  }, [extraFuture]);
+
   useLayoutEffect(() => {
     if (scrollDone.current) return;
     const container = scrollRef.current;
@@ -333,7 +357,9 @@ export function FixtureSlider({ initialResults }: { initialResults?: MatchResult
       scrollDone.current = true;
     }
 
-    if (targetIndex < 0) targetIndex = allFixtures.length - 1;
+    if (targetIndex < 0 || targetIndex >= container.children.length) {
+      targetIndex = container.children.length - 1;
+    }
     const card = container.children[targetIndex] as HTMLElement | undefined;
     card?.scrollIntoView({ behavior: 'instant', inline: 'start', block: 'nearest' });
   }, [allFixtures, resultsMap, isLoading]);
@@ -348,7 +374,7 @@ export function FixtureSlider({ initialResults }: { initialResults?: MatchResult
           role="region"
           aria-label="Fixtures"
         >
-          {allFixtures.map((fixture) => (
+          {renderedFixtures.map((fixture) => (
             <FixtureCard
               key={fixture.id}
               fixture={fixture}
@@ -356,6 +382,20 @@ export function FixtureSlider({ initialResults }: { initialResults?: MatchResult
               result={resultsMap.get(fixture.id)}
             />
           ))}
+          {renderedFixtures.length < allFixtures.length && (
+            <div className="snap-start shrink-0 flex items-center pr-2">
+              <button
+                type="button"
+                onClick={() => {
+                  viewMoreAnchorRef.current = renderedFixtures.length - 1;
+                  setExtraFuture((n) => n + 20);
+                }}
+                className="text-xs font-semibold text-white/70 hover:text-white active:text-white transition-colors whitespace-nowrap px-2 py-1"
+              >
+                View more →
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </>

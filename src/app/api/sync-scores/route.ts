@@ -1,6 +1,18 @@
 import { NextResponse } from 'next/server';
 
+import { fixtures } from '@/data/fixtures';
 import { getAdminDb } from '@/lib/firebase-admin';
+import { Fixture } from '@/lib/types';
+
+const MATCH_DURATION_MS = 150 * 60 * 1000;
+
+function getLiveMatches(): Fixture[] {
+  const now = Date.now();
+  return fixtures.filter((f) => {
+    const kickoff = new Date(f.kickoff).getTime();
+    return now >= kickoff && now < kickoff + MATCH_DURATION_MS;
+  });
+}
 
 const TEAM_NAME_ALIASES: Record<string, string> = {
   'Korea Republic': 'South Korea',
@@ -122,6 +134,10 @@ export async function GET(request: Request) {
   const apiKey = process.env.FOOTBALL_DATA_API_KEY;
   if (!apiKey) {
     return NextResponse.json({ error: 'FOOTBALL_DATA_API_KEY not set' }, { status: 500 });
+  }
+
+  if (getLiveMatches().length === 0) {
+    return NextResponse.json({ written: 0, skipped: 0, warnings: [], noLiveMatches: true });
   }
 
   const competitionId = 'WC';
