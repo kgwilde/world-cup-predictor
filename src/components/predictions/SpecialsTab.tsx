@@ -198,13 +198,13 @@ function BonusCard({
   players: Player[];
   bonusPredictions: BonusPredictions[];
 }) {
-  const rows: Array<{ label: string; getValue: (b: BonusPredictions) => string }> = [
+  const rows: Array<{ label: string; getValue: (b: BonusPredictions) => string; sortDesc?: boolean }> = [
     { label: 'Top Goalscorer', getValue: (b) => b.topScorer },
     { label: 'Group Stage Highest Scorers', getValue: (b) => teamName(b.highestScoringTeam) },
     { label: 'Best Group Stage Defence', getValue: (b) => teamName(b.bestDefence) },
-    { label: 'Yellow Cards', getValue: (b) => String(b.totalYellowCards) },
-    { label: 'Red Cards', getValue: (b) => String(b.totalRedCards) },
-    { label: 'Penalty Shootouts', getValue: (b) => String(b.penaltyShootouts) },
+    { label: 'Yellow Cards', getValue: (b) => String(b.totalYellowCards), sortDesc: true },
+    { label: 'Red Cards', getValue: (b) => String(b.totalRedCards), sortDesc: true },
+    { label: 'Penalty Shootouts', getValue: (b) => String(b.penaltyShootouts), sortDesc: true },
   ];
 
   const [isOpen, toggle] = useLocalStorageToggle('specials_bonus_open');
@@ -213,10 +213,17 @@ function BonusCard({
     <div className="overflow-hidden rounded-2xl bg-wc-ink">
       <CardHeader title="Bonus Predictions" isOpen={isOpen} onToggle={toggle} />
       {isOpen &&
-        rows.map(({ label, getValue }) => (
+        rows.map(({ label, getValue, sortDesc }) => (
           <CollapsibleSection key={label} label={label}>
             <div className="px-4">
-              {players.map((player) => {
+              {(sortDesc
+                ? [...players].sort((a, b) => {
+                    const bVal = bonusPredictions.find((x) => x.playerId === b.id);
+                    const aVal = bonusPredictions.find((x) => x.playerId === a.id);
+                    return Number(bVal ? getValue(bVal) : 0) - Number(aVal ? getValue(aVal) : 0);
+                  })
+                : players
+              ).map((player) => {
                 const bonus = bonusPredictions.find((b) => b.playerId === player.id);
                 return (
                   <div
