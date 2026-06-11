@@ -171,11 +171,22 @@ export async function GET(request: Request) {
       continue;
     }
 
+    const matchStatus = API_STATUS_MAP[status];
+
+    // Skip the write if this match is already recorded as final — the score won't change.
+    if (matchStatus === 'final') {
+      const existing = await db.collection('results').doc(fixtureId).get();
+      if (existing.exists && existing.data()?.status === 'final') {
+        skipped++;
+        continue;
+      }
+    }
+
     await db.collection('results').doc(fixtureId).set({
       fixtureId,
       homeGoals,
       awayGoals,
-      status: API_STATUS_MAP[status],
+      status: matchStatus,
     });
 
     written++;
