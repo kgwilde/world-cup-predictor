@@ -205,8 +205,11 @@ async function main() {
       continue;
     }
 
-    const homeGoals = score.fullTime?.home;
-    const awayGoals = score.fullTime?.away;
+    // fullTime is null at half-time (PAUSED); fall back to halfTime score.
+    // Also default to 0 for live matches that haven't scored yet (0:0 kick-off).
+    const isLive = status === 'IN_PLAY' || status === 'PAUSED';
+    const homeGoals = score.fullTime?.home ?? score.halfTime?.home ?? (isLive ? 0 : null);
+    const awayGoals = score.fullTime?.away ?? score.halfTime?.away ?? (isLive ? 0 : null);
 
     if (homeGoals === null || homeGoals === undefined || awayGoals === null || awayGoals === undefined) {
       skipped++;

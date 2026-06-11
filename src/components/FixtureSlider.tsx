@@ -6,6 +6,7 @@ import type { Fixture, FixtureStage, MatchResult, Team } from '@/lib/types';
 
 import { fixtures } from '@/data/fixtures';
 import { getNow } from '@/lib/deadline';
+import { useAuthStore } from '@/app/stores/useAuthStore';
 
 const STAGE_LABELS: Record<FixtureStage, string> = {
   group: 'Group Stage',
@@ -98,7 +99,11 @@ function formatHeroCountdown(kickoff: Date, now: Date): string | null {
   return `${hours}h ${minutes}m`;
 }
 
-function isFixtureLive(kickoff: Date, now: Date) {
+function isFixtureLive(kickoff: Date, now: Date, result?: MatchResult) {
+  // If the API has told us the status, trust it — matches can run beyond 90 minutes.
+  if (result?.status === 'live') return true;
+  if (result?.status === 'final') return false;
+  // No result yet: use the kickoff window as a best-guess until the first sync.
   const kickoffTime = kickoff.getTime();
   const nowTime = now.getTime();
   const matchEndTime = kickoffTime + MATCH_DURATION_MINUTES * MILLISECONDS_PER_MINUTE;
@@ -166,7 +171,7 @@ interface FixtureCardProps {
 
 export function FixtureCard({ fixture, now, isFullWidth, result }: FixtureCardProps) {
   const kickoff = new Date(fixture.kickoff);
-  const isLive = isFixtureLive(kickoff, now);
+  const isLive = isFixtureLive(kickoff, now, result);
   const dayLabel = formatKickoffDay(kickoff, now);
   const timeLabel = formatKickoffTime(kickoff);
   const stageLabel = getStageLabel(fixture);
@@ -230,9 +235,11 @@ export function FixtureCard({ fixture, now, isFullWidth, result }: FixtureCardPr
                     {result.awayGoals}
                   </span>
                 </div>
-                <span className="text-[9px] font-semibold uppercase tracking-widest text-wc-white/40">
-                  FT
-                </span>
+                {!isLive && (
+                  <span className="text-[9px] font-semibold uppercase tracking-widest text-wc-white/40">
+                    FT
+                  </span>
+                )}
               </div>
             ) : (
               <span className="text-[10px] font-bold uppercase tracking-widest text-white/50">
@@ -270,11 +277,20 @@ function useCurrentTime() {
 export function FixtureSlider() {
   const now = useCurrentTime();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const storeResults = useAuthStore((s) => s.results);
+
+  const resultsMap = useMemo(
+    () => new Map(storeResults.map((r) => [r.fixtureId, r])),
+    [storeResults],
+  );
 
   const upcomingFixtures = useMemo(() => {
     const nowTime = now.getTime();
     const matchWindowMilliseconds = MATCH_DURATION_MINUTES * MILLISECONDS_PER_MINUTE;
     const futureFixtures = fixtures.filter((fixture) => {
+      const result = resultsMap.get(fixture.id);
+      // Always keep matches the API says are still live — they may have gone past 90 minutes.
+      if (result?.status === 'live') return true;
       const kickoffTime = new Date(fixture.kickoff).getTime();
       const matchEndTime = kickoffTime + matchWindowMilliseconds;
       return matchEndTime > nowTime;
@@ -287,7 +303,7 @@ export function FixtureSlider() {
     });
 
     return futureFixtures;
-  }, [now]);
+  }, [now, resultsMap]);
 
   return (
     <>
@@ -309,7 +325,12 @@ export function FixtureSlider() {
           aria-label="Fixtures"
         >
           {upcomingFixtures.map((fixture) => (
-            <FixtureCard key={fixture.id} fixture={fixture} now={now} />
+            <FixtureCard
+              key={fixture.id}
+              fixture={fixture}
+              now={now}
+              result={resultsMap.get(fixture.id)}
+            />
           ))}
         </div>
       </div>
