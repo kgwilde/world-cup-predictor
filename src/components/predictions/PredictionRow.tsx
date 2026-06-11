@@ -86,13 +86,20 @@ export default function PredictionRow({
       </button>
 
       <div className="flex items-center gap-2 shrink-0">
-        <ScoreChip
-          homeGoals={prediction.homeGoals}
-          awayGoals={prediction.awayGoals}
-          resultType={resultType}
-          homeAccentColor={fixture.homeTeam.accentColor}
-          awayAccentColor={fixture.awayTeam.accentColor}
-        />
+        <span className="relative inline-flex shrink-0">
+          <ScoreChip
+            homeGoals={prediction.homeGoals}
+            awayGoals={prediction.awayGoals}
+            resultType={resultType}
+            homeAccentColor={fixture.homeTeam.accentColor}
+            awayAccentColor={fixture.awayTeam.accentColor}
+          />
+          {multiChipApplied && points === undefined && (
+            <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-wc-gold text-[8px] font-bold leading-none text-wc-black">
+              ×2
+            </span>
+          )}
+        </span>
         {points !== undefined && (
           <PointsBadge points={points} multiChipApplied={multiChipApplied} />
         )}

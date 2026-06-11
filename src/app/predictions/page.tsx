@@ -327,6 +327,7 @@ function MatchPredictionCard({
   onPlayerClick: (playerId: string) => void;
 }) {
   const hasStarted = new Date(fixture.kickoff) <= now;
+  const isFinal = result?.status === 'final';
 
   const fixturePredictions = useMemo(
     () => allPredictions.filter((p) => p.fixtureId === fixture.id),
@@ -339,7 +340,7 @@ function MatchPredictionCard({
   );
 
   const sortedPredictions = useMemo(() => {
-    if (!result) {
+    if (!isFinal) {
       return [...fixturePredictions].sort((a, b) => {
         const homeDiff = b.homeGoals - a.homeGoals;
         if (homeDiff !== 0) return homeDiff;
@@ -353,14 +354,14 @@ function MatchPredictionCard({
     return [...fixturePredictions].sort((a, b) => {
       const hasChipA = chipSet.has(a.playerId);
       const hasChipB = chipSet.has(b.playerId);
-      const ptsA = scoreMatch({ ...a, multiChip: hasChipA }, result).points;
-      const ptsB = scoreMatch({ ...b, multiChip: hasChipB }, result).points;
+      const ptsA = scoreMatch({ ...a, multiChip: hasChipA }, result!).points;
+      const ptsB = scoreMatch({ ...b, multiChip: hasChipB }, result!).points;
       return ptsB - ptsA;
     });
-  }, [fixturePredictions, result, players, chipSet]);
+  }, [fixturePredictions, isFinal, result, players, chipSet]);
 
   const pointGroups = useMemo(() => {
-    if (!result) return null;
+    if (!isFinal) return null;
     type Group = { key: string; pts: number; allChipped: boolean; predictions: Prediction[] };
     const groupMap = new Map<string, Group>();
     for (const pred of sortedPredictions) {
@@ -377,10 +378,10 @@ function MatchPredictionCard({
     }
     const groups = [...groupMap.values()].sort((a, b) => b.pts - a.pts);
     return groups.some((g) => g.predictions.length > 1) ? groups : null;
-  }, [result, sortedPredictions, chipSet]);
+  }, [isFinal, result, sortedPredictions, chipSet]);
 
   const predictionGroups = useMemo(() => {
-    if (result) return null;
+    if (isFinal) return null;
     const groupMap = new Map<
       string,
       { h: number; a: number; chipped: boolean; predictions: Prediction[] }
@@ -518,8 +519,8 @@ function MatchPredictionCard({
           <div className="px-4">
             {sortedPredictions.map((prediction) => {
               const hasChip = chipSet.has(prediction.playerId);
-              const pts = result
-                ? scoreMatch({ ...prediction, multiChip: hasChip }, result).points
+              const pts = isFinal
+                ? scoreMatch({ ...prediction, multiChip: hasChip }, result!).points
                 : undefined;
               return (
                 <PredictionRow
@@ -528,7 +529,7 @@ function MatchPredictionCard({
                   player={players.find((p) => p.id === prediction.playerId)}
                   fixture={fixture}
                   points={pts}
-                  multiChipApplied={!!result && hasChip}
+                  multiChipApplied={hasStarted && hasChip}
                   onPlayerClick={onPlayerClick}
                 />
               );

@@ -300,8 +300,9 @@ export default function PlayerCardModal({
                         const hasChip = playerChips.has(fixture.id);
                         const showChip = hasChip && (isViewer || hasStarted);
                         const result = resultMap.get(fixture.id);
-                        const pts = result
-                          ? scoreMatch({ ...prediction, multiChip: showChip }, result).points
+                        const isFinal = result?.status === 'final';
+                        const pts = isFinal
+                          ? scoreMatch({ ...prediction, multiChip: showChip }, result!).points
                           : undefined;
                         const resultType = getResultType(
                           prediction.homeGoals,
@@ -319,13 +320,20 @@ export default function PlayerCardModal({
                               </p>
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
-                              <ScoreChip
-                                homeGoals={prediction.homeGoals}
-                                awayGoals={prediction.awayGoals}
-                                resultType={resultType}
-                                homeAccentColor={fixture.homeTeam.accentColor}
-                                awayAccentColor={fixture.awayTeam.accentColor}
-                              />
+                              <span className="relative inline-flex shrink-0">
+                                <ScoreChip
+                                  homeGoals={prediction.homeGoals}
+                                  awayGoals={prediction.awayGoals}
+                                  resultType={resultType}
+                                  homeAccentColor={fixture.homeTeam.accentColor}
+                                  awayAccentColor={fixture.awayTeam.accentColor}
+                                />
+                                {showChip && !isFinal && (
+                                  <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-wc-gold text-[8px] font-bold leading-none text-wc-black">
+                                    ×2
+                                  </span>
+                                )}
+                              </span>
                               {pts !== undefined && (
                                 <ModalPointsBadge points={pts} multiChip={showChip} />
                               )}
