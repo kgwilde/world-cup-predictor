@@ -192,5 +192,8 @@ export async function GET(request: Request) {
     written++;
   }
 
+  console.log(`sync-scores: written=${written} skipped=${skipped} warnings=${warnings.length}`);
+  if (warnings.length) console.warn('sync-scores warnings:', warnings);
+
   return NextResponse.json({ written, skipped, warnings });
 }
