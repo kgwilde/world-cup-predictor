@@ -526,7 +526,7 @@ function ModalPointsBadge({ points, multiChip }: { points: number; multiChip?: b
   if (points >= 5) {
     return (
       <span className="min-w-[2.5rem] text-center text-xs font-bold text-green-300 bg-green-500/20 rounded px-1.5 py-0.5 shrink-0 tabular-nums">
-        {points}pt
+        {points} pts
       </span>
     );
   }
