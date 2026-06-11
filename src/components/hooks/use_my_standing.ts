@@ -28,8 +28,10 @@ export function useMyStanding(): { rank: number; totalPoints: number } | null {
   return useMemo(() => {
     if (!uid || usersLoading || resultsLoading) return null;
 
+    const finalResults = storeResults.filter((r) => r.status !== 'live');
+
     const playedFixtures = (() => {
-      const withResults = new Set(storeResults.map((r) => r.fixtureId));
+      const withResults = new Set(finalResults.map((r) => r.fixtureId));
       return fixtures
         .filter((f) => withResults.has(f.id))
         .sort((a, b) => new Date(a.kickoff).getTime() - new Date(b.kickoff).getTime());
@@ -47,7 +49,7 @@ export function useMyStanding(): { rank: number; totalPoints: number } | null {
 
     const predictions: Prediction[] = allPredictions;
     const lastFixture = playedFixtures[playedFixtures.length - 1];
-    const standings = calculateStandings(players, predictions, storeResults, lastFixture.id, fixtures);
+    const standings = calculateStandings(players, predictions, finalResults, lastFixture.id, fixtures);
     const mine = standings.find((s) => s.player.id === uid);
 
     return mine ? { rank: mine.rank, totalPoints: mine.totalPoints } : null;

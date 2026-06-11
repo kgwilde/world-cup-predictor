@@ -140,9 +140,18 @@ export async function GET(request: Request) {
   const { matches } = await res.json();
   const db = getAdminDb();
 
+  // Read the single summary document once — avoids one read per match for the "already final" check.
+  const summaryRef = db.collection('results').doc('all');
+  const summarySnap = await summaryRef.get();
+  const existing = (summarySnap.exists ? (summarySnap.data() ?? {}) : {}) as Record<
+    string,
+    { status?: string }
+  >;
+
   let written = 0;
   let skipped = 0;
   const warnings: string[] = [];
+  const updates: Record<string, object> = {};
 
   for (const match of matches) {
     const { status, homeTeam, awayTeam, score } = match;
@@ -173,23 +182,18 @@ export async function GET(request: Request) {
 
     const matchStatus = API_STATUS_MAP[status];
 
-    // Skip the write if this match is already recorded as final — the score won't change.
-    if (matchStatus === 'final') {
-      const existing = await db.collection('results').doc(fixtureId).get();
-      if (existing.exists && existing.data()?.status === 'final') {
-        skipped++;
-        continue;
-      }
+    // Skip if already recorded as final — the score won't change.
+    if (matchStatus === 'final' && existing[fixtureId]?.status === 'final') {
+      skipped++;
+      continue;
     }
 
-    await db.collection('results').doc(fixtureId).set({
-      fixtureId,
-      homeGoals,
-      awayGoals,
-      status: matchStatus,
-    });
-
+    updates[fixtureId] = { fixtureId, homeGoals, awayGoals, status: matchStatus };
     written++;
+  }
+
+  if (Object.keys(updates).length > 0) {
+    await summaryRef.set(updates, { merge: true });
   }
 
   console.log(`sync-scores: written=${written} skipped=${skipped} warnings=${warnings.length}`);

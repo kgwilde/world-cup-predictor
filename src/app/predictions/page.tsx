@@ -31,6 +31,12 @@ const GROUP_FIXTURE_IDS = new Set(fixtures.filter((f) => f.stage === 'group').ma
 const GROUP_CHIP_LIMIT = 10;
 const RAINBOW = 'linear-gradient(135deg, #f72585, #f8961e, #90be6d, #4cc9f0, #7209b7)';
 
+function getRingClass(rank: number | undefined): string {
+  if (rank === 1) return 'ring-2 ring-[#FFD000] ring-offset-2 ring-offset-wc-ink';
+  if (rank === 2) return 'ring-2 ring-[#E2E8F0]/90 ring-offset-2 ring-offset-wc-ink';
+  return 'ring-2 ring-white/15 ring-offset-2 ring-offset-wc-ink';
+}
+
 function userToPlayer(profile: PublicProfile): Player {
   return {
     id: profile.uid,
@@ -110,10 +116,12 @@ function AvatarStack({ players }: { players: Player[] }) {
 
 function AvatarGroupModal({
   players,
+  rankMap,
   onSelect,
   onClose,
 }: {
   players: Player[];
+  rankMap: Map<string, number>;
   onSelect: (playerId: string) => void;
   onClose: () => void;
 }) {
@@ -146,7 +154,7 @@ function AvatarGroupModal({
                 animationDelay: `${i * 55}ms`,
               }}
             >
-              <div className="rounded-full ring-2 ring-wc-blue ring-offset-2 ring-offset-wc-ink">
+              <div className={`rounded-full ${getRingClass(rankMap.get(player.id))}`}>
                 <Avatar name={player.name} photoUrl={player.photoUrl} size={60} />
               </div>
               <span className="text-xs font-medium text-white/80 text-center max-w-[64px] leading-tight">
@@ -165,12 +173,14 @@ function GroupedPredictionRow({
   players,
   fixture,
   chipped,
+  rankMap,
   onPlayerClick,
 }: {
   predictions: Prediction[];
   players: Player[];
   fixture: Fixture;
   chipped: boolean;
+  rankMap: Map<string, number>;
   onPlayerClick: (playerId: string) => void;
 }) {
   const [showModal, setShowModal] = useState(false);
@@ -204,6 +214,7 @@ function GroupedPredictionRow({
       {showModal && (
         <AvatarGroupModal
           players={groupPlayers}
+          rankMap={rankMap}
           onSelect={onPlayerClick}
           onClose={() => setShowModal(false)}
         />
@@ -218,6 +229,7 @@ function GroupedPointsRow({
   fixture,
   pts,
   allChipped,
+  rankMap,
   onPlayerClick,
 }: {
   predictions: Prediction[];
@@ -225,6 +237,7 @@ function GroupedPointsRow({
   fixture: Fixture;
   pts: number;
   allChipped: boolean;
+  rankMap: Map<string, number>;
   onPlayerClick: (playerId: string) => void;
 }) {
   const [showModal, setShowModal] = useState(false);
@@ -285,6 +298,7 @@ function GroupedPointsRow({
     {showModal && (
       <AvatarGroupModal
         players={groupPlayers}
+        rankMap={rankMap}
         onSelect={onPlayerClick}
         onClose={() => setShowModal(false)}
       />
@@ -300,6 +314,7 @@ function MatchPredictionCard({
   allPredictions,
   allChips,
   result,
+  rankMap,
   onPlayerClick,
 }: {
   fixture: Fixture;
@@ -308,6 +323,7 @@ function MatchPredictionCard({
   allPredictions: Prediction[];
   allChips: MultiChip[];
   result?: MatchResult;
+  rankMap: Map<string, number>;
   onPlayerClick: (playerId: string) => void;
 }) {
   const hasStarted = new Date(fixture.kickoff) <= now;
@@ -414,6 +430,7 @@ function MatchPredictionCard({
                   fixture={fixture}
                   pts={pts}
                   allChipped={allChipped}
+                  rankMap={rankMap}
                   onPlayerClick={onPlayerClick}
                 />
               ) : (
@@ -467,6 +484,7 @@ function MatchPredictionCard({
                       players={players}
                       fixture={fixture}
                       chipped={group.chipped}
+                      rankMap={rankMap}
                       onPlayerClick={onPlayerClick}
                     />
                   ) : (
@@ -799,9 +817,19 @@ export default function PredictionsPage() {
   const visibleTournamentPicks = allTournamentPicks;
   const visibleBonusPredictions = allBonusPredictions;
 
+  const finalResults = useMemo(
+    () => storeResults.filter((r) => r.status !== 'live'),
+    [storeResults]
+  );
+
   const standings = useMemo(
-    () => calculateStandings(players, visiblePredictions, storeResults),
-    [players, visiblePredictions, storeResults]
+    () => calculateStandings(players, visiblePredictions, finalResults),
+    [players, visiblePredictions, finalResults]
+  );
+
+  const rankMap = useMemo(
+    () => new Map(standings.map((s) => [s.player.id, s.rank])),
+    [standings]
   );
 
   const fixturesForDay = useMemo(
@@ -954,6 +982,7 @@ export default function PredictionsPage() {
                     allPredictions={visiblePredictions}
                     allChips={allChips}
                     result={resultMap.get(fixture.id)}
+                    rankMap={rankMap}
                     onPlayerClick={setSelectedPlayerId}
                   />
                 ))}

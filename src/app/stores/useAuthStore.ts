@@ -4,7 +4,7 @@ import { onAuthStateChanged, signOut as firebaseSignOut, type User } from 'fireb
 import { create } from 'zustand';
 
 import { auth } from '@/lib/firebase';
-import { createUserProfile, getAllUsers, getResults, getUserProfile } from '@/lib/firestore';
+import { applyMultiChip, createUserProfile, getAllUsers, getResults, getUserProfile, removeMultiChip } from '@/lib/firestore';
 import { preloadedAvatarUrls, resolveAvatarSrc } from '@/lib/avatar';
 import type { MatchResult, PublicProfile, UserProfile } from '@/lib/types';
 
@@ -40,6 +40,8 @@ interface AuthState {
   init: () => () => void;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  applyChip: (uid: string, fixtureId: string) => Promise<void>;
+  removeChip: (uid: string, fixtureId: string) => Promise<void>;
 }
 
 // Module-level guards so we only ever fire one request per session
@@ -126,6 +128,46 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       profile,
       allUsers: state.allUsers.map((u) => (u.uid === profile.uid ? publicProfile : u)),
     }));
+  },
+
+  applyChip: async (uid: string, fixtureId: string) => {
+    set((state) => ({
+      allUsers: state.allUsers.map((u) =>
+        u.uid === uid
+          ? { ...u, multiChips: [...new Set([...(u.multiChips ?? []), fixtureId])] }
+          : u,
+      ),
+    }));
+    try {
+      await applyMultiChip(uid, fixtureId);
+    } catch {
+      set((state) => ({
+        allUsers: state.allUsers.map((u) =>
+          u.uid === uid
+            ? { ...u, multiChips: (u.multiChips ?? []).filter((f) => f !== fixtureId) }
+            : u,
+        ),
+      }));
+    }
+  },
+
+  removeChip: async (uid: string, fixtureId: string) => {
+    set((state) => ({
+      allUsers: state.allUsers.map((u) =>
+        u.uid === uid
+          ? { ...u, multiChips: (u.multiChips ?? []).filter((f) => f !== fixtureId) }
+          : u,
+      ),
+    }));
+    try {
+      await removeMultiChip(uid, fixtureId);
+    } catch {
+      set((state) => ({
+        allUsers: state.allUsers.map((u) =>
+          u.uid === uid ? { ...u, multiChips: [...(u.multiChips ?? []), fixtureId] } : u,
+        ),
+      }));
+    }
   },
 
 }));

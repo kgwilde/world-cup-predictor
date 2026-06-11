@@ -54,3 +54,4 @@ scripts/generate-*.mjs
 
 .claude/*
 *.md
+docs/*

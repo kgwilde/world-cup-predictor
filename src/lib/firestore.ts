@@ -1,7 +1,7 @@
-import { collection, deleteDoc, doc, getDoc, getDocsFromServer, query, setDoc, updateDoc, where } from 'firebase/firestore';
+import { arrayRemove, arrayUnion, collection, doc, getDoc, getDocsFromServer, query, setDoc, updateDoc, where } from 'firebase/firestore';
 
 import { db } from './firebase';
-import type { MatchResult, MultiChip, PublicProfile, UserProfile } from './types';
+import type { MatchResult, PublicProfile, UserProfile } from './types';
 
 export async function getUserProfile(uid: string): Promise<UserProfile | null> {
   const snap = await getDoc(doc(db, 'users', uid));
@@ -32,23 +32,17 @@ export async function getAllUsersAdmin(): Promise<UserProfile[]> {
 }
 
 export async function getResults(): Promise<MatchResult[]> {
-  const snap = await getDocsFromServer(collection(db, 'results'));
-  return snap.docs.map((d) => d.data() as MatchResult);
-}
-
-export async function getAllMultiChips(): Promise<MultiChip[]> {
-  const snap = await getDocsFromServer(collection(db, 'multiChips'));
-  return snap.docs.map((d) => d.data() as MultiChip);
+  const snap = await getDoc(doc(db, 'results', 'all'));
+  if (!snap.exists()) return [];
+  return Object.values(snap.data() as Record<string, unknown>).filter(
+    (v): v is MatchResult => typeof v === 'object' && v !== null && 'fixtureId' in v,
+  );
 }
 
 export async function applyMultiChip(uid: string, fixtureId: string): Promise<void> {
-  await setDoc(doc(db, 'multiChips', `${uid}_${fixtureId}`), {
-    playerId: uid,
-    fixtureId,
-    appliedAt: new Date().toISOString(),
-  });
+  await updateDoc(doc(db, 'users', uid), { multiChips: arrayUnion(fixtureId) });
 }
 
 export async function removeMultiChip(uid: string, fixtureId: string): Promise<void> {
-  await deleteDoc(doc(db, 'multiChips', `${uid}_${fixtureId}`));
+  await updateDoc(doc(db, 'users', uid), { multiChips: arrayRemove(fixtureId) });
 }

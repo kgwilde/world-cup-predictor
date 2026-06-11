@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { firestorePatch, verifyAdminToken } from '@/lib/admin';
+import { verifyAdminToken } from '@/lib/admin';
+import { getAdminDb } from '@/lib/firebase-admin';
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,7 +16,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await firestorePatch(`results/${fixtureId}`, { fixtureId, homeGoals, awayGoals }, idToken);
+    const db = getAdminDb();
+    await db
+      .collection('results')
+      .doc('all')
+      .set({ [fixtureId]: { fixtureId, homeGoals, awayGoals, status: 'final' } }, { merge: true });
 
     return NextResponse.json({ ok: true });
   } catch (err) {

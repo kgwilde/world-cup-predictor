@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { ChevronDown, X } from 'lucide-react';
 import Avatar from '@/components/leaderboard/Avatar';
 import ScoreChip from '@/components/predictions/ScoreChip';
@@ -33,8 +33,16 @@ function TeamChip({ code }: { code: string }) {
   );
 }
 
-const CARD_COLOR = '#253ecf'; // wc-blue
 const RAINBOW = 'linear-gradient(135deg, #f72585, #f8961e, #90be6d, #4cc9f0, #7209b7)';
+
+const RANK_CARD_CONFIG: Record<number, { ringStyle: CSSProperties; cardColor: string }> = {
+  1: { ringStyle: { background: '#FFD000' }, cardColor: '#FFD000' },
+  2: { ringStyle: { background: 'rgba(226,232,240,0.9)' }, cardColor: '#E2E8F0' },
+};
+const DEFAULT_RANK_CARD_CONFIG: { ringStyle: CSSProperties; cardColor: string } = {
+  ringStyle: { background: 'rgba(255,255,255,0.15)' },
+  cardColor: '#253ecf',
+};
 
 interface Props {
   player: Player;
@@ -107,6 +115,9 @@ export default function PlayerCardModal({
   const [activeTab, setActiveTab] = useState<'matches' | 'specials'>('matches');
   const [showFullImage, setShowFullImage] = useState(false);
 
+  const rankConfig = (standing?.rank != null && RANK_CARD_CONFIG[standing.rank]) || DEFAULT_RANK_CARD_CONFIG;
+  const { cardColor } = rankConfig;
+
   useEffect(() => {
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
@@ -175,15 +186,15 @@ export default function PlayerCardModal({
           <div
             className="relative shrink-0 overflow-hidden"
             style={{
-              background: `radial-gradient(ellipse 85% 110% at 50% 0%, ${CARD_COLOR}38 0%, transparent 55%), linear-gradient(165deg, ${CARD_COLOR}25 0%, ${CARD_COLOR}0e 50%, #020F2A 72%, #020F2A 100%)`,
-              borderBottom: `1px solid ${CARD_COLOR}38`,
+              background: `radial-gradient(ellipse 85% 110% at 50% 0%, ${cardColor}38 0%, transparent 55%), linear-gradient(165deg, ${cardColor}25 0%, ${cardColor}0e 50%, #020F2A 72%, #020F2A 100%)`,
+              borderBottom: `1px solid ${cardColor}38`,
             }}
           >
             {/* Diagonal shimmer streak */}
             <div
               className="absolute inset-0 pointer-events-none"
               style={{
-                background: `linear-gradient(115deg, transparent 25%, ${CARD_COLOR}0c 48%, transparent 68%)`,
+                background: `linear-gradient(115deg, transparent 25%, ${cardColor}0c 48%, transparent 68%)`,
               }}
             />
 
@@ -199,7 +210,8 @@ export default function PlayerCardModal({
               <button
                 type="button"
                 onClick={() => player.photoUrl && setShowFullImage(true)}
-                className={`rounded-full p-[3px] bg-wc-blue ${player.photoUrl ? 'active:scale-95 transition-transform' : ''}`}
+                className={`rounded-full p-[3px] ${player.photoUrl ? 'active:scale-95 transition-transform' : ''}`}
+                style={rankConfig.ringStyle}
               >
                 <div className="rounded-full p-[2px] bg-wc-black">
                   <Avatar name={player.name} photoUrl={player.photoUrl} size={72} />

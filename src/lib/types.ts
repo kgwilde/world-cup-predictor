@@ -83,6 +83,7 @@ export interface UserProfile {
   predictionFileName: string | null;
   predictionUploadedAt: string | null;
   approved: boolean;
+  multiChips?: string[];
 }
 
 // Safe subset returned by getAllUsers() — email is never sent to the client for other users
@@ -93,7 +94,6 @@ export type PublicProfile = Omit<UserProfile, 'email'>;
 export interface MultiChip {
   playerId: string;
   fixtureId: string;
-  appliedAt: string; // ISO string
 }
 
 // ─── Specials Predictions ────────────────────────────────────────────────────

@@ -43,7 +43,7 @@ export default function Leaderboard() {
   const storeResults = useAuthStore((s) => s.results);
   const resultsLoading = useAuthStore((s) => s.resultsLoading);
 
-  const activeResults: MatchResult[] = storeResults;
+  const activeResults: MatchResult[] = storeResults.filter((r) => r.status !== 'live');
 
   const playedFixtures = useMemo(() => {
     const withResults = new Set(activeResults.map((r) => r.fixtureId));
