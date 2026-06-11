@@ -2,8 +2,6 @@
 
 import { useEffect, useMemo, useState } from 'react';
 
-import Link from 'next/link';
-
 import { useAuthStore } from '@/app/stores/useAuthStore';
 import { useStandings } from '@/components/hooks/use_standings';
 import { useMultiChips } from '@/components/hooks/use_multi_chips';
@@ -36,8 +34,6 @@ function userToPlayer(profile: PublicProfile): Player {
 
 export default function Leaderboard() {
   const viewerId = useAuthStore((s) => s.user?.uid ?? null);
-  const authLoading = useAuthStore((s) => s.loading);
-  const isGuest = !authLoading && !viewerId;
   const firestoreUsers = useAuthStore((s) => s.allUsers);
   const usersLoading = useAuthStore((s) => s.usersLoading);
   const storeResults = useAuthStore((s) => s.results);
@@ -129,8 +125,6 @@ export default function Leaderboard() {
             onNext={() => setReplayIndex((i) => Math.min(playedFixtures.length - 1, i + 1))}
           />
 
-          {!isLoading && isGuest && <SignUpPrompt />}
-
           {!isLoading && currentStandings.length === 0 && <EmptyState />}
 
           <div className="space-y-2">
@@ -213,25 +207,6 @@ function buildMatchDelta(
     rankChange: getRankChange(standings, previousStandings, playerId),
     multiChipApplied: getMultiChipApplied(standings, playerId, currentFixtureId),
   };
-}
-
-function SignUpPrompt() {
-  return (
-    <Link
-      href="/profile"
-      className="flex items-center justify-between px-4 py-3 rounded-xl bg-wc-gold/10 border border-wc-gold/30 hover:bg-wc-gold/20 transition-colors group"
-    >
-      <div>
-        <p className="font-display font-bold text-wc-gold text-sm tracking-wide">
-          Want to join the competition?
-        </p>
-        <p className="text-wc-white/50 text-xs font-body mt-0.5">
-          Sign up on your Profile to get on the leaderboard.
-        </p>
-      </div>
-      <span className="text-wc-gold/60 group-hover:text-wc-gold text-lg transition-colors">→</span>
-    </Link>
-  );
 }
 
 function EmptyState() {

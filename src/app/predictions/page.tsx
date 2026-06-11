@@ -367,7 +367,7 @@ function MatchPredictionCard({
     for (const pred of sortedPredictions) {
       const hasChipP = chipSet.has(pred.playerId);
       const pts = scoreMatch({ ...pred, multiChip: hasChipP }, result).points;
-      const key = `${pred.homeGoals}-${pred.awayGoals}-${pts}`;
+      const key = `${pred.homeGoals}-${pred.awayGoals}-${hasChipP}`;
       const existing = groupMap.get(key);
       if (existing) {
         existing.predictions.push(pred);
@@ -387,7 +387,7 @@ function MatchPredictionCard({
       { h: number; a: number; chipped: boolean; predictions: Prediction[] }
     >();
     for (const pred of sortedPredictions) {
-      const chipped = chipSet.has(pred.playerId) && hasStarted;
+      const chipped = chipSet.has(pred.playerId);
       const key = `${pred.homeGoals}-${pred.awayGoals}-${chipped}`;
       const existing = groupMap.get(key);
       if (existing) existing.predictions.push(pred);
@@ -403,7 +403,7 @@ function MatchPredictionCard({
       })
       .sort((a, b) => a.outcomeOrder - b.outcomeOrder || (a.chipped ? 1 : -1));
     return groups.some((g) => g.predictions.length > 1) ? groups : null;
-  }, [sortedPredictions, result, chipSet, hasStarted]);
+  }, [sortedPredictions, chipSet]);
 
   const predictingIds = useMemo(
     () => new Set(fixturePredictions.map((p) => p.playerId)),
@@ -491,14 +491,13 @@ function MatchPredictionCard({
                   ) : (
                     group.predictions.map((prediction) => {
                       const hasChip = chipSet.has(prediction.playerId);
-                      const showChip = hasChip && hasStarted;
                       return (
                         <PredictionRow
                           key={prediction.playerId}
                           prediction={prediction}
                           player={players.find((p) => p.id === prediction.playerId)}
                           fixture={fixture}
-                          multiChipApplied={showChip}
+                          multiChipApplied={hasChip}
                           onPlayerClick={onPlayerClick}
                         />
                       );
@@ -529,7 +528,7 @@ function MatchPredictionCard({
                   player={players.find((p) => p.id === prediction.playerId)}
                   fixture={fixture}
                   points={pts}
-                  multiChipApplied={hasStarted && hasChip}
+                  multiChipApplied={hasChip}
                   onPlayerClick={onPlayerClick}
                 />
               );

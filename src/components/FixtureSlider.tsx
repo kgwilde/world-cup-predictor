@@ -120,6 +120,15 @@ function getStageLabel(fixture: Fixture) {
 function LiveIndicator() {
   return (
     <div className="flex flex-col items-end text-right">
+      <style>{`
+        @keyframes live-ping {
+          0% { transform: scale(1); opacity: 0.75; }
+          75%, 100% { transform: scale(2.25); opacity: 0; }
+        }
+        .animate-live-ping {
+          animation: live-ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+        }
+      `}</style>
       <div className="flex items-center gap-1.5">
         <span className="relative flex h-2 w-2">
           <span className="absolute inline-flex h-full w-full animate-live-ping rounded-full bg-red-500 opacity-75" />
@@ -196,8 +205,8 @@ export function FixtureCard({ fixture, now, isFullWidth, result }: FixtureCardPr
           className="absolute inset-x-0 top-0 h-1"
           style={{ background: accentBar }}
         />
-        <div className="relative flex h-full flex-col justify-between px-4 py-2.5">
-          <header className="flex items-start justify-between gap-2">
+        <div className="relative flex h-full flex-col px-4 py-2.5">
+          <header className="flex h-9 items-start justify-between gap-2">
             <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/75">
               {stageLabel}
             </span>
@@ -205,22 +214,23 @@ export function FixtureCard({ fixture, now, isFullWidth, result }: FixtureCardPr
               <LiveIndicator />
             ) : (
               <div className="flex flex-col items-end text-right">
-                <span className="text-[10px] font-medium uppercase tracking-wider text-white/60">
-                  {dayLabel}
-                </span>
-                <span className="text-[13px] font-semibold text-white tabular-nums">
-                  {timeLabel}
-                </span>
                 {countdownLabel ? (
                   <span className="text-[10px] font-medium text-white/55 tabular-nums">
                     {countdownLabel}
                   </span>
+                ) : !isToday ? (
+                  <span className="text-[10px] font-medium uppercase tracking-wider text-white/60">
+                    {dayLabel}
+                  </span>
                 ) : null}
+                <span className="text-[13px] font-semibold text-white tabular-nums">
+                  {timeLabel}
+                </span>
               </div>
             )}
           </header>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-1 items-center gap-2">
             <div className="flex-1 min-w-0">
               <TeamHalf team={fixture.homeTeam} side="home" />
             </div>
@@ -307,15 +317,6 @@ export function FixtureSlider() {
 
   return (
     <>
-      <style>{`
-        @keyframes live-ping {
-          0% { transform: scale(1); opacity: 0.75; }
-          75%, 100% { transform: scale(2.25); opacity: 0; }
-        }
-        .animate-live-ping {
-          animation: live-ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
-        }
-      `}</style>
       <div className="relative mt-2">
         <div
           ref={scrollRef}
