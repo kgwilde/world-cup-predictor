@@ -33,8 +33,8 @@ function TeamChip({ code }: { code: string }) {
   );
 }
 
-const CARD_COLOR = '#efbf04'; // wc-gold
-const PODIUM_COLORS: Record<number, string> = { 1: '#efbf04', 2: '#C0C0C0', 3: '#CD7F32' };
+const CARD_COLOR = '#253ecf'; // wc-blue
+const RAINBOW = 'linear-gradient(135deg, #f72585, #f8961e, #90be6d, #4cc9f0, #7209b7)';
 
 interface Props {
   player: Player;
@@ -159,8 +159,6 @@ export default function PlayerCardModal({
       }));
   }, [playerPredictions, fixtureMap]);
 
-  const rankColor = standing ? (PODIUM_COLORS[standing.rank] ?? '#ffffff') : '#ffffff';
-
   return (
     <>
       <div
@@ -201,7 +199,7 @@ export default function PlayerCardModal({
               <button
                 type="button"
                 onClick={() => player.photoUrl && setShowFullImage(true)}
-                className={`rounded-full p-[3px] bg-wc-gold ${player.photoUrl ? 'active:scale-95 transition-transform' : ''}`}
+                className={`rounded-full p-[3px] bg-wc-blue ${player.photoUrl ? 'active:scale-95 transition-transform' : ''}`}
               >
                 <div className="rounded-full p-[2px] bg-wc-black">
                   <Avatar name={player.name} photoUrl={player.photoUrl} size={72} />
@@ -216,7 +214,7 @@ export default function PlayerCardModal({
 
           {/* Stats strip */}
           <div className="shrink-0 grid grid-cols-3 items-center px-6 py-3 border-b border-white/10 bg-wc-black">
-            <StatCell label="Rank" value={standing ? `#${standing.rank}` : '—'} color={rankColor} />
+            <StatCell label="Rank" value={standing ? `#${standing.rank}` : '—'} color={'#ffffff'} />
             <StatCell label="Points" value={standing ? String(standing.totalPoints) : '—'} />
             <div className="flex flex-col items-center gap-1">
               <ChipPips used={chipsUsed} />
@@ -235,7 +233,7 @@ export default function PlayerCardModal({
                 onClick={() => setActiveTab(tab)}
                 className={`flex-1 text-center pb-3 pt-2.5 text-sm font-semibold capitalize transition-colors border-b-2 -mb-px ${
                   activeTab === tab
-                    ? 'text-white border-wc-gold'
+                    ? 'text-white border-wc-blue'
                     : 'text-white/40 border-transparent hover:text-white/70'
                 }`}
               >
@@ -315,9 +313,10 @@ export default function PlayerCardModal({
                                 resultType={resultType}
                                 homeAccentColor={fixture.homeTeam.accentColor}
                                 awayAccentColor={fixture.awayTeam.accentColor}
-                                multiChip={showChip}
                               />
-                              {pts !== undefined && <ModalPointsBadge points={pts} />}
+                              {pts !== undefined && (
+                                <ModalPointsBadge points={pts} multiChip={showChip} />
+                              )}
                             </div>
                           </div>
                         );
@@ -475,10 +474,37 @@ function PlayerSpecialsTab({
   );
 }
 
-function ModalPointsBadge({ points }: { points: number }) {
+function ModalPointsBadge({ points, multiChip }: { points: number; multiChip?: boolean }) {
+  const textClass =
+    points >= 5
+      ? 'text-wc-white'
+      : points >= 3
+        ? 'text-green-300'
+        : points > 0
+          ? 'text-white/35'
+          : 'text-white/20';
+
+  if (multiChip && points > 0) {
+    return (
+      <span
+        className="relative inline-flex shrink-0 rounded-md"
+        style={{ padding: 1.5, background: RAINBOW }}
+      >
+        <span
+          className={`min-w-[2.5rem] text-center text-xs font-bold tabular-nums rounded-[4px] px-1.5 py-0.5 bg-wc-ink ${textClass}`}
+        >
+          {points}pt
+        </span>
+        <span className="absolute -top-1.5 -right-1.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-wc-gold text-[7px] font-bold leading-none text-wc-black">
+          ×2
+        </span>
+      </span>
+    );
+  }
+
   if (points >= 5) {
     return (
-      <span className="min-w-[2.5rem] text-center text-xs font-bold text-wc-black bg-wc-gold rounded px-1.5 py-0.5 shrink-0 tabular-nums">
+      <span className="min-w-[2.5rem] text-center text-xs font-bold text-green-300 bg-green-500/20 rounded px-1.5 py-0.5 shrink-0 tabular-nums">
         {points}pt
       </span>
     );

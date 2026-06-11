@@ -42,6 +42,26 @@ const DEFAULT_RANK_CONFIG = {
   shadowClass: '',
 };
 
+function RankChangeChip({ rankChange }: { rankChange: number }) {
+  if (rankChange > 0) {
+    return (
+      <span className="inline-flex items-center gap-0.5 text-[11px] font-bold tabular-nums text-emerald-400">
+        <span>▲</span>
+        <span>{rankChange}</span>
+      </span>
+    );
+  }
+  if (rankChange < 0) {
+    return (
+      <span className="inline-flex items-center gap-0.5 text-[11px] font-bold tabular-nums text-red-400">
+        <span>▼</span>
+        <span>{Math.abs(rankChange)}</span>
+      </span>
+    );
+  }
+  return <span className="text-[11px] font-bold text-slate-600">–</span>;
+}
+
 function RoundChangeChip({
   points,
   multiChipApplied,
@@ -142,7 +162,8 @@ export default function LeaderboardRow({ standing, isViewer, matchDelta, winnerP
 
       {/* Stat cluster */}
       <div className="shrink-0 flex flex-col items-end gap-1">
-        <div className="h-5 flex items-center justify-end">
+        <div className="h-5 flex items-center justify-end gap-1.5">
+          {matchDelta && <RankChangeChip rankChange={matchDelta.rankChange} />}
           {matchDelta && (
             <RoundChangeChip
               points={matchDelta.points}

@@ -68,7 +68,14 @@ export default function Leaderboard() {
     .filter((u) => u.approved === true)
     .filter((u) => !deadlinePassed || !!u.predictionFileUrl)
     .map(userToPlayer);
-  const predictions: Prediction[] = allPredictions;
+  const predictions = useMemo<Prediction[]>(
+    () =>
+      allPredictions.map((p) => ({
+        ...p,
+        multiChip: allChips.some((c) => c.playerId === p.playerId && c.fixtureId === p.fixtureId),
+      })),
+    [allChips]
+  );
 
   const { currentStandings, previousStandings, currentFixture } = useStandings(
     players,

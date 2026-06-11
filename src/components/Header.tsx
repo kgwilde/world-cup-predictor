@@ -11,7 +11,7 @@ import { useMyStanding } from '@/components/hooks/use_my_standing';
 
 export function Header() {
   return (
-    <header className="bg-wc-blue border-b border-wc-white/10 sticky top-0 z-10">
+    <header className="bg-wc-blue-dark border-b border-wc-white/10 sticky top-0 z-10">
       <div className="max-w-3xl mx-auto px-3 sm:px-4 py-3 sm:py-4 flex items-center justify-between gap-3">
         <Link
           href="/"

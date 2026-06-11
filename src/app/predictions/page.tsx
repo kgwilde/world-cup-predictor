@@ -29,6 +29,7 @@ import PlayerCardModal from '@/components/PlayerCardModal';
 
 const GROUP_FIXTURE_IDS = new Set(fixtures.filter((f) => f.stage === 'group').map((f) => f.id));
 const GROUP_CHIP_LIMIT = 10;
+const RAINBOW = 'linear-gradient(135deg, #f72585, #f8961e, #90be6d, #4cc9f0, #7209b7)';
 
 function userToPlayer(profile: PublicProfile): Player {
   return {
@@ -90,37 +91,71 @@ function PlaceholderRow({ player }: { player: Player }) {
 
 const AVATAR_SIZE = 26;
 const AVATAR_OFFSET = 16;
-const AVATAR_MAX_VISIBLE = 4;
 
 function AvatarStack({ players }: { players: Player[] }) {
-  const visible = players.slice(0, AVATAR_MAX_VISIBLE);
-  const overflow = players.length - AVATAR_MAX_VISIBLE;
-  const slots = visible.length + (overflow > 0 ? 1 : 0);
-  const containerWidth = AVATAR_SIZE + (slots - 1) * AVATAR_OFFSET;
+  const containerWidth = AVATAR_SIZE + (players.length - 1) * AVATAR_OFFSET;
 
   return (
     <div className="relative shrink-0" style={{ width: containerWidth, height: AVATAR_SIZE }}>
-      {visible.map((player, i) => (
+      {players.map((player, i) => (
         <div key={player.id} className="absolute" style={{ left: i * AVATAR_OFFSET, zIndex: i }}>
           <div className="rounded-full ring-2 ring-wc-ink">
             <Avatar name={player.name} photoUrl={player.photoUrl} size={AVATAR_SIZE} />
           </div>
         </div>
       ))}
-      {overflow > 0 && (
-        <div
-          className="absolute flex items-center justify-center rounded-full bg-white/15 ring-2 ring-wc-ink text-white font-bold"
-          style={{
-            left: visible.length * AVATAR_OFFSET,
-            width: AVATAR_SIZE,
-            height: AVATAR_SIZE,
-            fontSize: AVATAR_SIZE * 0.32,
-            zIndex: visible.length,
-          }}
-        >
-          +{overflow}
+    </div>
+  );
+}
+
+function AvatarGroupModal({
+  players,
+  onSelect,
+  onClose,
+}: {
+  players: Player[];
+  onSelect: (playerId: string) => void;
+  onClose: () => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-40 flex items-center justify-center"
+      style={{ animation: 'modal-fade-in 0.2s ease both' }}
+      onClick={onClose}
+    >
+      <div className="absolute inset-0 bg-black/65 backdrop-blur-sm" />
+      <div
+        className="relative flex flex-col items-center gap-5 rounded-2xl bg-wc-ink border border-white/10 px-8 py-7 shadow-2xl mx-6"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <p className="text-[11px] font-semibold uppercase tracking-widest text-white/35">
+          Select a player
+        </p>
+        <div className="flex flex-wrap justify-center gap-5">
+          {players.map((player, i) => (
+            <button
+              key={player.id}
+              type="button"
+              onClick={() => {
+                onSelect(player.id);
+                onClose();
+              }}
+              className="flex flex-col items-center gap-2 active:scale-95 transition-transform"
+              style={{
+                animation: 'avatar-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both',
+                animationDelay: `${i * 55}ms`,
+              }}
+            >
+              <div className="rounded-full ring-2 ring-wc-blue ring-offset-2 ring-offset-wc-ink">
+                <Avatar name={player.name} photoUrl={player.photoUrl} size={60} />
+              </div>
+              <span className="text-xs font-medium text-white/80 text-center max-w-[64px] leading-tight">
+                {player.name}
+              </span>
+            </button>
+          ))}
         </div>
-      )}
+      </div>
     </div>
   );
 }
@@ -138,6 +173,7 @@ function GroupedPredictionRow({
   chipped: boolean;
   onPlayerClick: (playerId: string) => void;
 }) {
+  const [showModal, setShowModal] = useState(false);
   const groupPlayers = predictions
     .map((p) => players.find((pl) => pl.id === p.playerId))
     .filter((p): p is Player => !!p);
@@ -146,24 +182,114 @@ function GroupedPredictionRow({
   const names = groupPlayers.map((p) => p.name).join(' · ');
 
   return (
+    <>
+      <div className="flex items-center justify-between gap-3 border-b border-white/10 py-3 last:border-0">
+        <button
+          type="button"
+          onClick={() => setShowModal(true)}
+          className="flex min-w-0 flex-1 flex-col gap-1.5 text-left active:opacity-70 transition-opacity"
+        >
+          <AvatarStack players={groupPlayers} />
+          <span className="text-xs text-white/50 truncate leading-none">{names}</span>
+        </button>
+        <ScoreChip
+          homeGoals={first.homeGoals}
+          awayGoals={first.awayGoals}
+          resultType={resultType}
+          homeAccentColor={fixture.homeTeam.accentColor}
+          awayAccentColor={fixture.awayTeam.accentColor}
+          multiChip={chipped}
+        />
+      </div>
+      {showModal && (
+        <AvatarGroupModal
+          players={groupPlayers}
+          onSelect={onPlayerClick}
+          onClose={() => setShowModal(false)}
+        />
+      )}
+    </>
+  );
+}
+
+function GroupedPointsRow({
+  predictions,
+  players,
+  fixture,
+  pts,
+  allChipped,
+  onPlayerClick,
+}: {
+  predictions: Prediction[];
+  players: Player[];
+  fixture: Fixture;
+  pts: number;
+  allChipped: boolean;
+  onPlayerClick: (playerId: string) => void;
+}) {
+  const [showModal, setShowModal] = useState(false);
+  const groupPlayers = predictions
+    .map((p) => players.find((pl) => pl.id === p.playerId))
+    .filter((p): p is Player => !!p);
+  const names = groupPlayers.map((p) => p.name).join(' · ');
+  const first = predictions[0];
+  const resultType = getResultType(first.homeGoals, first.awayGoals);
+  const label = pts === 1 ? '1 pt' : `${pts} pts`;
+
+  return (
+    <>
     <div className="flex items-center justify-between gap-3 border-b border-white/10 py-3 last:border-0">
       <button
         type="button"
-        onClick={() => onPlayerClick(predictions[0].playerId)}
+        onClick={() => setShowModal(true)}
         className="flex min-w-0 flex-1 flex-col gap-1.5 text-left active:opacity-70 transition-opacity"
       >
         <AvatarStack players={groupPlayers} />
         <span className="text-xs text-white/50 truncate leading-none">{names}</span>
       </button>
-      <ScoreChip
-        homeGoals={first.homeGoals}
-        awayGoals={first.awayGoals}
-        resultType={resultType}
-        homeAccentColor={fixture.homeTeam.accentColor}
-        awayAccentColor={fixture.awayTeam.accentColor}
-        multiChip={chipped}
-      />
+      <div className="flex items-center gap-2 shrink-0">
+        <ScoreChip
+          homeGoals={first.homeGoals}
+          awayGoals={first.awayGoals}
+          resultType={resultType}
+          homeAccentColor={fixture.homeTeam.accentColor}
+          awayAccentColor={fixture.awayTeam.accentColor}
+        />
+        {allChipped && pts > 0 ? (
+          <span
+            className="relative inline-flex shrink-0 rounded-md"
+            style={{ padding: 1.5, background: RAINBOW }}
+          >
+            <span className="min-w-[2.25rem] text-center text-xs font-bold text-wc-white bg-wc-ink rounded-[5px] px-1.5 py-0.5">
+              {label}
+            </span>
+            <span className="absolute -top-1.5 -right-1.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-wc-gold text-[7px] font-bold leading-none text-wc-black">
+              ×2
+            </span>
+          </span>
+        ) : pts >= 3 ? (
+          <span className="min-w-[2.75rem] text-center text-xs font-bold text-green-300 bg-green-500/20 rounded px-1.5 py-0.5 shrink-0">
+            {label}
+          </span>
+        ) : pts > 0 ? (
+          <span className="min-w-[2.75rem] text-center text-xs font-medium text-white/35 bg-white/5 rounded px-1.5 py-0.5 shrink-0">
+            {label}
+          </span>
+        ) : (
+          <span className="min-w-[2.75rem] text-center text-xs font-medium text-white/20 shrink-0">
+            0 pts
+          </span>
+        )}
+      </div>
     </div>
+    {showModal && (
+      <AvatarGroupModal
+        players={groupPlayers}
+        onSelect={onPlayerClick}
+        onClose={() => setShowModal(false)}
+      />
+    )}
+    </>
   );
 }
 
@@ -217,6 +343,26 @@ function MatchPredictionCard({
     });
   }, [fixturePredictions, result, players, chipSet]);
 
+  const pointGroups = useMemo(() => {
+    if (!result) return null;
+    type Group = { key: string; pts: number; allChipped: boolean; predictions: Prediction[] };
+    const groupMap = new Map<string, Group>();
+    for (const pred of sortedPredictions) {
+      const hasChipP = chipSet.has(pred.playerId);
+      const pts = scoreMatch({ ...pred, multiChip: hasChipP }, result).points;
+      const key = `${pred.homeGoals}-${pred.awayGoals}-${pts}`;
+      const existing = groupMap.get(key);
+      if (existing) {
+        existing.predictions.push(pred);
+        existing.allChipped = existing.allChipped && hasChipP;
+      } else {
+        groupMap.set(key, { key, pts, allChipped: hasChipP, predictions: [pred] });
+      }
+    }
+    const groups = [...groupMap.values()].sort((a, b) => b.pts - a.pts);
+    return groups.some((g) => g.predictions.length > 1) ? groups : null;
+  }, [result, sortedPredictions, chipSet]);
+
   const predictionGroups = useMemo(() => {
     if (result) return null;
     const groupMap = new Map<
@@ -257,7 +403,49 @@ function MatchPredictionCard({
         <FixtureCard fixture={fixture} now={now} isFullWidth result={result} />
       </div>
       <div className="border-t border-white/10">
-        {predictionGroups ? (
+        {pointGroups ? (
+          <div className="px-4">
+            {pointGroups.map(({ key, pts, allChipped, predictions: groupPreds }) =>
+              groupPreds.length >= 2 ? (
+                <GroupedPointsRow
+                  key={key}
+                  predictions={groupPreds}
+                  players={players}
+                  fixture={fixture}
+                  pts={pts}
+                  allChipped={allChipped}
+                  onPlayerClick={onPlayerClick}
+                />
+              ) : (
+                <Fragment key={`${key}-solo`}>
+                  {groupPreds.map((prediction) => {
+                    const hasChip = chipSet.has(prediction.playerId);
+                    return (
+                      <PredictionRow
+                        key={prediction.playerId}
+                        prediction={prediction}
+                        player={players.find((p) => p.id === prediction.playerId)}
+                        fixture={fixture}
+                        points={pts}
+                        multiChipApplied={hasChip}
+                        onPlayerClick={onPlayerClick}
+                      />
+                    );
+                  })}
+                </Fragment>
+              )
+            )}
+            {unpredictedPlayers.length > 0 && (
+              <div
+                className={sortedPredictions.length > 0 ? 'border-t border-white/20 mt-1 pt-1' : ''}
+              >
+                {unpredictedPlayers.map((player) => (
+                  <PlaceholderRow key={player.id} player={player} />
+                ))}
+              </div>
+            )}
+          </div>
+        ) : predictionGroups ? (
           <div className="px-3 pt-2 pb-3 flex flex-col gap-1.5">
             {predictionGroups.map((group) => {
               const accentColor =
@@ -312,9 +500,8 @@ function MatchPredictionCard({
           <div className="px-4">
             {sortedPredictions.map((prediction) => {
               const hasChip = chipSet.has(prediction.playerId);
-              const showChip = hasChip && hasStarted;
               const pts = result
-                ? scoreMatch({ ...prediction, multiChip: showChip }, result).points
+                ? scoreMatch({ ...prediction, multiChip: hasChip }, result).points
                 : undefined;
               return (
                 <PredictionRow
@@ -323,7 +510,7 @@ function MatchPredictionCard({
                   player={players.find((p) => p.id === prediction.playerId)}
                   fixture={fixture}
                   points={pts}
-                  multiChipApplied={showChip}
+                  multiChipApplied={!!result && hasChip}
                   onPlayerClick={onPlayerClick}
                 />
               );
@@ -397,7 +584,7 @@ function ChipFixtureRow({
     : 'draw';
   const pts =
     result && prediction
-      ? scoreMatch({ ...prediction, multiChip: showChipBadge }, result).points
+      ? scoreMatch({ ...prediction, multiChip: hasChip }, result).points
       : undefined;
 
   return (
@@ -435,7 +622,7 @@ function ChipFixtureRow({
       {/* Points (if result exists) */}
       {pts !== undefined && (
         <span
-          className={`text-xs font-semibold tabular-nums shrink-0 ${pts >= 5 ? 'text-wc-gold' : pts >= 3 ? 'text-green-300' : 'text-white/30'}`}
+          className={`text-xs font-semibold tabular-nums shrink-0 ${pts >= 5 ? 'text-green-300' : pts >= 3 ? 'text-green-300' : 'text-white/30'}`}
         >
           {pts}pt
         </span>
@@ -601,7 +788,14 @@ export default function PredictionsPage() {
     [firestoreUsers, deadlinePassed]
   );
 
-  const visiblePredictions = allPredictions;
+  const visiblePredictions = useMemo<Prediction[]>(
+    () =>
+      allPredictions.map((p) => ({
+        ...p,
+        multiChip: allChips.some((c) => c.playerId === p.playerId && c.fixtureId === p.fixtureId),
+      })),
+    [allChips]
+  );
   const visibleTournamentPicks = allTournamentPicks;
   const visibleBonusPredictions = allBonusPredictions;
 
@@ -665,7 +859,7 @@ export default function PredictionsPage() {
               onClick={() => setActiveTab('matches')}
               className={`flex-1 text-center pb-3 pt-1 text-sm font-semibold transition-colors border-b-2 -mb-px ${
                 activeTab === 'matches'
-                  ? 'text-white border-wc-gold'
+                  ? 'text-white border-wc-blue'
                   : 'text-white/40 border-transparent hover:text-white/70'
               }`}
             >
@@ -676,7 +870,7 @@ export default function PredictionsPage() {
               onClick={() => setActiveTab('specials')}
               className={`flex-1 text-center pb-3 pt-1 text-sm font-semibold transition-colors border-b-2 -mb-px ${
                 activeTab === 'specials'
-                  ? 'text-white border-wc-gold'
+                  ? 'text-white border-wc-blue'
                   : 'text-white/40 border-transparent hover:text-white/70'
               }`}
             >
@@ -688,7 +882,7 @@ export default function PredictionsPage() {
                 onClick={() => setActiveTab('my-chips')}
                 className={`flex-1 text-center pb-3 pt-1 text-sm font-semibold transition-colors border-b-2 -mb-px ${
                   activeTab === 'my-chips'
-                    ? 'text-white border-wc-gold'
+                    ? 'text-white border-wc-blue'
                     : 'text-white/40 border-transparent hover:text-white/70'
                 }`}
               >
@@ -734,12 +928,12 @@ export default function PredictionsPage() {
                         onClick={() => setSelectedDate(dateKey)}
                         className={`flex flex-col items-center w-13 rounded-xl py-3 transition-colors ${
                           isActive
-                            ? 'bg-wc-gold text-wc-black'
+                            ? 'bg-wc-blue text-wc-white'
                             : 'text-white/45 hover:text-white/80 hover:bg-white/5'
                         }`}
                       >
                         <span
-                          className={`text-[10px] font-bold tracking-wider leading-none ${isActive ? 'text-wc-black/60' : 'text-white/30'}`}
+                          className={`text-[10px] font-bold tracking-wider leading-none ${isActive ? 'text-wc-white/60' : 'text-white/30'}`}
                         >
                           {weekday}
                         </span>

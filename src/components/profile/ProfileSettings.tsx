@@ -10,7 +10,7 @@ import { resolveAvatarSrc } from '@/lib/avatar';
 import { getNow, PREDICTIONS_DEADLINE } from '@/lib/deadline';
 import { updateUserProfile } from '@/lib/firestore';
 
-const CARD_COLOR = '#efbf04'; // wc-gold
+const CARD_COLOR = '#253ecf'; // wc-blue
 
 export function ProfileSettings() {
   const { user, profile, signOut, refreshProfile } = useAuthStore();
@@ -199,7 +199,7 @@ export function ProfileSettings() {
         <div className="absolute top-4 right-4 z-10">
           <span
             className={`inline-block text-xs px-2.5 py-1 rounded-full font-medium ${
-              isApproved ? 'bg-wc-gold/20 text-wc-gold' : 'bg-wc-white/10 text-wc-white/40'
+              isApproved ? 'bg-wc-blue/20 text-wc-blue' : 'bg-wc-white/10 text-wc-white/40'
             }`}
           >
             {isApproved ? 'Approved' : 'Pending approval'}
@@ -209,7 +209,7 @@ export function ProfileSettings() {
         <div className="flex flex-col items-center pt-8 pb-6 px-5">
           {/* Avatar */}
           <div className="relative mb-4">
-            <div className="rounded-full p-[3px] bg-wc-gold">
+            <div className="rounded-full p-[3px] bg-wc-blue">
               <div className="rounded-full p-[2px] bg-[#0a0a0a]">
                 <div
                   className="relative rounded-full"
@@ -259,12 +259,12 @@ export function ProfileSettings() {
                   placeholder="e.g. Galácticos FC"
                   maxLength={25}
                   disabled={teamNameSaving}
-                  className="flex-1 bg-wc-black/50 text-wc-white text-sm text-center rounded-lg px-3 py-2 outline-none border border-wc-white/20 focus:border-wc-gold/50 placeholder:text-wc-white/20 disabled:opacity-50 transition-colors"
+                  className="flex-1 bg-wc-black/50 text-wc-white text-sm text-center rounded-lg px-3 py-2 outline-none border border-wc-white/20 focus:border-wc-blue/50 placeholder:text-wc-white/20 disabled:opacity-50 transition-colors"
                 />
                 <button
                   onClick={handleTeamNameSave}
                   disabled={teamNameSaving || !teamNameValue.trim()}
-                  className="text-xs font-semibold bg-wc-gold text-wc-black rounded-lg px-3 py-2 hover:opacity-90 transition-opacity disabled:opacity-50 shrink-0"
+                  className="text-xs font-semibold bg-wc-blue text-wc-white rounded-lg px-3 py-2 hover:opacity-90 transition-opacity disabled:opacity-50 shrink-0"
                 >
                   {teamNameSaving ? '…' : 'Save'}
                 </button>
@@ -348,7 +348,7 @@ export function ProfileSettings() {
 
           {hasPredictions && (
             <div className="flex items-center gap-3 bg-wc-black/30 border border-wc-white/10 rounded-lg px-3 py-2.5">
-              <FileSpreadsheet size={16} className="text-wc-gold shrink-0" />
+              <FileSpreadsheet size={16} className="text-wc-blue shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="text-wc-white text-xs font-medium truncate">
                   {profile.predictionFileName ?? 'predictions file'}
@@ -380,7 +380,7 @@ export function ProfileSettings() {
           <button
             onClick={() => predictionsInputRef.current?.click()}
             disabled={predictionsLoading || hasPredictions || deadlinePassed}
-            className="flex items-center justify-center gap-2 text-sm font-semibold bg-wc-gold text-wc-black rounded-lg px-4 py-2.5 hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex items-center justify-center gap-2 text-sm font-semibold bg-wc-blue text-wc-white rounded-lg px-4 py-2.5 hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Upload size={14} />
             {predictionsLoading ? 'Uploading…' : deadlinePassed && !hasPredictions ? 'Deadline closed' : 'Upload predictions'}
@@ -459,16 +459,16 @@ function PredictionsTracker({ hasPredictions }: { hasPredictions: boolean }) {
               className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold transition-colors"
               style={{
                 background: step.done
-                  ? 'rgba(239,191,4,0.2)'
+                  ? 'rgba(64,96,240,0.2)'
                   : step.failed
                     ? 'rgba(248,113,113,0.1)'
                     : 'rgba(255,255,255,0.06)',
                 border: step.done
-                  ? '1.5px solid rgba(239,191,4,0.6)'
+                  ? '1.5px solid rgba(64,96,240,0.6)'
                   : step.failed
                     ? '1.5px solid rgba(248,113,113,0.3)'
                     : '1.5px solid rgba(255,255,255,0.12)',
-                color: step.done ? '#efbf04' : step.failed ? '#f87171' : 'rgba(255,255,255,0.2)',
+                color: step.done ? '#4060f0' : step.failed ? '#f87171' : 'rgba(255,255,255,0.2)',
               }}
             >
               {step.done ? '✓' : step.failed ? '✕' : i + 1}
@@ -478,7 +478,7 @@ function PredictionsTracker({ hasPredictions }: { hasPredictions: boolean }) {
                 className="w-px flex-1 my-1"
                 style={{
                   minHeight: 16,
-                  background: step.done ? 'rgba(239,191,4,0.25)' : 'rgba(255,255,255,0.07)',
+                  background: step.done ? 'rgba(64,96,240,0.25)' : 'rgba(255,255,255,0.07)',
                 }}
               />
             )}
@@ -546,7 +546,7 @@ function StatTile({
     <div className="bg-wc-ink rounded-xl px-3 py-3.5 flex flex-col items-center gap-1">
       <p
         className="font-display font-bold text-lg leading-none tabular-nums"
-        style={{ color: highlight ? '#efbf04' : error ? '#f87171' : '#ffffff' }}
+        style={{ color: highlight ? '#4060f0' : error ? '#f87171' : '#ffffff' }}
       >
         {value}
       </p>

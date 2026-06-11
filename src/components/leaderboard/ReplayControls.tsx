@@ -77,7 +77,7 @@ export default function ReplayControls({ fixtures, currentIndex, onPrev, onNext 
 
       <div className="h-0.5 bg-wc-white/5">
         <div
-          className="h-full bg-wc-gold/60 transition-all duration-500"
+          className="h-full bg-wc-blue/60 transition-all duration-500"
           style={{ width: `${progressPct}%` }}
         />
       </div>

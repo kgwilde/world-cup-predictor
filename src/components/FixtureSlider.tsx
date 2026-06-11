@@ -5,8 +5,7 @@ import { getFlagByCode } from '@/lib/flags';
 import type { Fixture, FixtureStage, MatchResult, Team } from '@/lib/types';
 
 import { fixtures } from '@/data/fixtures';
-
-const TEST_NOW_OVERRIDE: string | null = null;
+import { getNow } from '@/lib/deadline';
 
 const STAGE_LABELS: Record<FixtureStage, string> = {
   group: 'Group Stage',
@@ -255,22 +254,11 @@ export function FixtureCard({ fixture, now, isFullWidth, result }: FixtureCardPr
 }
 
 function useCurrentTime() {
-  const initialNow = useMemo(() => {
-    if (TEST_NOW_OVERRIDE) {
-      return new Date(TEST_NOW_OVERRIDE);
-    }
-    return new Date();
-  }, []);
-
-  const [now, setNow] = useState(initialNow);
+  const [now, setNow] = useState(() => getNow());
 
   useEffect(() => {
-    if (TEST_NOW_OVERRIDE) {
-      return;
-    }
-
     const intervalId = setInterval(() => {
-      setNow(new Date());
+      setNow(getNow());
     }, COUNTDOWN_TICK_INTERVAL_MS);
 
     return () => clearInterval(intervalId);
@@ -286,7 +274,6 @@ export function FixtureSlider() {
   const upcomingFixtures = useMemo(() => {
     const nowTime = now.getTime();
     const matchWindowMilliseconds = MATCH_DURATION_MINUTES * MILLISECONDS_PER_MINUTE;
-
     const futureFixtures = fixtures.filter((fixture) => {
       const kickoffTime = new Date(fixture.kickoff).getTime();
       const matchEndTime = kickoffTime + matchWindowMilliseconds;

@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from 'next';
-import localFont from 'next/font/local';
 import { Analytics } from '@vercel/analytics/next';
 
 import { ClientProviders } from '@/components/ClientProviders';
@@ -7,22 +6,6 @@ import { Header } from '@/components/Header';
 import { Navigation } from '@/components/navigation';
 
 import './globals.css';
-
-const fifaSans = localFont({
-  src: [
-    {
-      path: '../../public/fonts/FIFASans-Regular.woff2',
-      weight: '400',
-      style: 'normal',
-    },
-    {
-      path: '../../public/fonts/FIFASans-Medium.woff2',
-      weight: '500',
-      style: 'normal',
-    },
-  ],
-  variable: '--font-body-src',
-});
 
 export const metadata: Metadata = {
   title: 'WC26 Predictor',
@@ -122,7 +105,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className="dark">
-      <body className={`${fifaSans.variable} font-body antialiased`}>
+      <body className="font-body antialiased">
         <div className="min-h-screen bg-wc-black pb-16 sm:pb-0">
           <ClientProviders />
           <Header />

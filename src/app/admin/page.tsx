@@ -34,7 +34,7 @@ function InitialsAvatar({ name }: { name: string }) {
 
 function TabSpinner() {
   return (
-    <div className="w-4 h-4 border-2 border-white/20 border-t-wc-gold rounded-full animate-spin" />
+    <div className="w-4 h-4 border-2 border-white/20 border-t-wc-blue rounded-full animate-spin" />
   );
 }
 
@@ -83,7 +83,7 @@ function UsersTab({
   if (loading) {
     return (
       <div className="flex items-center justify-center py-16">
-        <div className="w-8 h-8 border-2 border-white/20 border-t-wc-gold rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-white/20 border-t-wc-blue rounded-full animate-spin" />
       </div>
     );
   }
@@ -100,13 +100,13 @@ function UsersTab({
         <div className="flex-1 min-w-0">
           <p className="text-wc-white text-sm font-semibold truncate">{name}</p>
           {u.email && <p className="text-wc-bone text-xs truncate">{u.email}</p>}
-          {u.teamName && <p className="text-wc-gold text-xs truncate">{u.teamName}</p>}
+          {u.teamName && <p className="text-wc-blue text-xs truncate">{u.teamName}</p>}
         </div>
         {showApprove && (
           <button
             onClick={() => handleApprove(u.uid)}
             disabled={isApproving}
-            className="bg-wc-gold text-wc-black text-xs font-semibold rounded-lg px-3 py-1.5 hover:opacity-90 transition-opacity disabled:opacity-60 flex items-center gap-1.5 shrink-0"
+            className="bg-wc-blue text-wc-white text-xs font-semibold rounded-lg px-3 py-1.5 hover:opacity-90 transition-opacity disabled:opacity-60 flex items-center gap-1.5 shrink-0"
           >
             {isApproving ? <TabSpinner /> : 'Approve'}
           </button>
@@ -125,7 +125,7 @@ function UsersTab({
           <h2 className="text-sm font-semibold text-wc-white/60 uppercase tracking-wider">
             Pending approval
           </h2>
-          <span className="bg-wc-gold/20 text-wc-gold text-xs font-semibold rounded-full px-2 py-0.5">
+          <span className="bg-wc-blue/20 text-wc-blue text-xs font-semibold rounded-full px-2 py-0.5">
             {pending.length}
           </span>
         </div>
@@ -249,7 +249,7 @@ function ResultsTab({
   if (loading) {
     return (
       <div className="flex items-center justify-center py-16">
-        <div className="w-8 h-8 border-2 border-white/20 border-t-wc-gold rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-white/20 border-t-wc-blue rounded-full animate-spin" />
       </div>
     );
   }
@@ -263,7 +263,7 @@ function ResultsTab({
             onClick={() => setStage(key)}
             className={`shrink-0 text-xs font-semibold rounded-full px-3 py-1.5 transition-colors ${
               stage === key
-                ? 'bg-wc-gold text-wc-black'
+                ? 'bg-wc-blue text-wc-white'
                 : 'bg-wc-ink text-white/60 hover:text-white/80'
             }`}
           >
@@ -300,7 +300,7 @@ function ResultsTab({
                       onChange={(e) =>
                         setHomeInputs((prev) => ({ ...prev, [f.id]: e.target.value }))
                       }
-                      className="w-12 text-center bg-wc-black border border-white/15 rounded-lg px-2 py-1.5 text-sm font-bold tabular-nums focus:border-wc-gold/60 outline-none"
+                      className="w-12 text-center bg-wc-black border border-white/15 rounded-lg px-2 py-1.5 text-sm font-bold tabular-nums focus:border-wc-blue/60 outline-none"
                     />
                     <span className="text-wc-bone/40 text-sm font-bold">:</span>
                     <input
@@ -310,7 +310,7 @@ function ResultsTab({
                       onChange={(e) =>
                         setAwayInputs((prev) => ({ ...prev, [f.id]: e.target.value }))
                       }
-                      className="w-12 text-center bg-wc-black border border-white/15 rounded-lg px-2 py-1.5 text-sm font-bold tabular-nums focus:border-wc-gold/60 outline-none"
+                      className="w-12 text-center bg-wc-black border border-white/15 rounded-lg px-2 py-1.5 text-sm font-bold tabular-nums focus:border-wc-blue/60 outline-none"
                     />
                   </div>
 
@@ -321,7 +321,7 @@ function ResultsTab({
 
                 <div className="flex items-center gap-2 shrink-0">
                   {hasResult && (
-                    <span className="w-2 h-2 rounded-full bg-wc-gold shrink-0" title="Result set" />
+                    <span className="w-2 h-2 rounded-full bg-wc-blue shrink-0" title="Result set" />
                   )}
                   <button
                     onClick={() => handleSave(f.id)}
@@ -329,7 +329,7 @@ function ResultsTab({
                     className={`text-xs font-semibold rounded-lg px-3 py-1.5 transition-colors disabled:opacity-60 ${
                       isSaved
                         ? 'bg-green-500/20 text-green-400'
-                        : 'bg-wc-gold text-wc-black hover:opacity-90'
+                        : 'bg-wc-blue text-wc-white hover:opacity-90'
                     }`}
                   >
                     {isSaving ? <TabSpinner /> : isSaved ? 'Saved ✓' : 'Save'}
@@ -374,7 +374,7 @@ export default function AdminPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-wc-black flex items-center justify-center">
-        <div className="w-10 h-10 border-2 border-white/20 border-t-wc-gold rounded-full animate-spin" />
+        <div className="w-10 h-10 border-2 border-white/20 border-t-wc-blue rounded-full animate-spin" />
       </div>
     );
   }
@@ -382,7 +382,7 @@ export default function AdminPage() {
   if (!isAdmin) {
     return (
       <div className="min-h-screen bg-wc-black flex flex-col items-center justify-center gap-3 px-4">
-        <p className="text-wc-gold text-xs font-semibold uppercase tracking-widest">
+        <p className="text-wc-blue text-xs font-semibold uppercase tracking-widest">
           FIFA World Cup 2026
         </p>
         <h1 className="text-wc-white font-display font-bold text-2xl">Access denied</h1>
@@ -395,7 +395,7 @@ export default function AdminPage() {
     <div className="bg-wc-black min-h-screen px-4 py-6 text-white">
       <div className="max-w-3xl mx-auto space-y-8">
         <header>
-          <p className="text-wc-gold text-xs font-semibold uppercase tracking-widest mb-1">
+          <p className="text-wc-blue text-xs font-semibold uppercase tracking-widest mb-1">
             FIFA World Cup 2026
           </p>
           <h1 className="font-display font-bold text-3xl text-wc-white">Admin Dashboard</h1>
@@ -408,7 +408,7 @@ export default function AdminPage() {
               onClick={() => setTab(t)}
               className={`px-5 py-2.5 text-sm font-semibold capitalize border-b-2 transition-colors ${
                 tab === t
-                  ? 'border-wc-gold text-wc-gold'
+                  ? 'border-wc-blue text-wc-blue'
                   : 'border-transparent text-white/50 hover:text-white/70'
               }`}
             >

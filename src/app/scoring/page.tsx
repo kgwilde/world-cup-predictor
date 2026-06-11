@@ -34,7 +34,7 @@ function GoalStepper({
           type="button"
           onClick={() => onChange(Math.max(0, value - 1))}
           disabled={value === 0}
-          className="flex h-10 w-10 items-center justify-center rounded-full border border-white/15 text-lg font-bold transition hover:border-wc-gold/60 hover:text-wc-gold disabled:cursor-not-allowed disabled:opacity-25"
+          className="flex h-10 w-10 items-center justify-center rounded-full border border-white/15 text-lg font-bold transition hover:border-wc-blue/60 hover:text-wc-blue disabled:cursor-not-allowed disabled:opacity-25"
           aria-label={`Decrease ${label}`}
         >
           −
@@ -44,7 +44,7 @@ function GoalStepper({
           type="button"
           onClick={() => onChange(Math.min(MAX_GOALS, value + 1))}
           disabled={value === MAX_GOALS}
-          className="flex h-10 w-10 items-center justify-center rounded-full border border-white/15 text-lg font-bold transition hover:border-wc-gold/60 hover:text-wc-gold disabled:cursor-not-allowed disabled:opacity-25"
+          className="flex h-10 w-10 items-center justify-center rounded-full border border-white/15 text-lg font-bold transition hover:border-wc-blue/60 hover:text-wc-blue disabled:cursor-not-allowed disabled:opacity-25"
           aria-label={`Increase ${label}`}
         >
           +
@@ -108,7 +108,7 @@ function BreakdownRow({
         <div className="mt-0.5 text-xs text-white/55 leading-snug">{detail}</div>
       </div>
       <span
-        className={`shrink-0 text-sm font-bold tabular-nums ${awarded ? 'text-wc-gold' : 'text-white/40'}`}
+        className={`shrink-0 text-sm font-bold tabular-nums ${awarded ? 'text-wc-blue' : 'text-white/40'}`}
       >
         {value}
       </span>
@@ -142,7 +142,7 @@ function ScoringCalculator() {
         <button
           type="button"
           onClick={reset}
-          className="mt-0.5 shrink-0 text-xs font-semibold text-wc-gold/60 transition hover:text-wc-gold"
+          className="mt-0.5 shrink-0 text-xs font-semibold text-wc-blue/60 transition hover:text-wc-blue"
         >
           Reset
         </button>
@@ -234,9 +234,9 @@ function ScoringCalculator() {
 
           <div className="flex items-center justify-between border-t border-white/10 py-4">
             <span className="text-sm font-semibold text-white/60">Total</span>
-            <span className="text-2xl font-bold tabular-nums text-wc-gold">
+            <span className="text-2xl font-bold tabular-nums text-wc-blue">
               {bd.total}
-              <span className="ml-1 text-sm font-semibold text-wc-gold/60">
+              <span className="ml-1 text-sm font-semibold text-wc-blue/60">
                 {bd.total === 1 ? 'pt' : 'pts'}
               </span>
             </span>
@@ -264,7 +264,7 @@ export default function ScoringPage() {
               key={rule.title}
               className={`flex items-center gap-4 px-5 py-4 ${i < RULES.length - 1 ? 'border-b border-white/8' : ''}`}
             >
-              <span className="font-display w-10 shrink-0 text-center text-xl font-bold tabular-nums text-wc-gold">
+              <span className="font-display w-10 shrink-0 text-center text-xl font-bold tabular-nums text-wc-blue">
                 {rule.badge}
               </span>
               <div className="min-w-0 flex-1">

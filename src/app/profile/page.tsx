@@ -10,7 +10,7 @@ export default function ProfilePage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="w-8 h-8 border-2 border-wc-ink border-t-wc-gold rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-wc-ink border-t-wc-blue rounded-full animate-spin" />
       </div>
     );
   }
@@ -24,7 +24,7 @@ export default function ProfilePage() {
         </p>
         <button
           onClick={() => useAuthStore.getState().signOut()}
-          className="bg-wc-gold text-wc-ink font-semibold py-2 px-6 rounded-lg hover:opacity-90 transition-opacity"
+          className="bg-wc-blue text-wc-white font-semibold py-2 px-6 rounded-lg hover:opacity-90 transition-opacity"
         >
           Sign out
         </button>
