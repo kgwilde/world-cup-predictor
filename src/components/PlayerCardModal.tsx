@@ -115,7 +115,8 @@ export default function PlayerCardModal({
   const [activeTab, setActiveTab] = useState<'matches' | 'specials'>('matches');
   const [showFullImage, setShowFullImage] = useState(false);
 
-  const rankConfig = (standing?.rank != null && RANK_CARD_CONFIG[standing.rank]) || DEFAULT_RANK_CARD_CONFIG;
+  const rankConfig =
+    (standing?.rank != null && RANK_CARD_CONFIG[standing.rank]) || DEFAULT_RANK_CARD_CONFIG;
   const { cardColor } = rankConfig;
 
   useEffect(() => {
@@ -497,7 +498,7 @@ function PlayerSpecialsTab({
 function ModalPointsBadge({ points, multiChip }: { points: number; multiChip?: boolean }) {
   const textClass =
     points >= 5
-      ? 'text-wc-white'
+      ? 'text-green-300'
       : points >= 3
         ? 'text-green-300'
         : points > 0
@@ -513,7 +514,7 @@ function ModalPointsBadge({ points, multiChip }: { points: number; multiChip?: b
         <span
           className={`min-w-[2.5rem] text-center text-xs font-bold tabular-nums rounded-[4px] px-1.5 py-0.5 bg-wc-ink ${textClass}`}
         >
-          {points}pt
+          {points} pts
         </span>
         <span className="absolute -top-1.5 -right-1.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-wc-gold text-[7px] font-bold leading-none text-wc-black">
           ×2

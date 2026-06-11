@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { getFlagByCode } from '@/lib/flags';
 import type { Fixture, FixtureStage, MatchResult, Team } from '@/lib/types';
 
@@ -284,38 +284,59 @@ function useCurrentTime() {
   return now;
 }
 
-export function FixtureSlider() {
+export function FixtureSlider({ initialResults }: { initialResults?: MatchResult[] }) {
   const now = useCurrentTime();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollDone = useRef(false);
   const storeResults = useAuthStore((s) => s.results);
   const resultsLoading = useAuthStore((s) => s.resultsLoading);
 
+  // Use server-prefetched results while the client store is still fetching
+  const activeResults = resultsLoading && initialResults ? initialResults : storeResults;
+  const isLoading = resultsLoading && !initialResults;
+
   const resultsMap = useMemo(
-    () => new Map(storeResults.map((r) => [r.fixtureId, r])),
-    [storeResults],
+    () => new Map(activeResults.map((r) => [r.fixtureId, r])),
+    [activeResults],
   );
 
-  const upcomingFixtures = useMemo(() => {
-    const nowTime = now.getTime();
-    // While results haven't loaded yet, extend the window to 150 minutes so a match
-    // in extra time isn't dropped before we have API confirmation of its live status.
-    const windowMs = (resultsLoading ? 150 : MATCH_DURATION_MINUTES) * MILLISECONDS_PER_MINUTE;
-    const futureFixtures = fixtures.filter((fixture) => {
-      const result = resultsMap.get(fixture.id);
-      if (result?.status === 'live') return true;
-      if (result?.status === 'final') return false;
-      const kickoffTime = new Date(fixture.kickoff).getTime();
-      return kickoffTime + windowMs > nowTime;
-    });
+  const allFixtures = useMemo(
+    () =>
+      [...fixtures].sort(
+        (a, b) => new Date(a.kickoff).getTime() - new Date(b.kickoff).getTime(),
+      ),
+    [],
+  );
 
-    futureFixtures.sort((a, b) => {
-      const timeA = new Date(a.kickoff).getTime();
-      const timeB = new Date(b.kickoff).getTime();
-      return timeA - timeB;
-    });
+  // useLayoutEffect fires before the browser paints — with initialResults already
+  // populated, the scroll runs immediately on mount with accurate data.
+  useLayoutEffect(() => {
+    if (scrollDone.current) return;
+    const container = scrollRef.current;
+    if (!container || !container.children.length) return;
 
-    return futureFixtures;
-  }, [now, resultsMap, resultsLoading]);
+    let targetIndex: number;
+    if (isLoading) {
+      // Fallback: no server data, approximate by time window
+      const nowTime = Date.now();
+      targetIndex = allFixtures.findIndex(
+        (f) => new Date(f.kickoff).getTime() + 150 * MILLISECONDS_PER_MINUTE > nowTime,
+      );
+    } else if (resultsMap.size === 0) {
+      // Results not loaded yet — skip scrolling, don't lock, let the effect re-run when they arrive
+      return;
+    } else {
+      targetIndex = allFixtures.findIndex((f) => {
+        const result = resultsMap.get(f.id);
+        return !result || result.status === 'live';
+      });
+      scrollDone.current = true;
+    }
+
+    if (targetIndex < 0) targetIndex = allFixtures.length - 1;
+    const card = container.children[targetIndex] as HTMLElement | undefined;
+    card?.scrollIntoView({ behavior: 'instant', inline: 'start', block: 'nearest' });
+  }, [allFixtures, resultsMap, isLoading]);
 
   return (
     <>
@@ -327,7 +348,7 @@ export function FixtureSlider() {
           role="region"
           aria-label="Fixtures"
         >
-          {upcomingFixtures.map((fixture) => (
+          {allFixtures.map((fixture) => (
             <FixtureCard
               key={fixture.id}
               fixture={fixture}

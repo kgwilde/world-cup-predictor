@@ -18,13 +18,14 @@
 
 @theme {
   --color-wc-black: #0a0a0a;
-  --color-wc-navy: #020F2A;
-  --color-wc-ink: #0F1117;
+  --color-wc-navy: #020f2a;
+  --color-wc-ink: #0f1117;
   --color-wc-white: #ffffff;
   --color-wc-bone: #f4f1ea;
   --color-wc-gold: #efbf04;
   --color-wc-gold-deep: #8c6a23;
-  --color-wc-cyan: #00B8FF;
+  --color-wc-cyan: #00b8ff;
+  --color-wc-gray: #454545;
 
   --color-wc-red: #e4002b;
   --color-wc-green: #069e6c;
@@ -52,16 +53,30 @@ html.dark {
 }
 
 @keyframes modal-slide-up {
-  from { transform: translateY(100%); }
-  to { transform: translateY(0); }
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
 }
 
 @keyframes modal-fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes avatar-pop {
-  from { opacity: 0; transform: scale(0.5) translateY(12px); }
-  to   { opacity: 1; transform: scale(1)   translateY(0);    }
+  from {
+    opacity: 0;
+    transform: scale(0.5) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }

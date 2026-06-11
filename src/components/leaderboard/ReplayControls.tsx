@@ -44,7 +44,7 @@ export default function ReplayControls({ fixtures, currentIndex, onPrev, onNext 
     fixtures.length > 0 ? (Math.max(0, currentIndex + 1) / fixtures.length) * 100 : 0;
 
   const buttonClasses =
-    'w-8 h-8 flex items-center justify-center rounded text-wc-white/40 hover:text-wc-white hover:bg-wc-white/5 cursor-pointer disabled:opacity-20 disabled:cursor-not-allowed transition-colors';
+    'w-8 h-8 flex items-center justify-center rounded text-wc-bone hover:text-wc-white hover:bg-wc-white/5 cursor-pointer disabled:text-wc-gray disabled:cursor-not-allowed transition-colors';
 
   return (
     <div className="bg-wc-ink border border-wc-white/10 rounded-lg overflow-hidden">

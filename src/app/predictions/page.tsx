@@ -315,6 +315,7 @@ function MatchPredictionCard({
   allChips,
   result,
   rankMap,
+  viewerId,
   onPlayerClick,
 }: {
   fixture: Fixture;
@@ -324,6 +325,7 @@ function MatchPredictionCard({
   allChips: MultiChip[];
   result?: MatchResult;
   rankMap: Map<string, number>;
+  viewerId: string | null;
   onPlayerClick: (playerId: string) => void;
 }) {
   const hasStarted = new Date(fixture.kickoff) <= now;
@@ -484,7 +486,7 @@ function MatchPredictionCard({
                       predictions={group.predictions}
                       players={players}
                       fixture={fixture}
-                      chipped={group.chipped}
+                      chipped={group.chipped && hasStarted}
                       rankMap={rankMap}
                       onPlayerClick={onPlayerClick}
                     />
@@ -497,7 +499,7 @@ function MatchPredictionCard({
                           prediction={prediction}
                           player={players.find((p) => p.id === prediction.playerId)}
                           fixture={fixture}
-                          multiChipApplied={hasChip}
+                          multiChipApplied={hasChip && (hasStarted || prediction.playerId === viewerId)}
                           onPlayerClick={onPlayerClick}
                         />
                       );
@@ -528,7 +530,7 @@ function MatchPredictionCard({
                   player={players.find((p) => p.id === prediction.playerId)}
                   fixture={fixture}
                   points={pts}
-                  multiChipApplied={hasChip}
+                  multiChipApplied={hasChip && (hasStarted || prediction.playerId === viewerId)}
                   onPlayerClick={onPlayerClick}
                 />
               );
@@ -983,6 +985,7 @@ export default function PredictionsPage() {
                     allChips={allChips}
                     result={resultMap.get(fixture.id)}
                     rankMap={rankMap}
+                    viewerId={viewerId}
                     onPlayerClick={setSelectedPlayerId}
                   />
                 ))}

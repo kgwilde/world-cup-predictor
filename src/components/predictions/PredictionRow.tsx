@@ -23,7 +23,7 @@ function PointsBadge({ points, multiChipApplied }: { points: number; multiChipAp
         className="relative inline-flex shrink-0 rounded-md"
         style={{ padding: 1.5, background: RAINBOW }}
       >
-        <span className="min-w-[2.25rem] text-center text-xs font-bold text-wc-white bg-wc-ink rounded-[5px] px-1.5 py-0.5">
+        <span className="min-w-[2.25rem] text-center text-xs font-bold text-green-300 bg-wc-ink rounded-[5px] px-1.5 py-0.5">
           {label}
         </span>
         <span className="absolute -top-1.5 -right-1.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-wc-gold text-[7px] font-bold leading-none text-wc-black">

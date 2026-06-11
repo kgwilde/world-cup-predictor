@@ -147,7 +147,7 @@ export default function LeaderboardRow({
 
       {/* Name block */}
       <div className="flex-1 min-w-0 flex flex-col gap-[3px]">
-        <span className="font-display text-[14.5px] font-bold text-white whitespace-nowrap">
+        <span className="font-display text-[15.5px] font-bold text-white whitespace-nowrap">
           {displayName}
         </span>
         {(ownerName || isViewer) && (
@@ -164,27 +164,31 @@ export default function LeaderboardRow({
         )}
       </div>
 
-      {/* Stat cluster */}
-      <div className="shrink-0 flex flex-col items-end gap-1">
-        <div className="h-5 flex items-center justify-end gap-1.5">
-          {matchDelta && <RankChangeChip rankChange={matchDelta.rankChange} />}
-          {matchDelta && (
-            <RoundChangeChip
-              points={matchDelta.points}
-              multiChipApplied={matchDelta.multiChipApplied}
-            />
-          )}
+      <div className="flex items-center gap-2 translate-x-2">
+        {/* Stat cluster */}
+        <div className="shrink-0 flex flex-col items-end gap-1">
+          <div className="h-5 flex items-center justify-end gap-1.5">
+            {matchDelta && <RankChangeChip rankChange={matchDelta.rankChange} />}
+            {matchDelta && (
+              <RoundChangeChip
+                points={matchDelta.points}
+                multiChipApplied={matchDelta.multiChipApplied}
+              />
+            )}
+          </div>
+          <div className="flex items-baseline gap-1">
+            <span className="font-display text-[22px] font-bold tabular-nums tracking-tight text-white">
+              {standing.totalPoints}
+            </span>
+            <span className="font-body text-[10px] font-bold tracking-wide text-slate-500">
+              PTS
+            </span>
+          </div>
         </div>
-        <div className="flex items-baseline gap-1">
-          <span className="font-display text-[22px] font-bold tabular-nums tracking-tight text-white">
-            {standing.totalPoints}
-          </span>
-          <span className="font-body text-[10px] font-bold tracking-wide text-slate-500">PTS</span>
-        </div>
-      </div>
 
-      {/* Chevron */}
-      <ChevronRight className="h-4 w-4 text-slate-500 shrink-0" />
+        {/* Chevron */}
+        <ChevronRight className="h-4 w-4 text-slate-500 shrink-0" />
+      </div>
     </button>
   );
 }
