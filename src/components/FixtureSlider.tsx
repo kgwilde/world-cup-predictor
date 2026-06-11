@@ -288,6 +288,7 @@ export function FixtureSlider() {
   const now = useCurrentTime();
   const scrollRef = useRef<HTMLDivElement>(null);
   const storeResults = useAuthStore((s) => s.results);
+  const resultsLoading = useAuthStore((s) => s.resultsLoading);
 
   const resultsMap = useMemo(
     () => new Map(storeResults.map((r) => [r.fixtureId, r])),
@@ -296,14 +297,15 @@ export function FixtureSlider() {
 
   const upcomingFixtures = useMemo(() => {
     const nowTime = now.getTime();
-    const matchWindowMilliseconds = MATCH_DURATION_MINUTES * MILLISECONDS_PER_MINUTE;
+    // While results haven't loaded yet, extend the window to 150 minutes so a match
+    // in extra time isn't dropped before we have API confirmation of its live status.
+    const windowMs = (resultsLoading ? 150 : MATCH_DURATION_MINUTES) * MILLISECONDS_PER_MINUTE;
     const futureFixtures = fixtures.filter((fixture) => {
       const result = resultsMap.get(fixture.id);
-      // Always keep matches the API says are still live — they may have gone past 90 minutes.
       if (result?.status === 'live') return true;
+      if (result?.status === 'final') return false;
       const kickoffTime = new Date(fixture.kickoff).getTime();
-      const matchEndTime = kickoffTime + matchWindowMilliseconds;
-      return matchEndTime > nowTime;
+      return kickoffTime + windowMs > nowTime;
     });
 
     futureFixtures.sort((a, b) => {
@@ -313,7 +315,7 @@ export function FixtureSlider() {
     });
 
     return futureFixtures;
-  }, [now, resultsMap]);
+  }, [now, resultsMap, resultsLoading]);
 
   return (
     <>
