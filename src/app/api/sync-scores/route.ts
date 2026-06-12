@@ -17,6 +17,7 @@ function getLiveMatches(): Fixture[] {
 const TEAM_NAME_ALIASES: Record<string, string> = {
   'Korea Republic': 'South Korea',
   'Bosnia and Herzegovina': 'Bosnia & Herzegovina',
+  'Bosnia-Herzegovina': 'Bosnia & Herzegovina',
   "Côte d'Ivoire": 'Ivory Coast',
   "Cote d'Ivoire": 'Ivory Coast',
   Türkiye: 'Turkey',
