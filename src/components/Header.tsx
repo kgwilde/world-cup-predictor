@@ -11,8 +11,18 @@ import { useMyStanding } from '@/components/hooks/use_my_standing';
 
 export function Header() {
   return (
-    <header className="bg-wc-blue-dark border-b border-wc-white/10 sticky top-0 z-10">
-      <div className="max-w-3xl mx-auto px-3 sm:px-4 py-3 sm:py-4 flex items-center justify-between gap-3">
+    <header
+      className="border-b border-white/10 sticky top-0 z-10 relative overflow-hidden"
+      style={{ background: 'linear-gradient(135deg, #1e33b5 0%, #253ecf 55%, #2c47d4 100%)' }}
+    >
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background:
+            'linear-gradient(115deg, transparent 20%, rgba(255,255,255,0.12) 45%, rgba(255,255,255,0.07) 55%, transparent 80%)',
+        }}
+      />
+      <div className="relative max-w-3xl mx-auto px-3 sm:px-4 py-3 sm:py-4 flex items-center justify-between gap-3">
         <Link
           href="/"
           className="flex items-center gap-3 min-w-0 flex-1 hover:opacity-90 transition-opacity"
@@ -27,14 +37,15 @@ export function Header() {
           />
 
           <div className="min-w-0">
-            <h1 className="font-display font-bold text-base sm:text-2xl tracking-tight leading-tight">
-              World Cup 2026
-            </h1>
-            <h1 className="font-display font-bold text-base sm:text-2xl tracking-tight leading-tight">
+            <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest leading-none">
+              <span className="text-white/45">FIFA® World Cup </span>
+              <span className="text-wc-gold">2026</span>
+            </p>
+            <h1 className="font-display font-bold text-lg sm:text-2xl tracking-tight leading-tight text-white mt-0.5">
               Match Predictor
             </h1>
-            <p className="hidden sm:block text-wc-bone text-md font-body tracking-widest mt-1">
-              11 June - 19 July 2026
+            <p className="hidden sm:block text-white/35 text-[10px] font-body tracking-widest mt-1">
+              11 June – 19 July 2026
             </p>
           </div>
         </Link>
@@ -166,8 +177,8 @@ export function WorldCupCountdown() {
 function getNextFixtureTimestamp(): number | null {
   const now = Date.now();
   const upcoming = fixtures
-    .map(f => new Date(f.kickoff).getTime())
-    .filter(t => t > now)
+    .map((f) => new Date(f.kickoff).getTime())
+    .filter((t) => t > now)
     .sort((a, b) => a - b);
   return upcoming[0] ?? null;
 }
