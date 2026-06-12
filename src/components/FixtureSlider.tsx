@@ -68,7 +68,7 @@ function formatKickoffDay(kickoff: Date, now: Date) {
 
 function formatKickoffTime(kickoff: Date) {
   return kickoff.toLocaleTimeString('en-GB', {
-    hour: 'numeric',
+    hour: '2-digit',
     minute: '2-digit',
   });
 }

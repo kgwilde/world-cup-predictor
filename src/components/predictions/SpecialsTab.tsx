@@ -32,7 +32,7 @@ function teamName(code: string): string {
 
 function TeamChip({ code }: { code: string }) {
   return (
-    <span className="inline-block text-[11px] font-medium text-white/90 bg-white/8 rounded px-1.5 py-0.5 whitespace-nowrap">
+    <span className="inline-block text-[11px] font-medium text-white/75 bg-white/8 rounded px-1.5 py-0.5 whitespace-nowrap">
       {teamName(code)}
     </span>
   );
@@ -51,7 +51,7 @@ function CardHeader({
     <button
       type="button"
       onClick={onToggle}
-      className="w-full flex items-center justify-between px-4 py-3.5 border-b border-white/10 text-left"
+      className="w-full flex items-center justify-between px-4 py-3.5 border-b border-white/8 text-left"
     >
       <span className="text-sm font-bold text-white">{title}</span>
       <ChevronDown
@@ -69,9 +69,9 @@ function CollapsibleSection({ label, children }: { label: string; children: Reac
       <button
         type="button"
         onClick={() => setIsOpen((o) => !o)}
-        className="w-full flex items-center justify-between px-4 py-3.5 bg-white/[0.03] border-b border-white/5 text-left"
+        className="w-full flex items-center justify-between px-4 py-2.5 bg-white/[0.03] border-b border-white/8 text-left"
       >
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-white/55">
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-white/35">
           {label}
         </span>
         <ChevronDown
@@ -88,7 +88,7 @@ function PlayerRow({ player, children }: { player: Player; children: React.React
   return (
     <div className="flex items-start gap-3 py-3 border-b border-white/8 last:border-0">
       <Avatar name={player.name} photoUrl={player.photoUrl} size={24} />
-      <span className="text-xs text-white/70 w-16 shrink-0 pt-0.5">{player.name}</span>
+      <span className="text-xs text-white/80 w-16 shrink-0 pt-0.5 truncate">{player.name}</span>
       <div className="flex flex-wrap gap-1.5 flex-1">{children}</div>
     </div>
   );
@@ -125,7 +125,7 @@ function KnockoutCard({
                 return (
                   <PlayerRow key={player.id} player={player}>
                     {teams == null ? (
-                      <span className="text-xs text-white/40 italic pt-0.5">No picks</span>
+                      <span className="text-xs text-white/30 italic pt-0.5">No picks</span>
                     ) : typeof teams === 'string' ? (
                       <TeamChip code={teams} />
                     ) : (
@@ -166,20 +166,20 @@ function GroupStageCard({
                     {gp ? (
                       <>
                         <div className="flex items-center gap-1">
-                          <span className="text-[9px] font-bold uppercase tracking-wider text-white/50">
+                          <span className="text-[9px] font-semibold uppercase tracking-wider text-white/35">
                             1st
                           </span>
                           <TeamChip code={gp.winner} />
                         </div>
                         <div className="flex items-center gap-1">
-                          <span className="text-[9px] font-bold uppercase tracking-wider text-white/50">
+                          <span className="text-[9px] font-semibold uppercase tracking-wider text-white/35">
                             2nd
                           </span>
                           <TeamChip code={gp.runnerUp} />
                         </div>
                       </>
                     ) : (
-                      <span className="text-xs text-white/40 italic pt-0.5">No picks</span>
+                      <span className="text-xs text-white/30 italic pt-0.5">No picks</span>
                     )}
                   </PlayerRow>
                 );
@@ -228,14 +228,14 @@ function BonusCard({
                 return (
                   <div
                     key={player.id}
-                    className="flex items-center gap-3 py-2.5 border-b border-white/8 last:border-0"
+                    className="flex items-center gap-3 py-3 border-b border-white/8 last:border-0"
                   >
                     <Avatar name={player.name} photoUrl={player.photoUrl} size={24} />
-                    <span className="text-xs text-white/70 flex-1">{player.name}</span>
+                    <span className="text-xs text-white/80 flex-1">{player.name}</span>
                     {bonus ? (
-                      <span className="text-sm font-medium text-white">{getValue(bonus)}</span>
+                      <span className="text-sm font-medium text-white/90">{getValue(bonus)}</span>
                     ) : (
-                      <span className="text-xs text-white/40">—</span>
+                      <span className="text-xs text-white/30">—</span>
                     )}
                   </div>
                 );

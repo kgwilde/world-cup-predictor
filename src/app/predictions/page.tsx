@@ -390,7 +390,9 @@ function MatchPredictionCard({
     >();
     for (const pred of sortedPredictions) {
       const chipped = chipSet.has(pred.playerId);
-      const key = `${pred.homeGoals}-${pred.awayGoals}-${chipped}`;
+      const key = hasStarted
+        ? `${pred.homeGoals}-${pred.awayGoals}-${chipped}`
+        : `${pred.homeGoals}-${pred.awayGoals}`;
       const existing = groupMap.get(key);
       if (existing) existing.predictions.push(pred);
       else
