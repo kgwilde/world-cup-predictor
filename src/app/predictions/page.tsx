@@ -24,12 +24,12 @@ import { FixtureCard } from '@/components/FixtureSlider';
 import Avatar from '@/components/leaderboard/Avatar';
 import PredictionRow from '@/components/predictions/PredictionRow';
 import ScoreChip from '@/components/predictions/ScoreChip';
+import { PointsBadge } from '@/components/PointsBadge';
 import SpecialsTab from '@/components/predictions/SpecialsTab';
 import PlayerCardModal from '@/components/PlayerCardModal';
 
 const GROUP_FIXTURE_IDS = new Set(fixtures.filter((f) => f.stage === 'group').map((f) => f.id));
 const GROUP_CHIP_LIMIT = 10;
-const RAINBOW = 'linear-gradient(135deg, #f72585, #f8961e, #90be6d, #4cc9f0, #7209b7)';
 
 function getRingClass(rank: number | undefined): string {
   if (rank === 1) return 'ring-2 ring-[#FFD000] ring-offset-2 ring-offset-wc-ink';
@@ -247,8 +247,6 @@ function GroupedPointsRow({
   const names = groupPlayers.map((p) => p.name).join(' · ');
   const first = predictions[0];
   const resultType = getResultType(first.homeGoals, first.awayGoals);
-  const label = pts === 1 ? '1 pt' : `${pts} pts`;
-
   return (
     <>
     <div className="flex items-center justify-between gap-3 border-b border-white/10 py-3 last:border-0">
@@ -268,31 +266,7 @@ function GroupedPointsRow({
           homeAccentColor={fixture.homeTeam.accentColor}
           awayAccentColor={fixture.awayTeam.accentColor}
         />
-        {allChipped && pts > 0 ? (
-          <span
-            className="relative inline-flex shrink-0 rounded-md"
-            style={{ padding: 1.5, background: RAINBOW }}
-          >
-            <span className="min-w-[2.25rem] text-center text-xs font-bold text-wc-white bg-wc-ink rounded-[5px] px-1.5 py-0.5">
-              {label}
-            </span>
-            <span className="absolute -top-1.5 -right-1.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-wc-gold text-[7px] font-bold leading-none text-wc-black">
-              ×2
-            </span>
-          </span>
-        ) : pts >= 3 ? (
-          <span className="min-w-[2.75rem] text-center text-xs font-bold text-green-300 bg-green-500/20 rounded px-1.5 py-0.5 shrink-0">
-            {label}
-          </span>
-        ) : pts > 0 ? (
-          <span className="min-w-[2.75rem] text-center text-xs font-medium text-white/35 bg-white/5 rounded px-1.5 py-0.5 shrink-0">
-            {label}
-          </span>
-        ) : (
-          <span className="min-w-[2.75rem] text-center text-xs font-medium text-white/20 shrink-0">
-            0 pts
-          </span>
-        )}
+        <PointsBadge points={pts} multiChipApplied={allChipped} />
       </div>
     </div>
     {showModal && (
@@ -600,7 +574,6 @@ function ChipFixtureRow({
   onApply: () => void;
   onRemove: () => void;
 }) {
-  const showChipBadge = hasChip && hasStarted;
   const resultType = prediction
     ? getResultType(prediction.homeGoals, prediction.awayGoals)
     : 'draw';
@@ -635,26 +608,20 @@ function ChipFixtureRow({
           resultType={resultType}
           homeAccentColor={fixture.homeTeam.accentColor}
           awayAccentColor={fixture.awayTeam.accentColor}
-          multiChip={showChipBadge}
+          multiChip={false}
         />
       ) : (
         <span className="text-xs text-white/20 italic">No prediction</span>
       )}
 
       {/* Points (if result exists) */}
-      {pts !== undefined && (
-        <span
-          className={`text-xs font-semibold tabular-nums shrink-0 ${pts >= 5 ? 'text-green-300' : pts >= 3 ? 'text-green-300' : 'text-white/30'}`}
-        >
-          {pts}pt
-        </span>
-      )}
+      {pts !== undefined && <PointsBadge points={pts} multiChipApplied={hasChip && hasStarted} />}
 
       {/* Chip toggle */}
       {prediction &&
         (hasStarted ? (
           hasChip ? (
-            <span className="shrink-0 flex items-center gap-1 text-[11px] font-bold text-wc-gold/60 bg-wc-gold/10 border border-wc-gold/20 rounded-full px-2 py-1">
+            <span className="shrink-0 flex items-center gap-1 text-[11px] font-bold text-white/35 bg-white/[0.07] border border-white/12 rounded-full px-2 py-1">
               <Lock size={10} />
               Locked
             </span>
@@ -663,17 +630,17 @@ function ChipFixtureRow({
           <button
             type="button"
             onClick={onRemove}
-            className="shrink-0 flex items-center gap-1 text-[11px] font-bold rounded-full px-2 py-1 border transition-colors text-wc-gold bg-wc-gold/15 border-wc-gold/40 active:bg-red-500/15 active:border-red-500/40 active:text-red-400"
+            className="shrink-0 flex items-center gap-1 text-[11px] font-bold rounded-full px-2 py-1 border transition-colors text-wc-gold bg-wc-gold/20 border-wc-gold/60 active:bg-red-500/15 active:border-red-500/40 active:text-red-400"
           >
-            Applied
-            <X size={9} className="opacity-60" />
+            ✓ Applied
+            <X size={9} className="opacity-70" />
           </button>
         ) : (
           <button
             type="button"
             onClick={onApply}
             disabled={chipsUsed >= GROUP_CHIP_LIMIT}
-            className="shrink-0 text-[11px] font-semibold text-white/50 border border-white/15 rounded-full px-2.5 py-1 hover:text-white/80 hover:border-white/30 active:opacity-70 transition-colors disabled:opacity-25 disabled:cursor-not-allowed"
+            className="shrink-0 text-[11px] font-semibold text-wc-gold/60 border border-wc-gold/25 rounded-full px-2.5 py-1 hover:text-wc-gold hover:border-wc-gold/60 active:opacity-70 transition-colors disabled:opacity-25 disabled:cursor-not-allowed"
           >
             + Chip
           </button>

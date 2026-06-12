@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { ChevronDown, X } from 'lucide-react';
 import Avatar from '@/components/leaderboard/Avatar';
 import ScoreChip from '@/components/predictions/ScoreChip';
+import { PointsBadge } from '@/components/PointsBadge';
 import { getTeamByCode } from '@/data/fixtures';
 import { getResultType } from '@/lib/predictions';
 import { scoreMatch } from '@/lib/scoring';
@@ -32,8 +33,6 @@ function TeamChip({ code }: { code: string }) {
     </span>
   );
 }
-
-const RAINBOW = 'linear-gradient(135deg, #f72585, #f8961e, #90be6d, #4cc9f0, #7209b7)';
 
 const RANK_CARD_CONFIG: Record<number, { ringStyle: CSSProperties; cardColor: string }> = {
   1: { ringStyle: { background: '#FFD000' }, cardColor: '#FFD000' },
@@ -336,7 +335,7 @@ export default function PlayerCardModal({
                                 )}
                               </span>
                               {pts !== undefined && (
-                                <ModalPointsBadge points={pts} multiChip={showChip} />
+                                <PointsBadge points={pts} multiChipApplied={showChip} />
                               )}
                             </div>
                           </div>
@@ -495,58 +494,3 @@ function PlayerSpecialsTab({
   );
 }
 
-function ModalPointsBadge({ points, multiChip }: { points: number; multiChip?: boolean }) {
-  const textClass =
-    points >= 5
-      ? 'text-green-300'
-      : points >= 3
-        ? 'text-green-300'
-        : points > 0
-          ? 'text-white/35'
-          : 'text-white/20';
-
-  if (multiChip && points > 0) {
-    return (
-      <span
-        className="relative inline-flex shrink-0 rounded-md"
-        style={{ padding: 1.5, background: RAINBOW }}
-      >
-        <span
-          className={`min-w-[2.5rem] text-center text-xs font-bold tabular-nums rounded-[4px] px-1.5 py-0.5 bg-wc-ink ${textClass}`}
-        >
-          {points} pts
-        </span>
-        <span className="absolute -top-1.5 -right-1.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-wc-gold text-[7px] font-bold leading-none text-wc-black">
-          ×2
-        </span>
-      </span>
-    );
-  }
-
-  if (points >= 5) {
-    return (
-      <span className="min-w-[2.5rem] text-center text-xs font-bold text-green-300 bg-green-500/20 rounded px-1.5 py-0.5 shrink-0 tabular-nums">
-        {points} pts
-      </span>
-    );
-  }
-  if (points >= 3) {
-    return (
-      <span className="min-w-[2.5rem] text-center text-xs font-bold text-green-300 bg-green-500/20 rounded px-1.5 py-0.5 shrink-0 tabular-nums">
-        {points}pt
-      </span>
-    );
-  }
-  if (points > 0) {
-    return (
-      <span className="min-w-[2.5rem] text-center text-xs text-white/35 bg-white/5 rounded px-1.5 py-0.5 shrink-0 tabular-nums">
-        {points}pt
-      </span>
-    );
-  }
-  return (
-    <span className="min-w-[2.5rem] text-center text-xs text-white/20 shrink-0 tabular-nums">
-      0pt
-    </span>
-  );
-}
