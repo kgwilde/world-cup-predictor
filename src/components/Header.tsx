@@ -31,9 +31,9 @@ export function Header() {
           <img
             src="/logo.svg"
             alt="Logo"
-            width={40}
-            height={40}
-            className="select-none w-8 h-8 sm:w-10 sm:h-10 shrink-0"
+            width={60}
+            height={60}
+            className="select-none w-10 h-10 sm:w-8 sm:h-8 shrink-0"
           />
 
           <div className="min-w-0">
