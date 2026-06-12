@@ -5,14 +5,12 @@ import { Lock, X } from 'lucide-react';
 import { fixtures } from '@/data/fixtures';
 import { allPredictions, allTournamentPicks, allBonusPredictions } from '@/data/entries';
 import type {
-  BonusPredictions,
   Fixture,
   MatchResult,
   MultiChip,
   Player,
   Prediction,
   PublicProfile,
-  TournamentPicks,
 } from '@/lib/types';
 import { getNow, PREDICTIONS_DEADLINE } from '@/lib/deadline';
 import { getResultType } from '@/lib/predictions';
@@ -381,7 +379,7 @@ function MatchPredictionCard({
       })
       .sort((a, b) => a.outcomeOrder - b.outcomeOrder || (a.chipped ? 1 : -1));
     return groups.some((g) => g.predictions.length > 1) ? groups : null;
-  }, [sortedPredictions, chipSet]);
+  }, [sortedPredictions, chipSet, hasStarted, isFinal]);
 
   const predictingIds = useMemo(
     () => new Set(fixturePredictions.map((p) => p.playerId)),

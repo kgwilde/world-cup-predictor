@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import Avatar from '@/components/leaderboard/Avatar';
 import { getTeamByCode } from '@/data/fixtures';
@@ -9,12 +9,11 @@ import type { BonusPredictions, GroupCode, Player, TournamentPicks } from '@/lib
 const GROUP_CODES: GroupCode[] = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
 
 function useLocalStorageToggle(key: string, defaultValue = false): [boolean, () => void] {
-  const [value, setValue] = useState(defaultValue);
-
-  useEffect(() => {
+  const [value, setValue] = useState(() => {
+    if (typeof window === 'undefined') return defaultValue;
     const stored = localStorage.getItem(key);
-    if (stored !== null) setValue(stored === 'true');
-  }, [key]);
+    return stored !== null ? stored === 'true' : defaultValue;
+  });
 
   const toggle = () =>
     setValue((v) => {

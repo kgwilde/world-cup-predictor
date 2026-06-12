@@ -25,9 +25,14 @@ const MILLISECONDS_PER_HOUR = 1000 * 60 * 60;
 const MILLISECONDS_PER_MINUTE = 1000 * 60;
 const COUNTDOWN_TICK_INTERVAL_MS = 30 * 1000;
 
-function getFlagComponent(team: Team) {
-  if (team.code === 'TBD') return null;
-  return getFlagByCode(team.code);
+function TeamFlag({ team }: { team: Team }) {
+  if (team.code === 'TBD')
+    return <div className="h-6 w-9 rounded-[2px] bg-white/10 ring-1 ring-white/20" aria-hidden />;
+  const Flag = getFlagByCode(team.code);
+  if (!Flag) return <div className="h-6 w-9 rounded-[2px] bg-white/10 ring-1 ring-white/20" aria-hidden />;
+  // Flag is a stable reference from a static module-scope map — not created during render
+  // eslint-disable-next-line react-hooks/static-components
+  return <Flag title={team.name} className="h-6 w-9 rounded-[2px] object-cover ring-1 ring-white/20 shadow-md" />;
 }
 
 function getViewingDay(date: Date) {
@@ -90,14 +95,6 @@ function formatCountdownToKickoff(kickoff: Date, now: Date) {
   return `in ${hours}h ${minutes}m`;
 }
 
-function formatHeroCountdown(kickoff: Date, now: Date): string | null {
-  const ms = kickoff.getTime() - now.getTime();
-  if (ms <= 0) return null;
-  const hours = Math.floor(ms / MILLISECONDS_PER_HOUR);
-  const minutes = Math.floor((ms % MILLISECONDS_PER_HOUR) / MILLISECONDS_PER_MINUTE);
-  if (hours === 0) return `${Math.max(minutes, 1)}m`;
-  return `${hours}h ${minutes}m`;
-}
 
 function isFixtureLive(kickoff: Date, now: Date, result?: MatchResult) {
   // If the API has told us the status, trust it — matches can run beyond 90 minutes.
@@ -146,20 +143,12 @@ interface TeamHalfProps {
 }
 
 function TeamHalf({ team, side }: TeamHalfProps) {
-  const FlagComponent = getFlagComponent(team);
   const isPlaceholder = team.code === 'TBD';
   const alignment = side === 'home' ? 'items-start' : 'items-end';
 
   return (
     <div className={`flex w-full flex-col gap-1 ${alignment}`}>
-      {FlagComponent ? (
-        <FlagComponent
-          title={team.name}
-          className="h-6 w-9 rounded-[2px] object-cover ring-1 ring-white/20 shadow-md"
-        />
-      ) : (
-        <div className="h-6 w-9 rounded-[2px] bg-white/10 ring-1 ring-white/20" aria-hidden />
-      )}
+      <TeamFlag team={team} />
       <span
         className={`w-full truncate text-[13px] font-semibold leading-tight text-white ${
           isPlaceholder ? 'text-[11px] font-medium opacity-90' : ''

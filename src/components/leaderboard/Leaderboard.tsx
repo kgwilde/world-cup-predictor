@@ -14,13 +14,11 @@ import { resolveAvatarSrc } from '@/lib/avatar';
 import { getNow, PREDICTIONS_DEADLINE } from '@/lib/deadline';
 import { calculateStandings } from '@/lib/scoring';
 import type {
-  BonusPredictions,
   MatchResult,
   Player,
   PlayerStanding,
   Prediction,
   PublicProfile,
-  TournamentPicks,
 } from '@/lib/types';
 
 function userToPlayer(profile: PublicProfile): Player {
@@ -55,6 +53,7 @@ export default function Leaderboard() {
 
   useEffect(() => {
     if (!resultsLoading) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setReplayIndex(playedFixtures.length - 1);
     }
   }, [resultsLoading, playedFixtures.length]);
@@ -97,16 +96,13 @@ export default function Leaderboard() {
     [latestStandings, selectedPlayerId]
   );
 
-  const tournamentPicksList: TournamentPicks[] = allTournamentPicks;
-  const bonusPredictionsList: BonusPredictions[] = allBonusPredictions;
-
   const selectedTournamentPicks = useMemo(
-    () => tournamentPicksList.find((t) => t.playerId === selectedPlayerId) ?? null,
+    () => allTournamentPicks.find((t) => t.playerId === selectedPlayerId) ?? null,
     [selectedPlayerId]
   );
 
   const selectedBonusPredictions = useMemo(
-    () => bonusPredictionsList.find((b) => b.playerId === selectedPlayerId) ?? null,
+    () => allBonusPredictions.find((b) => b.playerId === selectedPlayerId) ?? null,
     [selectedPlayerId]
   );
 
@@ -136,7 +132,7 @@ export default function Leaderboard() {
                     standing={standing}
                     isViewer={standing.player.id === viewerId}
                     winnerPick={
-                      tournamentPicksList.find((t) => t.playerId === standing.player.id)?.winner
+                      allTournamentPicks.find((t) => t.playerId === standing.player.id)?.winner
                     }
                     onClick={() => setSelectedPlayerId(standing.player.id)}
                     matchDelta={

@@ -32,6 +32,7 @@ export function ProfileSettings() {
   const [isEditingTeamName, setIsEditingTeamName] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setTeamNameValue(profile?.teamName ?? '');
   }, [profile?.teamName]);
 

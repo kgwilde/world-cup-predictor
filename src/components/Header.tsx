@@ -7,7 +7,6 @@ import { useEffect, useState } from 'react';
 
 import { fixtures } from '@/data/fixtures';
 
-import { useMyStanding } from '@/components/hooks/use_my_standing';
 
 export function Header() {
   return (
@@ -56,37 +55,6 @@ export function Header() {
   );
 }
 
-function ordinal(n: number): string {
-  const s = ['th', 'st', 'nd', 'rd'];
-  const v = n % 100;
-  return n + (s[(v - 20) % 10] || s[v] || s[0]);
-}
-
-function PlayerRankWidget() {
-  const standing = useMyStanding();
-  if (!standing) return null;
-
-  return (
-    <div className="flex items-center gap-2 sm:gap-4 shrink-0">
-      <div className="flex flex-col items-center">
-        <span className="font-display font-bold text-lg sm:text-2xl leading-none tabular-nums">
-          {ordinal(standing.rank)}
-        </span>
-        <span className="text-wc-bone text-[10px] sm:text-xs font-body tracking-wider mt-0.5 sm:mt-1">
-          rank
-        </span>
-      </div>
-      <div className="flex flex-col items-center">
-        <span className="font-display font-bold text-lg sm:text-2xl leading-none tabular-nums">
-          {standing.totalPoints}
-        </span>
-        <span className="text-wc-bone text-[10px] sm:text-xs font-body tracking-wider mt-0.5 sm:mt-1">
-          pts
-        </span>
-      </div>
-    </div>
-  );
-}
 
 const KICKOFF_TIMESTAMP = Date.UTC(2026, 5, 11, 19, 0, 0);
 
@@ -136,11 +104,12 @@ function CountdownUnit({ value, label }: CountdownUnitProps) {
 }
 
 export function WorldCupCountdown() {
-  const [timeRemaining, setTimeRemaining] = useState<TimeRemaining | null>(null);
+  const [timeRemaining, setTimeRemaining] = useState<TimeRemaining | null>(() => {
+    if (typeof window === 'undefined') return null;
+    return getTimeRemaining(KICKOFF_TIMESTAMP);
+  });
 
   useEffect(() => {
-    setTimeRemaining(getTimeRemaining(KICKOFF_TIMESTAMP));
-
     const intervalId = setInterval(() => {
       setTimeRemaining(getTimeRemaining(KICKOFF_TIMESTAMP));
     }, 1000);
