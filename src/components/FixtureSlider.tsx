@@ -18,10 +18,8 @@ const STAGE_LABELS: Record<FixtureStage, string> = {
   final: 'Final',
 };
 
-const LATE_NIGHT_CUTOFF_HOURS = 5;
 const MATCH_DURATION_MINUTES = 90;
 const MILLISECONDS_PER_DAY = 1000 * 60 * 60 * 24;
-const MILLISECONDS_PER_HOUR = 1000 * 60 * 60;
 const MILLISECONDS_PER_MINUTE = 1000 * 60;
 const COUNTDOWN_TICK_INTERVAL_MS = 30 * 1000;
 
@@ -35,24 +33,20 @@ function TeamFlag({ team }: { team: Team }) {
   return <Flag title={team.name} className="h-6 w-9 rounded-[2px] object-cover ring-1 ring-white/20 shadow-md" />;
 }
 
-function getViewingDay(date: Date) {
-  const adjusted = new Date(date);
-  adjusted.setHours(adjusted.getHours() - LATE_NIGHT_CUTOFF_HOURS);
-  adjusted.setHours(0, 0, 0, 0);
-  return adjusted;
-}
-
-function getDaysUntilViewing(kickoff: Date, now: Date) {
-  const kickoffViewingDay = getViewingDay(kickoff);
-  const todayViewingDay = getViewingDay(now);
-  return Math.round(
-    (kickoffViewingDay.getTime() - todayViewingDay.getTime()) / MILLISECONDS_PER_DAY
-  );
+function getDaysUntil(kickoff: Date, now: Date) {
+  const kickoffDay = new Date(kickoff);
+  kickoffDay.setHours(0, 0, 0, 0);
+  const todayDay = new Date(now);
+  todayDay.setHours(0, 0, 0, 0);
+  return Math.round((kickoffDay.getTime() - todayDay.getTime()) / MILLISECONDS_PER_DAY);
 }
 
 function formatKickoffDay(kickoff: Date, now: Date) {
-  const daysUntil = getDaysUntilViewing(kickoff, now);
+  const daysUntil = getDaysUntil(kickoff, now);
 
+  if (daysUntil === -1) {
+    return 'Yesterday';
+  }
   if (daysUntil === 0) {
     return 'Today';
   }
@@ -78,22 +72,6 @@ function formatKickoffTime(kickoff: Date) {
   });
 }
 
-function formatCountdownToKickoff(kickoff: Date, now: Date) {
-  const millisecondsUntil = kickoff.getTime() - now.getTime();
-  if (millisecondsUntil <= 0) {
-    return null;
-  }
-
-  const hours = Math.floor(millisecondsUntil / MILLISECONDS_PER_HOUR);
-  const minutes = Math.floor((millisecondsUntil % MILLISECONDS_PER_HOUR) / MILLISECONDS_PER_MINUTE);
-
-  if (hours === 0) {
-    const displayMinutes = Math.max(minutes, 1);
-    return `in ${displayMinutes}m`;
-  }
-
-  return `in ${hours}h ${minutes}m`;
-}
 
 
 function isFixtureLive(kickoff: Date, now: Date, result?: MatchResult) {
@@ -174,9 +152,6 @@ export function FixtureCard({ fixture, now, isFullWidth, result }: FixtureCardPr
   const timeLabel = formatKickoffTime(kickoff);
   const stageLabel = getStageLabel(fixture);
 
-  const isToday = dayLabel === 'Today';
-  const countdownLabel = isToday && !isLive ? formatCountdownToKickoff(kickoff, now) : null;
-
   const homeGlow = `radial-gradient(circle at top left, ${fixture.homeTeam.accentColor} 0%, transparent 45%)`;
   const awayGlow = `radial-gradient(circle at top right, ${fixture.awayTeam.accentColor} 0%, transparent 45%)`;
   const cardBackground = `${homeGlow}, ${awayGlow}, #0a0a0a`;
@@ -203,15 +178,9 @@ export function FixtureCard({ fixture, now, isFullWidth, result }: FixtureCardPr
               <LiveIndicator />
             ) : (
               <div className="flex flex-col items-end text-right">
-                {countdownLabel ? (
-                  <span className="text-[10px] font-medium text-white/55 tabular-nums">
-                    {countdownLabel}
-                  </span>
-                ) : !isToday ? (
-                  <span className="text-[10px] font-medium uppercase tracking-wider text-white/60">
-                    {dayLabel}
-                  </span>
-                ) : null}
+                <span className="text-[10px] font-medium uppercase tracking-wider text-white/60">
+                  {dayLabel}
+                </span>
                 <span className="text-[13px] font-semibold text-white tabular-nums">
                   {timeLabel}
                 </span>

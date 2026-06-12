@@ -279,6 +279,23 @@ function GroupedPointsRow({
   );
 }
 
+const SKELETON_NAME_WIDTHS = ['w-24', 'w-32', 'w-20', 'w-28', 'w-16'];
+
+function SkeletonPredictionRow({ index }: { index: number }) {
+  return (
+    <div
+      className="flex items-center justify-between gap-3 border-b border-white/10 py-3 last:border-0 animate-pulse"
+      style={{ animationDelay: `${index * 60}ms` }}
+    >
+      <div className="flex min-w-0 flex-1 items-center gap-3">
+        <div className="w-[30px] h-[30px] rounded-full bg-white/10 shrink-0" />
+        <div className={`h-4 rounded bg-white/10 ${SKELETON_NAME_WIDTHS[index % SKELETON_NAME_WIDTHS.length]}`} />
+      </div>
+      <div className="w-14 h-8 rounded-lg bg-white/10 shrink-0" />
+    </div>
+  );
+}
+
 function MatchPredictionCard({
   fixture,
   now,
@@ -288,6 +305,7 @@ function MatchPredictionCard({
   result,
   rankMap,
   viewerId,
+  isLoading,
   onPlayerClick,
 }: {
   fixture: Fixture;
@@ -298,6 +316,7 @@ function MatchPredictionCard({
   result?: MatchResult;
   rankMap: Map<string, number>;
   viewerId: string | null;
+  isLoading: boolean;
   onPlayerClick: (playerId: string) => void;
 }) {
   const hasStarted = new Date(fixture.kickoff) <= now;
@@ -389,6 +408,21 @@ function MatchPredictionCard({
     () => players.filter((p) => !predictingIds.has(p.id)),
     [players, predictingIds]
   );
+
+  if (isLoading) {
+    return (
+      <div className="overflow-hidden rounded-2xl bg-wc-ink">
+        <div className="p-3">
+          <FixtureCard fixture={fixture} now={now} isFullWidth result={result} />
+        </div>
+        <div className="border-t border-white/10 px-4">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <SkeletonPredictionRow key={i} index={i} />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="overflow-hidden rounded-2xl bg-wc-ink">
@@ -741,8 +775,11 @@ export default function PredictionsPage() {
   const now = useMemo(() => getNow(), []);
   const availableDates = useMemo(() => buildAvailableDates(fixtures), []);
   const firestoreUsers = useAuthStore((s) => s.allUsers);
+  const usersLoading = useAuthStore((s) => s.usersLoading);
   const viewerId = useAuthStore((s) => s.user?.uid ?? null);
   const storeResults = useAuthStore((s) => s.results);
+  const resultsLoading = useAuthStore((s) => s.resultsLoading);
+  const isLoading = usersLoading || resultsLoading;
   const resultMap = useMemo(
     () => new Map(storeResults.map((r) => [r.fixtureId, r])),
     [storeResults]
@@ -953,6 +990,7 @@ export default function PredictionsPage() {
                     result={resultMap.get(fixture.id)}
                     rankMap={rankMap}
                     viewerId={viewerId}
+                    isLoading={isLoading}
                     onPlayerClick={setSelectedPlayerId}
                   />
                 ))}
