@@ -72,6 +72,17 @@ function formatKickoffTime(kickoff: Date) {
   });
 }
 
+function formatCountdown(kickoff: Date, now: Date): string | null {
+  const diffMs = kickoff.getTime() - now.getTime();
+  if (diffMs <= 0 || diffMs > 24 * 60 * 60 * 1000) return null;
+  const totalMins = Math.floor(diffMs / (1000 * 60));
+  const hrs = Math.floor(totalMins / 60);
+  const mins = totalMins % 60;
+  if (hrs === 0) return `in ${mins}m`;
+  if (mins === 0) return `in ${hrs}h`;
+  return `in ${hrs}h ${mins}m`;
+}
+
 
 
 function isFixtureLive(kickoff: Date, now: Date, result?: MatchResult) {
@@ -152,6 +163,8 @@ export function FixtureCard({ fixture, now, isFullWidth, result }: FixtureCardPr
   const timeLabel = formatKickoffTime(kickoff);
   const stageLabel = getStageLabel(fixture);
 
+  const countdownLabel = formatCountdown(kickoff, now);
+
   const homeGlow = `radial-gradient(circle at top left, ${fixture.homeTeam.accentColor} 0%, transparent 45%)`;
   const awayGlow = `radial-gradient(circle at top right, ${fixture.awayTeam.accentColor} 0%, transparent 45%)`;
   const cardBackground = `${homeGlow}, ${awayGlow}, #0a0a0a`;
@@ -178,9 +191,15 @@ export function FixtureCard({ fixture, now, isFullWidth, result }: FixtureCardPr
               <LiveIndicator />
             ) : (
               <div className="flex flex-col items-end text-right">
-                <span className="text-[10px] font-medium uppercase tracking-wider text-white/60">
-                  {dayLabel}
-                </span>
+                {countdownLabel ? (
+                  <span className="text-[9px] font-medium text-white/60 tabular-nums">
+                    {countdownLabel}
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-medium uppercase tracking-wider text-white/60">
+                    {dayLabel}
+                  </span>
+                )}
                 <span className="text-[13px] font-semibold text-white tabular-nums">
                   {timeLabel}
                 </span>
