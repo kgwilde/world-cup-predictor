@@ -137,11 +137,17 @@ export default function PlayerCardModal({
 
   const resultMap = useMemo(() => new Map(results.map((r) => [r.fixtureId, r])), [results]);
   const fixtureMap = useMemo(() => new Map(fixtures.map((f) => [f.id, f])), [fixtures]);
-
+  if (player.id === 'BT4kIKcu0yRz70hJrLXhcA9P43s2') {
+    console.log(playerChips);
+    console.log(fixtureMap);
+  }
   const chipsUsed = useMemo(
     () =>
       [...playerChips].filter((id) => {
         const f = fixtureMap.get(id);
+        if (f && new Date(f.kickoff) <= now) {
+          console.log(id);
+        }
         return f && new Date(f.kickoff) <= now;
       }).length,
     [playerChips, fixtureMap, now]
@@ -493,4 +499,3 @@ function PlayerSpecialsTab({
     </div>
   );
 }
-

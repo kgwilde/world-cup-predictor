@@ -12,7 +12,7 @@ export function PointsBadge({
 }) {
   const label = points === 1 ? '1 pt' : `${points} pts`;
 
-  if (multiChipApplied && points > 0) {
+  if (multiChipApplied) {
     return (
       <span
         className="relative inline-flex shrink-0 rounded-md"

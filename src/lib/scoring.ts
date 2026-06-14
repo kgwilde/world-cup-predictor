@@ -30,21 +30,10 @@ export function scoreMatch(prediction: Prediction, result: MatchResult): MatchPo
   };
 }
 
-function firstReachFixture(
-  matchPoints: MatchPoints[],
-  orderMap: Map<string, number>,
-  targetTotal: number
-): number {
-  if (targetTotal === 0) return -1;
-  const sorted = [...matchPoints].sort(
-    (a, b) => (orderMap.get(a.fixtureId) ?? 0) - (orderMap.get(b.fixtureId) ?? 0)
-  );
+function buildCumulativeHistory(matchPoints: MatchPoints[], orderedFixtureIds: string[]): number[] {
+  const pointsByFixture = new Map(matchPoints.map((mp) => [mp.fixtureId, mp.points]));
   let running = 0;
-  for (const mp of sorted) {
-    running += mp.points;
-    if (running >= targetTotal) return orderMap.get(mp.fixtureId) ?? 0;
-  }
-  return orderMap.size;
+  return orderedFixtureIds.map((id) => (running += pointsByFixture.get(id) ?? 0));
 }
 
 export function calculateStandings(
@@ -67,13 +56,11 @@ export function calculateStandings(
 
   const resultMap = new Map(includedResults.map((r) => [r.fixtureId, r]));
 
-  const fixtureOrderMap: Map<string, number> = fixtures
-    ? new Map(
-        [...fixtures]
-          .sort((a, b) => new Date(a.kickoff).getTime() - new Date(b.kickoff).getTime())
-          .map((f, i) => [f.id, i])
-      )
-    : new Map();
+  const orderedFixtureIds: string[] = fixtures
+    ? [...fixtures]
+        .sort((a, b) => new Date(a.kickoff).getTime() - new Date(b.kickoff).getTime())
+        .map((f) => f.id)
+    : [];
 
   const standings: PlayerStanding[] = players.map((player) => {
     const playerPredictions = predictions.filter((p) => p.playerId === player.id);
@@ -93,16 +80,21 @@ export function calculateStandings(
 
   standings.sort((a, b) => {
     if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
-    if (fixtureOrderMap.size > 0) {
-      const aReach = firstReachFixture(a.matchPoints, fixtureOrderMap, a.totalPoints);
-      const bReach = firstReachFixture(b.matchPoints, fixtureOrderMap, b.totalPoints);
-      if (aReach !== bReach) return aReach - bReach;
+    if (orderedFixtureIds.length > 0) {
+      const aCum = buildCumulativeHistory(a.matchPoints, orderedFixtureIds);
+      const bCum = buildCumulativeHistory(b.matchPoints, orderedFixtureIds);
+      for (let i = 0; i < orderedFixtureIds.length; i++) {
+        if (aCum[i] !== bCum[i]) return bCum[i] - aCum[i];
+      }
     }
     return a.player.name.localeCompare(b.player.name);
   });
 
+  // Dense ranking: tied players share a rank, next distinct group takes the next integer
+  let denseRank = 0;
   standings.forEach((s, i) => {
-    s.rank = i + 1;
+    if (i === 0 || s.totalPoints !== standings[i - 1].totalPoints) denseRank++;
+    s.rank = denseRank;
   });
 
   return standings;
