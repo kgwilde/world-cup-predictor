@@ -105,9 +105,6 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className="dark">
-      <head>
-        <link rel="preload" as="image" href="/logo.svg" />
-      </head>
       <body className="font-body antialiased">
         <div className="min-h-screen bg-wc-black pb-16 sm:pb-0">
           <ClientProviders />

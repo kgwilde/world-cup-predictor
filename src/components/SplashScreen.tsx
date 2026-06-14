@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 
+import Image from 'next/image';
+
 import { useAuthStore } from '@/app/stores/useAuthStore';
 
 export function SplashScreen() {
@@ -23,8 +25,14 @@ export function SplashScreen() {
 
   return (
     <div className={`splash-screen${fading ? ' splash-fading' : ''}`}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/logo.svg" alt="FIFA World Cup 2026" className="splash-logo" />
+      <Image
+        src="/logo.webp"
+        alt="FIFA World Cup 2026"
+        width={320}
+        height={480}
+        className="splash-logo"
+        priority
+      />
       <p className="splash-text">MATCH PREDICTOR</p>
     </div>
   );
