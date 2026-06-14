@@ -90,11 +90,8 @@ export function calculateStandings(
     return a.player.name.localeCompare(b.player.name);
   });
 
-  // Dense ranking: tied players share a rank, next distinct group takes the next integer
-  let denseRank = 0;
   standings.forEach((s, i) => {
-    if (i === 0 || s.totalPoints !== standings[i - 1].totalPoints) denseRank++;
-    s.rank = denseRank;
+    s.rank = i + 1;
   });
 
   return standings;
