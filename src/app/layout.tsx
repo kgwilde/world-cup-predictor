@@ -1,9 +1,11 @@
 import type { Metadata, Viewport } from 'next';
+import { cookies } from 'next/headers';
 import { Analytics } from '@vercel/analytics/next';
 
 import { ClientProviders } from '@/components/ClientProviders';
 import { Header } from '@/components/Header';
 import { Navigation } from '@/components/navigation';
+import { SplashScreen } from '@/components/SplashScreen';
 
 import './globals.css';
 
@@ -102,12 +104,16 @@ export const viewport: Viewport = {
   userScalable: false,
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const cookieStore = await cookies();
+  const showSplash = !cookieStore.get('splash-shown');
+
   return (
     <html lang="en" className="dark">
       <body className="font-body antialiased">
         <div className="min-h-screen bg-wc-black pb-16 sm:pb-0">
           <ClientProviders />
+          {showSplash && <SplashScreen />}
           <Header />
           <Navigation />
           <main>{children}</main>

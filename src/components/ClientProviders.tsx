@@ -8,13 +8,6 @@ const AuthBootstrap = dynamic(
   { ssr: false }
 );
 
-import { SplashScreen } from '@/components/SplashScreen';
-
 export function ClientProviders() {
-  return (
-    <>
-      <AuthBootstrap />
-      <SplashScreen />
-    </>
-  );
+  return <AuthBootstrap />;
 }

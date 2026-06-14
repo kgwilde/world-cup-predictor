@@ -16,6 +16,8 @@ export function SplashScreen() {
     if (!usersLoading && !resultsLoading) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setFading(true);
+      // Set cookie so the server omits the splash on any subsequent load (refresh, pull-to-refresh)
+      document.cookie = 'splash-shown=1; path=/; SameSite=Strict';
       const t = setTimeout(() => setVisible(false), 600);
       return () => clearTimeout(t);
     }
