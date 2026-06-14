@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from 'next';
-import { cookies } from 'next/headers';
 import { Analytics } from '@vercel/analytics/next';
 
 import { ClientProviders } from '@/components/ClientProviders';
@@ -104,16 +103,21 @@ export const viewport: Viewport = {
   userScalable: false,
 };
 
-export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  const cookieStore = await cookies();
-  const showSplash = !cookieStore.get('splash-shown');
-
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" className="dark" suppressHydrationWarning>
       <body className="font-body antialiased">
+        {/* Runs synchronously during HTML parsing, before the browser's first paint.
+            Hides the splash via CSS if this is a pull-to-refresh or browser reload,
+            so it never appears visually — React's useLayoutEffect then unmounts it after hydration. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var n=performance.getEntriesByType('navigation')[0];if(n&&n.type==='reload')document.documentElement.classList.add('splash-reload');}catch(e){}})();`,
+          }}
+        />
         <div className="min-h-screen bg-wc-black pb-16 sm:pb-0">
           <ClientProviders />
-          {showSplash && <SplashScreen />}
+          <SplashScreen />
           <Header />
           <Navigation />
           <main>{children}</main>

@@ -90,6 +90,11 @@ html.dark {
   }
 }
 
+/* Added by inline script before first paint when navigation type is reload */
+html.splash-reload .splash-screen {
+  display: none;
+}
+
 .splash-screen {
   position: fixed;
   inset: 0;
