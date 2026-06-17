@@ -1,7 +1,7 @@
 'use client';
 
 import { Fragment, useMemo, useRef, useState, useEffect } from 'react';
-import { Lock, X } from 'lucide-react';
+import { Clock, Lock, X } from 'lucide-react';
 import { fixtures } from '@/data/fixtures';
 import { allPredictions, allTournamentPicks, allBonusPredictions } from '@/data/entries';
 import type {
@@ -28,6 +28,8 @@ import PlayerCardModal from '@/components/PlayerCardModal';
 
 const GROUP_FIXTURE_IDS = new Set(fixtures.filter((f) => f.stage === 'group').map((f) => f.id));
 const GROUP_CHIP_LIMIT = 10;
+// 03:00 Irish time (UTC+1 in summer)
+const KNOCKOUT_UNLOCK = new Date('2026-06-28T02:00:00Z');
 
 function getRingClass(rank: number | undefined): string {
   if (rank === 1) return 'ring-2 ring-[#FFD000] ring-offset-2 ring-offset-wc-ink';
@@ -580,9 +582,13 @@ function ChipCounter({ used }: { used: number }) {
           />
         ))}
       </div>
-      <p className="text-xs text-white/60 mt-3">
-        A chip doubles points for that prediction. More chips unlock after the group stage.
-      </p>
+      <p className="text-xs text-white/60 mt-3">A chip doubles points for that prediction.</p>
+      <div className="flex items-center gap-2 mt-2 rounded-lg bg-amber-500/10 border border-amber-500/20 px-3 py-2">
+        <Clock size={11} className="text-amber-400/80 shrink-0" />
+        <p className="text-[11px] text-amber-300/80">
+          These chips can only be used on group stage fixtures
+        </p>
+      </div>
     </div>
   );
 }
@@ -681,6 +687,45 @@ function ChipFixtureRow({
   );
 }
 
+const KNOCKOUT_CHIP_LIMIT = 5;
+const KNOCKOUT_TEAL = '#2DD4BF';
+
+function KnockoutChipCounter({ used }: { used: number }) {
+  const [isLocked, setIsLocked] = useState(true);
+
+  useEffect(() => {
+    setIsLocked(Date.now() < KNOCKOUT_UNLOCK.getTime());
+  }, []);
+
+  const remaining = KNOCKOUT_CHIP_LIMIT - used;
+
+  return (
+    <div className={`bg-wc-ink rounded-xl px-4 py-3.5 transition-opacity ${isLocked ? 'opacity-50' : ''}`}>
+      <div className="flex items-center justify-between mb-2.5">
+        <span className="text-sm font-bold text-white flex items-center gap-1.5">
+          {isLocked && <Lock size={13} className="text-white/60" />}
+          {remaining} of {KNOCKOUT_CHIP_LIMIT} knockout chips remaining
+        </span>
+        <span className="text-xs text-white/60">{used} used</span>
+      </div>
+      <div className="flex gap-1.5">
+        {Array.from({ length: KNOCKOUT_CHIP_LIMIT }).map((_, i) => (
+          <div
+            key={i}
+            className="flex-1 h-2 rounded-full transition-colors"
+            style={{ backgroundColor: i < remaining ? KNOCKOUT_TEAL : 'rgba(255,255,255,0.12)' }}
+          />
+        ))}
+      </div>
+      <p className="text-xs text-white/60 mt-3">
+        {isLocked
+          ? 'Unlocks when the group stage ends'
+          : 'A chip doubles points for that prediction.'}
+      </p>
+    </div>
+  );
+}
+
 function MyChipsTab({
   viewerId,
   allPredictions,
@@ -738,6 +783,7 @@ function MyChipsTab({
   return (
     <div className="space-y-4">
       <ChipCounter used={myChipIds.size} />
+      <KnockoutChipCounter used={0} />
 
       {fixturesByDate.map(([dateKey, dayFixtures]) => (
         <div key={dateKey} className="bg-wc-ink rounded-2xl overflow-hidden">
@@ -763,6 +809,7 @@ function MyChipsTab({
           </div>
         </div>
       ))}
+
     </div>
   );
 }

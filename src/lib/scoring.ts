@@ -83,9 +83,11 @@ export function calculateStandings(
     if (orderedFixtureIds.length > 0) {
       const aCum = buildCumulativeHistory(a.matchPoints, orderedFixtureIds);
       const bCum = buildCumulativeHistory(b.matchPoints, orderedFixtureIds);
+      let lastDiffIdx = -1;
       for (let i = 0; i < orderedFixtureIds.length; i++) {
-        if (aCum[i] !== bCum[i]) return bCum[i] - aCum[i];
+        if (aCum[i] !== bCum[i]) lastDiffIdx = i;
       }
+      if (lastDiffIdx !== -1) return bCum[lastDiffIdx] - aCum[lastDiffIdx];
     }
     return a.player.name.localeCompare(b.player.name);
   });
