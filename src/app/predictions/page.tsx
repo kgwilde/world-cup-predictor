@@ -913,6 +913,7 @@ export default function PredictionsPage() {
   const activeButtonRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
+    if (activeTab !== 'matches') return;
     if (activeButtonRef.current) {
       activeButtonRef.current.scrollIntoView({
         inline: 'center',
@@ -920,7 +921,7 @@ export default function PredictionsPage() {
         behavior: 'smooth',
       });
     }
-  }, [selectedDate]);
+  }, [selectedDate, activeTab]);
 
   return (
     <>
