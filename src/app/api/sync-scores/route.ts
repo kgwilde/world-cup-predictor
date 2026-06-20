@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { getAuth } from 'firebase-admin/auth';
 
 import { fixtures } from '@/data/fixtures';
 import { getAdminDb } from '@/lib/firebase-admin';
@@ -128,8 +129,19 @@ function normalizeTeamName(name: string): string {
 }
 
 export async function GET(request: Request) {
-  if (request.headers.get('x-sync-secret') !== process.env.SYNC_SECRET) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const syncSecret = request.headers.get('x-sync-secret');
+  if (syncSecret !== process.env.SYNC_SECRET) {
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    // Ensures Admin SDK is initialised before getAuth()
+    getAdminDb();
+    try {
+      await getAuth().verifyIdToken(authHeader.slice(7));
+    } catch {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
   }
 
   const apiKey = process.env.FOOTBALL_DATA_API_KEY;
@@ -144,7 +156,7 @@ export async function GET(request: Request) {
   const competitionId = 'WC';
   const res = await fetch(
     `https://api.football-data.org/v4/competitions/${competitionId}/matches`,
-    { headers: { 'X-Auth-Token': apiKey } },
+    { headers: { 'X-Auth-Token': apiKey, 'X-Api-Version': 'v4.1' } },
   );
 
   if (!res.ok) {
@@ -171,7 +183,7 @@ export async function GET(request: Request) {
   const updates: Record<string, object> = {};
 
   for (const match of matches) {
-    const { status, homeTeam, awayTeam, score } = match;
+    const { status, homeTeam, awayTeam, score, minute, injuryTime } = match;
 
     if (!['FINISHED', 'IN_PLAY', 'PAUSED'].includes(status)) {
       skipped++;
@@ -205,7 +217,14 @@ export async function GET(request: Request) {
       continue;
     }
 
-    updates[fixtureId] = { fixtureId, homeGoals, awayGoals, status: matchStatus };
+    updates[fixtureId] = {
+      fixtureId,
+      homeGoals,
+      awayGoals,
+      status: matchStatus,
+      ...(minute != null ? { minute } : {}),
+      ...(injuryTime != null ? { injuryTime } : {}),
+    };
     written++;
   }
 

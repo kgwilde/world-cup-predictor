@@ -18,7 +18,7 @@ import { scoreMatch, calculateStandings } from '@/lib/scoring';
 import { resolveAvatarSrc } from '@/lib/avatar';
 import { useAuthStore } from '@/app/stores/useAuthStore';
 import { useMultiChips } from '@/components/hooks/use_multi_chips';
-import { FixtureCard } from '@/components/FixtureSlider';
+import { FixtureCard, isFixtureLive } from '@/components/FixtureSlider';
 import Avatar from '@/components/leaderboard/Avatar';
 import PredictionRow from '@/components/predictions/PredictionRow';
 import ScoreChip from '@/components/predictions/ScoreChip';
@@ -308,6 +308,7 @@ function MatchPredictionCard({
   rankMap,
   viewerId,
   isLoading,
+  isLatest,
   onPlayerClick,
 }: {
   fixture: Fixture;
@@ -319,6 +320,7 @@ function MatchPredictionCard({
   rankMap: Map<string, number>;
   viewerId: string | null;
   isLoading: boolean;
+  isLatest: boolean;
   onPlayerClick: (playerId: string) => void;
 }) {
   const hasStarted = new Date(fixture.kickoff) <= now;
@@ -411,9 +413,17 @@ function MatchPredictionCard({
     [players, predictingIds]
   );
 
+  const latestBanner = isLatest && (
+    <div className="flex items-center gap-1.5 border-b border-wc-gold/20 bg-wc-gold/10 px-4 py-1.5">
+      <span className="h-1.5 w-1.5 rounded-full bg-wc-gold" />
+      <span className="text-[10px] font-bold uppercase tracking-widest text-wc-gold">Latest</span>
+    </div>
+  );
+
   if (isLoading) {
     return (
-      <div className="overflow-hidden rounded-2xl bg-wc-ink">
+      <div className={`overflow-hidden rounded-2xl bg-wc-ink ${isLatest ? 'ring-1 ring-wc-gold/50' : ''}`}>
+        {latestBanner}
         <div className="p-3">
           <FixtureCard fixture={fixture} now={now} isFullWidth result={result} />
         </div>
@@ -427,7 +437,8 @@ function MatchPredictionCard({
   }
 
   return (
-    <div className="overflow-hidden rounded-2xl bg-wc-ink">
+    <div className={`overflow-hidden rounded-2xl bg-wc-ink ${isLatest ? 'ring-1 ring-wc-gold/50' : ''}`}>
+      {latestBanner}
       <div className="p-3">
         <FixtureCard fixture={fixture} now={now} isFullWidth result={result} />
       </div>
@@ -890,6 +901,38 @@ export default function PredictionsPage() {
     [selectedDate]
   );
 
+  const orderedFixturesForDay = useMemo(() => {
+    const started: Fixture[] = [];
+    const upcoming: Fixture[] = [];
+    for (const f of fixturesForDay) {
+      if (new Date(f.kickoff).getTime() <= now.getTime()) {
+        started.push(f);
+      } else {
+        upcoming.push(f);
+      }
+    }
+    started.sort((a, b) => new Date(b.kickoff).getTime() - new Date(a.kickoff).getTime());
+    upcoming.sort((a, b) => new Date(a.kickoff).getTime() - new Date(b.kickoff).getTime());
+    return { started, upcoming };
+  }, [fixturesForDay, now]);
+
+  const latestFixtureIds = useMemo(() => {
+    const { started } = orderedFixturesForDay;
+    if (started.length === 0) return new Set<string>();
+    const liveFixtures = started.filter((f) =>
+      isFixtureLive(new Date(f.kickoff), now, resultMap.get(f.id))
+    );
+    if (liveFixtures.length > 0) {
+      return new Set(liveFixtures.map((f) => f.id));
+    }
+    const mostRecentKickoff = new Date(started[0].kickoff).getTime();
+    return new Set(
+      started
+        .filter((f) => new Date(f.kickoff).getTime() === mostRecentKickoff)
+        .map((f) => f.id)
+    );
+  }, [orderedFixturesForDay, now, resultMap]);
+
   const selectedPlayer = useMemo(
     () => players.find((p) => p.id === selectedPlayerId) ?? null,
     [players, selectedPlayerId]
@@ -1027,7 +1070,7 @@ export default function PredictionsPage() {
               </div>
 
               <div className="space-y-4">
-                {fixturesForDay.map((fixture) => (
+                {orderedFixturesForDay.started.map((fixture) => (
                   <MatchPredictionCard
                     key={fixture.id}
                     fixture={fixture}
@@ -1039,6 +1082,32 @@ export default function PredictionsPage() {
                     rankMap={rankMap}
                     viewerId={viewerId}
                     isLoading={isLoading}
+                    isLatest={latestFixtureIds.has(fixture.id)}
+                    onPlayerClick={setSelectedPlayerId}
+                  />
+                ))}
+                {orderedFixturesForDay.started.length > 0 && orderedFixturesForDay.upcoming.length > 0 && (
+                  <div className="flex items-center gap-3">
+                    <div className="h-px flex-1 bg-white/10" />
+                    <span className="text-[10px] font-semibold uppercase tracking-widest text-white/30">
+                      Upcoming
+                    </span>
+                    <div className="h-px flex-1 bg-white/10" />
+                  </div>
+                )}
+                {orderedFixturesForDay.upcoming.map((fixture) => (
+                  <MatchPredictionCard
+                    key={fixture.id}
+                    fixture={fixture}
+                    now={now}
+                    players={players}
+                    allPredictions={visiblePredictions}
+                    allChips={allChips}
+                    result={resultMap.get(fixture.id)}
+                    rankMap={rankMap}
+                    viewerId={viewerId}
+                    isLoading={isLoading}
+                    isLatest={false}
                     onPlayerClick={setSelectedPlayerId}
                   />
                 ))}

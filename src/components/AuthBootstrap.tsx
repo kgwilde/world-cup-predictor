@@ -3,9 +3,11 @@
 import { useEffect } from 'react';
 
 import { useAuthStore } from '@/app/stores/useAuthStore';
+import { useLiveSync } from '@/components/hooks/useLiveSync';
 
 export function AuthBootstrap() {
   const init = useAuthStore((s) => s.init);
+  useLiveSync();
 
   useEffect(() => {
     const unsubscribe = init();

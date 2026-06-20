@@ -1,4 +1,4 @@
-import { arrayRemove, arrayUnion, collection, doc, getDoc, getDocsFromServer, query, setDoc, updateDoc, where } from 'firebase/firestore';
+import { arrayRemove, arrayUnion, collection, doc, getDoc, getDocsFromServer, onSnapshot, query, setDoc, updateDoc, where } from 'firebase/firestore';
 
 import { db } from './firebase';
 import type { MatchResult, PublicProfile, UserProfile } from './types';
@@ -36,6 +36,23 @@ export async function getResults(): Promise<MatchResult[]> {
   if (!snap.exists()) return [];
   return Object.values(snap.data() as Record<string, unknown>).filter(
     (v): v is MatchResult => typeof v === 'object' && v !== null && 'fixtureId' in v,
+  );
+}
+
+function parseResultsDoc(data: Record<string, unknown>): MatchResult[] {
+  return Object.values(data).filter(
+    (v): v is MatchResult => typeof v === 'object' && v !== null && 'fixtureId' in v,
+  );
+}
+
+export function subscribeToResults(
+  onUpdate: (results: MatchResult[]) => void,
+  onError?: () => void,
+): () => void {
+  return onSnapshot(
+    doc(db, 'results', 'all'),
+    (snap) => onUpdate(snap.exists() ? parseResultsDoc(snap.data() as Record<string, unknown>) : []),
+    () => onError?.(),
   );
 }
 

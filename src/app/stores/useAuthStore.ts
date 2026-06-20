@@ -4,7 +4,7 @@ import { onAuthStateChanged, signOut as firebaseSignOut, type User } from 'fireb
 import { create } from 'zustand';
 
 import { auth } from '@/lib/firebase';
-import { applyMultiChip, createUserProfile, getAllUsers, getResults, getUserProfile, removeMultiChip } from '@/lib/firestore';
+import { applyMultiChip, createUserProfile, getAllUsers, getUserProfile, removeMultiChip, subscribeToResults } from '@/lib/firestore';
 import { preloadedAvatarUrls, resolveAvatarSrc } from '@/lib/avatar';
 import type { MatchResult, PublicProfile, UserProfile } from '@/lib/types';
 
@@ -46,7 +46,7 @@ interface AuthState {
 
 // Module-level guards so we only ever fire one request per session
 let allUsersFetchPromise: Promise<void> | null = null;
-let resultsFetchPromise: Promise<void> | null = null;
+let resultsUnsubscribe: (() => void) | null = null;
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
@@ -102,11 +102,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           .catch(() => set({ usersLoading: false }));
       }
 
-      // Fetch match results once per session
-      if (!resultsFetchPromise) {
-        resultsFetchPromise = getResults()
-          .then((results) => set({ results, resultsLoading: false }))
-          .catch(() => set({ resultsLoading: false }));
+      // Subscribe to live result updates — fires immediately with current data,
+      // then again whenever any client writes a new score to Firestore.
+      if (!resultsUnsubscribe) {
+        resultsUnsubscribe = subscribeToResults(
+          (results) => set({ results, resultsLoading: false }),
+          () => set({ resultsLoading: false }),
+        );
       }
     });
     return unsubscribe;

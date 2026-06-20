@@ -85,7 +85,7 @@ function formatCountdown(kickoff: Date, now: Date): string | null {
 
 
 
-function isFixtureLive(kickoff: Date, now: Date, result?: MatchResult) {
+export function isFixtureLive(kickoff: Date, now: Date, result?: MatchResult) {
   // If the API has told us the status, trust it — matches can run beyond 90 minutes.
   if (result?.status === 'live') return true;
   if (result?.status === 'final') return false;
@@ -222,11 +222,15 @@ export function FixtureCard({ fixture, now, isFullWidth, result }: FixtureCardPr
                     {result.awayGoals}
                   </span>
                 </div>
-                {!isLive && (
+                {isLive && result.minute != null ? (
+                  <span className="text-[9px] font-semibold tabular-nums text-red-400/80">
+                    {result.injuryTime ? `${result.minute}+${result.injuryTime}'` : `${result.minute}'`}
+                  </span>
+                ) : !isLive ? (
                   <span className="text-[9px] font-semibold uppercase tracking-widest text-wc-white/40">
                     FT
                   </span>
-                )}
+                ) : null}
               </div>
             ) : (
               <span className="text-[10px] font-bold uppercase tracking-widest text-white/50">
