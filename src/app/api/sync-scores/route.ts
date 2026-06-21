@@ -130,15 +130,21 @@ function normalizeTeamName(name: string): string {
 
 export async function GET(request: Request) {
   const syncSecret = request.headers.get('x-sync-secret');
-  if (syncSecret !== process.env.SYNC_SECRET) {
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
+  const authHeader = request.headers.get('authorization');
+  const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+
+  const isLegacyCron = syncSecret === process.env.SYNC_SECRET;
+  const isVercelCron = bearerToken !== null && bearerToken === process.env.CRON_SECRET;
+
+  if (!isLegacyCron && !isVercelCron) {
+    // Fall back to Firebase ID token for client-side calls
+    if (!bearerToken) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     // Ensures Admin SDK is initialised before getAuth()
     getAdminDb();
     try {
-      await getAuth().verifyIdToken(authHeader.slice(7));
+      await getAuth().verifyIdToken(bearerToken);
     } catch {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
