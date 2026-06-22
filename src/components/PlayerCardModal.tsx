@@ -28,7 +28,7 @@ function teamName(code: string): string {
 
 function TeamChip({ code }: { code: string }) {
   return (
-    <span className="inline-block text-[11px] font-medium text-white/75 bg-white/8 rounded px-1.5 py-0.5 whitespace-nowrap">
+    <span className="inline-block text-[11px] font-medium text-wc-black/75 dark:text-white/75 bg-black/8 dark:bg-white/8 rounded px-1.5 py-0.5 whitespace-nowrap">
       {teamName(code)}
     </span>
   );
@@ -77,7 +77,7 @@ function ChipPips({ used, total = 10 }: { used: number; total?: number }) {
       {Array.from({ length: total }).map((_, i) => (
         <div
           key={i}
-          className={`w-2 h-2 rounded-full ${i < remaining ? 'bg-wc-gold' : 'bg-white/15'}`}
+          className={`w-2 h-2 rounded-full ${i < remaining ? 'bg-wc-gold' : 'bg-black/15 dark:bg-white/15'}`}
         />
       ))}
     </div>
@@ -89,11 +89,11 @@ function StatCell({ label, value, color }: { label: string; value: string; color
     <div className="flex flex-col items-center gap-0.5">
       <span
         className="font-display font-bold text-lg tabular-nums leading-none"
-        style={{ color: color ?? '#ffffff' }}
+        style={{ color: color ?? 'currentColor' }}
       >
         {value}
       </span>
-      <span className="text-white/40 text-[10px] uppercase tracking-wider">{label}</span>
+      <span className="text-wc-black/40 dark:text-white/40 text-[10px] uppercase tracking-wider">{label}</span>
     </div>
   );
 }
@@ -184,7 +184,7 @@ export default function PlayerCardModal({
       >
         {/* Panel */}
         <div
-          className="relative bg-wc-black flex flex-col overflow-hidden flex-1"
+          className="relative bg-wc-bone dark:bg-wc-black flex flex-col overflow-hidden flex-1"
           onClick={(e) => e.stopPropagation()}
           style={{ animation: 'modal-slide-up 0.45s cubic-bezier(0.32, 0.72, 0, 1) both' }}
         >
@@ -192,7 +192,7 @@ export default function PlayerCardModal({
           <div
             className="relative shrink-0 overflow-hidden"
             style={{
-              background: `radial-gradient(ellipse 85% 110% at 50% 0%, ${cardColor}38 0%, transparent 55%), linear-gradient(165deg, ${cardColor}25 0%, ${cardColor}0e 50%, #020F2A 72%, #020F2A 100%)`,
+              background: `radial-gradient(ellipse 85% 110% at 50% 0%, ${cardColor}38 0%, transparent 55%), linear-gradient(165deg, ${cardColor}25 0%, ${cardColor}0e 50%, var(--card-gradient-mid) 72%, var(--card-gradient-end) 100%)`,
               borderBottom: `1px solid ${cardColor}38`,
             }}
           >
@@ -207,7 +207,7 @@ export default function PlayerCardModal({
             <button
               type="button"
               onClick={onClose}
-              className="absolute top-4 right-4 z-10 flex items-center justify-center w-9 h-9 rounded-full bg-white/10 text-white/60 hover:text-white hover:bg-white/15 transition-colors"
+              className="absolute top-4 right-4 z-10 flex items-center justify-center w-9 h-9 rounded-full bg-black/10 dark:bg-white/10 text-wc-black/60 dark:text-white/60 hover:text-wc-black dark:hover:text-white hover:bg-black/15 dark:hover:bg-white/15 transition-colors"
             >
               <X size={18} />
             </button>
@@ -219,31 +219,31 @@ export default function PlayerCardModal({
                 className={`rounded-full p-[3px] ${player.photoUrl ? 'active:scale-95 transition-transform' : ''}`}
                 style={rankConfig.ringStyle}
               >
-                <div className="rounded-full p-[2px] bg-wc-black">
+                <div className="rounded-full p-[2px] bg-wc-bone dark:bg-wc-black">
                   <Avatar name={player.name} photoUrl={player.photoUrl} size={72} />
                 </div>
               </button>
-              <p className="font-display font-bold text-xl text-white text-center leading-tight mt-3">
+              <p className="font-display font-bold text-xl text-wc-black dark:text-white text-center leading-tight mt-3">
                 {player.teamName ?? player.name}
               </p>
-              {player.teamName && <p className="text-white/40 text-xs mt-0.5">{player.name}</p>}
+              {player.teamName && <p className="text-wc-black/40 dark:text-white/40 text-xs mt-0.5">{player.name}</p>}
             </div>
           </div>
 
           {/* Stats strip */}
-          <div className="shrink-0 grid grid-cols-3 items-center px-6 py-3 border-b border-white/10 bg-wc-black">
-            <StatCell label="Rank" value={standing ? `#${standing.rank}` : '—'} color={'#ffffff'} />
+          <div className="shrink-0 grid grid-cols-3 items-center px-6 py-3 border-b border-black/10 dark:border-white/10 bg-wc-bone dark:bg-wc-black">
+            <StatCell label="Rank" value={standing ? `#${standing.rank}` : '—'} />
             <StatCell label="Points" value={standing ? String(standing.totalPoints) : '—'} />
             <div className="flex flex-col items-center gap-1">
               <ChipPips used={chipsUsed} />
-              <span className="text-white/40 text-[10px] uppercase tracking-wider">
+              <span className="text-wc-black/40 dark:text-white/40 text-[10px] uppercase tracking-wider">
                 {10 - chipsUsed}/10 chips left
               </span>
             </div>
           </div>
 
           {/* Tab strip */}
-          <div className="shrink-0 flex border-b border-white/10 bg-wc-black">
+          <div className="shrink-0 flex border-b border-black/10 dark:border-white/10 bg-wc-bone dark:bg-wc-black">
             {(['matches', 'specials'] as const).map((tab) => (
               <button
                 key={tab}
@@ -251,8 +251,8 @@ export default function PlayerCardModal({
                 onClick={() => setActiveTab(tab)}
                 className={`flex-1 text-center pb-3 pt-2.5 text-sm font-semibold capitalize transition-colors border-b-2 -mb-px ${
                   activeTab === tab
-                    ? 'text-white border-wc-blue'
-                    : 'text-white/40 border-transparent hover:text-white/70'
+                    ? 'text-wc-black dark:text-white border-wc-blue'
+                    : 'text-wc-black/40 dark:text-white/40 border-transparent hover:text-wc-black/70 dark:hover:text-white/70'
                 }`}
               >
                 {tab}
@@ -280,7 +280,7 @@ export default function PlayerCardModal({
                   e.stopPropagation();
                   setShowFullImage(false);
                 }}
-                className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-white/60 hover:text-white transition-colors"
+                className="absolute top-4 right-4 w-9 h-9 rounded-full bg-black/10 dark:bg-white/10 flex items-center justify-center text-wc-black/60 dark:text-white/60 hover:text-wc-black dark:hover:text-white transition-colors"
               >
                 <X size={18} />
               </button>
@@ -291,12 +291,12 @@ export default function PlayerCardModal({
           <div className="overflow-y-auto flex-1 pb-8">
             {activeTab === 'matches' &&
               (grouped.length === 0 ? (
-                <p className="text-center text-white/30 text-sm py-10">No predictions yet</p>
+                <p className="text-center text-wc-black/30 dark:text-white/30 text-sm py-10">No predictions yet</p>
               ) : (
                 grouped.map(({ dateKey, rows }) => (
                   <div key={dateKey}>
-                    <div className="px-4 py-2 bg-white/[0.03] border-b border-white/5">
-                      <span className="text-[11px] font-semibold uppercase tracking-wider text-white/35">
+                    <div className="px-4 py-2 bg-black/[0.03] dark:bg-white/[0.03] border-b border-black/5 dark:border-white/5">
+                      <span className="text-[11px] font-semibold uppercase tracking-wider text-wc-black/35 dark:text-white/35">
                         {formatDateLabel(dateKey)}
                       </span>
                     </div>
@@ -307,7 +307,8 @@ export default function PlayerCardModal({
                         const showChip = hasChip && (isViewer || hasStarted);
                         const result = resultMap.get(fixture.id);
                         const isFinal = result?.status === 'final';
-                        const pts = isFinal
+                        const isMatchLive = result?.status === 'live';
+                        const pts = (isFinal || isMatchLive)
                           ? scoreMatch({ ...prediction, multiChip: showChip }, result!).points
                           : undefined;
                         const resultType = getResultType(
@@ -318,10 +319,10 @@ export default function PlayerCardModal({
                         return (
                           <div
                             key={fixture.id}
-                            className="flex items-center justify-between gap-3 py-3 border-b border-white/8 last:border-0"
+                            className="flex items-center justify-between gap-3 py-3 border-b border-black/8 dark:border-white/8 last:border-0"
                           >
                             <div className="flex-1 min-w-0">
-                              <p className="text-xs text-white/90 truncate">
+                              <p className="text-xs text-wc-black/90 dark:text-white/90 truncate">
                                 {fixture.homeTeam.name} vs {fixture.awayTeam.name}
                               </p>
                             </div>
@@ -341,7 +342,7 @@ export default function PlayerCardModal({
                                 )}
                               </span>
                               {pts !== undefined && (
-                                <PointsBadge points={pts} multiChipApplied={showChip} />
+                                <PointsBadge points={pts} multiChipApplied={showChip} live={isMatchLive} />
                               )}
                             </div>
                           </div>
@@ -380,10 +381,10 @@ function ModalCollapsibleSection({
         onClick={() => setIsOpen((o) => !o)}
         className="w-full flex items-center justify-between py-2"
       >
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-white/35">{label}</p>
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-wc-black/35 dark:text-white/35">{label}</p>
         <ChevronDown
           size={14}
-          className={`text-white/30 transition-transform duration-200 ${isOpen ? 'rotate-0' : '-rotate-90'}`}
+          className={`text-wc-black/30 dark:text-white/30 transition-transform duration-200 ${isOpen ? 'rotate-0' : '-rotate-90'}`}
         />
       </button>
       {isOpen && <div className="pb-1">{children}</div>}
@@ -399,7 +400,7 @@ function PlayerSpecialsTab({
   bonusPredictions: BonusPredictions | null;
 }) {
   if (!tournamentPicks && !bonusPredictions) {
-    return <p className="text-center text-white/30 text-sm py-10">No specials data yet</p>;
+    return <p className="text-center text-wc-black/30 dark:text-white/30 text-sm py-10">No specials data yet</p>;
   }
 
   const knockoutStages: Array<{ label: string; teams: string[] }> = tournamentPicks
@@ -426,7 +427,7 @@ function PlayerSpecialsTab({
     : [];
 
   return (
-    <div className="divide-y divide-white/8 px-4 py-2">
+    <div className="divide-y divide-black/8 dark:divide-white/8 px-4 py-2">
       {tournamentPicks && (
         <>
           <ModalCollapsibleSection label="Tournament Winner">
@@ -436,13 +437,13 @@ function PlayerSpecialsTab({
           </ModalCollapsibleSection>
 
           <ModalCollapsibleSection label="Bracket Picks">
-            <div className="rounded-xl bg-wc-ink overflow-hidden mb-3">
+            <div className="rounded-xl bg-white dark:bg-wc-ink overflow-hidden mb-3">
               {knockoutStages.map(({ label, teams }) => (
                 <div
                   key={label}
-                  className="flex items-start gap-3 px-4 py-3 border-b border-white/8 last:border-0"
+                  className="flex items-start gap-3 px-4 py-3 border-b border-black/8 dark:border-white/8 last:border-0"
                 >
-                  <span className="text-xs text-white/40 w-24 shrink-0 pt-0.5">{label}</span>
+                  <span className="text-xs text-wc-black/40 dark:text-white/40 w-24 shrink-0 pt-0.5">{label}</span>
                   <div className="flex flex-wrap gap-1.5">
                     {teams.map((code) => (
                       <TeamChip key={code} code={code} />
@@ -454,17 +455,17 @@ function PlayerSpecialsTab({
           </ModalCollapsibleSection>
 
           <ModalCollapsibleSection label="Group Picks">
-            <div className="rounded-xl bg-wc-ink overflow-hidden mb-3">
+            <div className="rounded-xl bg-white dark:bg-wc-ink overflow-hidden mb-3">
               {GROUP_CODES.map((group) => {
                 const gp = tournamentPicks.groups[group];
                 return (
                   <div
                     key={group}
-                    className="flex items-center gap-3 px-4 py-2.5 border-b border-white/8 last:border-0"
+                    className="flex items-center gap-3 px-4 py-2.5 border-b border-black/8 dark:border-white/8 last:border-0"
                   >
-                    <span className="text-xs font-bold text-white/30 w-6 shrink-0">{group}</span>
-                    <span className="text-xs text-white/70 flex-1">{teamName(gp.winner)}</span>
-                    <span className="text-xs text-white/40">{teamName(gp.runnerUp)}</span>
+                    <span className="text-xs font-bold text-wc-black/30 dark:text-white/30 w-6 shrink-0">{group}</span>
+                    <span className="text-xs text-wc-black/70 dark:text-white/70 flex-1">{teamName(gp.winner)}</span>
+                    <span className="text-xs text-wc-black/40 dark:text-white/40">{teamName(gp.runnerUp)}</span>
                   </div>
                 );
               })}
@@ -483,14 +484,14 @@ function PlayerSpecialsTab({
 
       {bonusPredictions && (
         <ModalCollapsibleSection label="Bonus Predictions">
-          <div className="rounded-xl bg-wc-ink overflow-hidden mb-3">
+          <div className="rounded-xl bg-white dark:bg-wc-ink overflow-hidden mb-3">
             {bonusRows.map(({ label, value }) => (
               <div
                 key={label}
-                className="flex items-center justify-between px-4 py-2.5 border-b border-white/8 last:border-0"
+                className="flex items-center justify-between px-4 py-2.5 border-b border-black/8 dark:border-white/8 last:border-0"
               >
-                <span className="text-xs text-white/40">{label}</span>
-                <span className="text-sm font-medium text-white/80">{value}</span>
+                <span className="text-xs text-wc-black/40 dark:text-white/40">{label}</span>
+                <span className="text-sm font-medium text-wc-black/80 dark:text-white/80">{value}</span>
               </div>
             ))}
           </div>

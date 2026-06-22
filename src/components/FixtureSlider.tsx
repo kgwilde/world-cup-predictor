@@ -25,12 +25,12 @@ const COUNTDOWN_TICK_INTERVAL_MS = 30 * 1000;
 
 function TeamFlag({ team }: { team: Team }) {
   if (team.code === 'TBD')
-    return <div className="h-6 w-9 rounded-[2px] bg-white/10 ring-1 ring-white/20" aria-hidden />;
+    return <div className="h-6 w-9 rounded-[2px] bg-black/10 ring-1 ring-black/20 dark:bg-white/10 dark:ring-white/20" aria-hidden />;
   const Flag = getFlagByCode(team.code);
-  if (!Flag) return <div className="h-6 w-9 rounded-[2px] bg-white/10 ring-1 ring-white/20" aria-hidden />;
+  if (!Flag) return <div className="h-6 w-9 rounded-[2px] bg-black/10 ring-1 ring-black/20 dark:bg-white/10 dark:ring-white/20" aria-hidden />;
   // Flag is a stable reference from a static module-scope map — not created during render
   // eslint-disable-next-line react-hooks/static-components
-  return <Flag title={team.name} className="h-6 w-9 rounded-[2px] object-cover ring-1 ring-white/20 shadow-md" />;
+  return <Flag title={team.name} className="h-6 w-9 rounded-[2px] object-cover ring-1 ring-black/20 shadow-md dark:ring-white/20" />;
 }
 
 function getDaysUntil(kickoff: Date, now: Date) {
@@ -115,12 +115,12 @@ function LiveIndicator() {
           animation: live-ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
         }
       `}</style>
-      <div className="flex items-center gap-1.5">
+      <div className="flex items-center gap-1.5 bg-black/30 rounded-full px-2 py-0.5 backdrop-blur-sm">
         <span className="relative flex h-2 w-2">
-          <span className="absolute inline-flex h-full w-full animate-live-ping rounded-full bg-red-500 opacity-75" />
-          <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
+          <span className="absolute inline-flex h-full w-full animate-live-ping rounded-full bg-red-400 opacity-75" />
+          <span className="relative inline-flex h-2 w-2 rounded-full bg-red-400" />
         </span>
-        <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-red-400">Live</span>
+        <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-white">Live</span>
       </div>
     </div>
   );
@@ -139,7 +139,7 @@ function TeamHalf({ team, side }: TeamHalfProps) {
     <div className={`flex w-full flex-col gap-1 ${alignment}`}>
       <TeamFlag team={team} />
       <span
-        className={`w-full truncate text-[13px] font-semibold leading-tight text-white ${
+        className={`w-full truncate text-[13px] font-semibold leading-tight text-wc-black dark:text-white ${
           isPlaceholder ? 'text-[11px] font-medium opacity-90' : ''
         } ${side === 'away' ? 'text-right' : ''}`}
       >
@@ -167,14 +167,14 @@ export function FixtureCard({ fixture, now, isFullWidth, result }: FixtureCardPr
 
   const homeGlow = `radial-gradient(circle at top left, ${fixture.homeTeam.accentColor} 0%, transparent 45%)`;
   const awayGlow = `radial-gradient(circle at top right, ${fixture.awayTeam.accentColor} 0%, transparent 45%)`;
-  const cardBackground = `${homeGlow}, ${awayGlow}, #0a0a0a`;
+  const cardBackground = `${homeGlow}, ${awayGlow}, var(--fixture-card-base)`;
 
   const accentBar = `linear-gradient(to right, ${fixture.homeTeam.accentColor} 0%, ${fixture.homeTeam.accentColor} 35%, ${fixture.awayTeam.accentColor} 65%, ${fixture.awayTeam.accentColor} 100%)`;
 
   return (
     <article className={`snap-start shrink-0 ${isFullWidth ? 'w-full' : 'w-[15rem] sm:w-[17rem]'}`}>
       <div
-        className="relative h-[9.5rem] overflow-hidden rounded-xl ring-1 ring-white/10 shadow-lg"
+        className="relative h-[9.5rem] overflow-hidden rounded-xl ring-1 ring-black/10 dark:ring-white/10 shadow-lg"
         style={{ background: cardBackground }}
       >
         <div
@@ -184,7 +184,7 @@ export function FixtureCard({ fixture, now, isFullWidth, result }: FixtureCardPr
         />
         <div className="relative flex h-full flex-col px-4 py-2.5">
           <header className="flex h-9 items-start justify-between gap-2">
-            <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/75">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-wc-black/75 dark:text-white/75">
               {stageLabel}
             </span>
             {isLive ? (
@@ -192,15 +192,15 @@ export function FixtureCard({ fixture, now, isFullWidth, result }: FixtureCardPr
             ) : (
               <div className="flex flex-col items-end text-right">
                 {countdownLabel ? (
-                  <span className="text-[9px] font-medium text-white/60 tabular-nums">
+                  <span className="text-[9px] font-medium text-wc-black/60 dark:text-white/60 tabular-nums">
                     {countdownLabel}
                   </span>
                 ) : (
-                  <span className="text-[10px] font-medium uppercase tracking-wider text-white/60">
+                  <span className="text-[10px] font-medium uppercase tracking-wider text-wc-black/60 dark:text-white/60">
                     {dayLabel}
                   </span>
                 )}
-                <span className="text-[13px] font-semibold text-white tabular-nums">
+                <span className="text-[13px] font-semibold text-wc-black dark:text-white tabular-nums">
                   {timeLabel}
                 </span>
               </div>
@@ -214,11 +214,11 @@ export function FixtureCard({ fixture, now, isFullWidth, result }: FixtureCardPr
             {result ? (
               <div className="flex flex-col items-center gap-0.5">
                 <div className="flex items-center gap-1.5">
-                  <span className="font-display font-bold text-xl text-wc-white tabular-nums leading-none">
+                  <span className="font-display font-bold text-xl text-wc-black dark:text-wc-white tabular-nums leading-none">
                     {result.homeGoals}
                   </span>
-                  <span className="text-wc-white/30 text-sm">–</span>
-                  <span className="font-display font-bold text-xl text-wc-white tabular-nums leading-none">
+                  <span className="text-wc-black/30 dark:text-wc-white/30 text-sm">–</span>
+                  <span className="font-display font-bold text-xl text-wc-black dark:text-wc-white tabular-nums leading-none">
                     {result.awayGoals}
                   </span>
                 </div>
@@ -227,13 +227,13 @@ export function FixtureCard({ fixture, now, isFullWidth, result }: FixtureCardPr
                     {result.injuryTime ? `${result.minute}+${result.injuryTime}'` : `${result.minute}'`}
                   </span>
                 ) : !isLive ? (
-                  <span className="text-[9px] font-semibold uppercase tracking-widest text-wc-white/40">
+                  <span className="text-[9px] font-semibold uppercase tracking-widest text-wc-black/40 dark:text-wc-white/40">
                     FT
                   </span>
                 ) : null}
               </div>
             ) : (
-              <span className="text-[10px] font-bold uppercase tracking-widest text-white/50">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-wc-black/50 dark:text-white/50">
                 vs
               </span>
             )}
@@ -242,8 +242,8 @@ export function FixtureCard({ fixture, now, isFullWidth, result }: FixtureCardPr
             </div>
           </div>
 
-          <footer className="border-t border-white/15 pt-1.5">
-            <p className="text-[10px] leading-snug text-white/65 truncate">{fixture.venue}</p>
+          <footer className="border-t border-black/15 dark:border-white/15 pt-1.5">
+            <p className="text-[10px] leading-snug text-wc-black/65 dark:text-white/65 truncate">{fixture.venue}</p>
           </footer>
         </div>
       </div>
@@ -371,7 +371,7 @@ export function FixtureSlider({ initialResults }: { initialResults?: MatchResult
                   viewMoreAnchorRef.current = renderedFixtures.length - 1;
                   setExtraFuture((n) => n + 20);
                 }}
-                className="text-xs font-semibold text-white/70 hover:text-white active:text-white transition-colors whitespace-nowrap px-2 py-1"
+                className="text-xs font-semibold text-wc-black/60 hover:text-wc-black active:text-wc-black dark:text-white/70 dark:hover:text-white dark:active:text-white transition-colors whitespace-nowrap px-2 py-1"
               >
                 View more →
               </button>

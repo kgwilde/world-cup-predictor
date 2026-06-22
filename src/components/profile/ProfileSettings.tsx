@@ -184,7 +184,7 @@ export function ProfileSettings() {
       <div
         className="relative rounded-2xl overflow-hidden"
         style={{
-          background: `radial-gradient(ellipse 85% 110% at 50% 0%, ${accentColor}38 0%, transparent 55%), linear-gradient(165deg, ${accentColor}25 0%, ${accentColor}0e 50%, #020F2A 72%, #0a0a0a 100%)`,
+          background: `radial-gradient(ellipse 85% 110% at 50% 0%, ${accentColor}38 0%, transparent 55%), linear-gradient(165deg, ${accentColor}25 0%, ${accentColor}0e 50%, var(--card-gradient-mid) 72%, var(--card-gradient-end) 100%)`,
           border: `1px solid ${accentColor}38`,
         }}
       >
@@ -200,7 +200,7 @@ export function ProfileSettings() {
         <div className="absolute top-4 right-4 z-10">
           <span
             className={`inline-block text-xs px-2.5 py-1 rounded-full font-medium ${
-              isApproved ? 'bg-wc-blue/20 text-wc-blue' : 'bg-wc-white/10 text-wc-white/40'
+              isApproved ? 'bg-wc-blue/20 text-wc-blue' : 'bg-wc-black/10 dark:bg-wc-white/10 text-wc-black/40 dark:text-wc-white/40'
             }`}
           >
             {isApproved ? 'Approved' : 'Pending approval'}
@@ -244,7 +244,7 @@ export function ProfileSettings() {
           </div>
 
           {/* Display name */}
-          <p className="font-display font-bold text-xl text-wc-white text-center leading-tight">
+          <p className="font-display font-bold text-xl text-wc-black dark:text-wc-white text-center leading-tight">
             {displayName}
           </p>
           {/* Team name — inline editable */}
@@ -260,7 +260,7 @@ export function ProfileSettings() {
                   placeholder="e.g. Galácticos FC"
                   maxLength={25}
                   disabled={teamNameSaving}
-                  className="flex-1 bg-wc-black/50 text-wc-white text-sm text-center rounded-lg px-3 py-2 outline-none border border-wc-white/20 focus:border-wc-blue/50 placeholder:text-wc-white/20 disabled:opacity-50 transition-colors"
+                  className="flex-1 bg-wc-black/10 dark:bg-wc-black/50 text-wc-black dark:text-wc-white text-sm text-center rounded-lg px-3 py-2 outline-none border border-wc-black/20 dark:border-wc-white/20 focus:border-wc-blue/50 placeholder:text-wc-black/20 dark:placeholder:text-wc-white/20 disabled:opacity-50 transition-colors"
                 />
                 <button
                   onClick={handleTeamNameSave}
@@ -271,12 +271,12 @@ export function ProfileSettings() {
                 </button>
                 <button
                   onClick={handleTeamNameCancel}
-                  className="text-wc-bone/50 hover:text-wc-bone transition-colors shrink-0"
+                  className="text-wc-black/50 dark:text-wc-bone/50 hover:text-wc-black dark:hover:text-wc-bone transition-colors shrink-0"
                 >
                   <X size={16} />
                 </button>
               </div>
-              <span className={`text-[10px] self-start pl-1 tabular-nums ${teamNameValue.length >= 25 ? 'text-wc-red/70' : 'text-wc-white/25'}`}>
+              <span className={`text-[10px] self-start pl-1 tabular-nums ${teamNameValue.length >= 25 ? 'text-wc-red/70' : 'text-wc-black/25 dark:text-wc-white/25'}`}>
                 {teamNameValue.length}/25
               </span>
             </div>
@@ -285,12 +285,12 @@ export function ProfileSettings() {
               onClick={() => setIsEditingTeamName(true)}
               className="group relative mt-1"
             >
-              <span className="font-display font-bold text-sm text-wc-bone/70 group-hover:text-wc-white border-b border-dashed border-wc-white/25 group-hover:border-wc-white/50 pb-0.5 transition-colors">
+              <span className="font-display font-bold text-sm text-wc-black/70 dark:text-wc-bone/70 group-hover:text-wc-black dark:group-hover:text-wc-white border-b border-dashed border-wc-black/25 dark:border-wc-white/25 group-hover:border-wc-black/50 dark:group-hover:border-wc-white/50 pb-0.5 transition-colors">
                 {profile.teamName ?? 'Set your team name'}
               </span>
               <Pencil
                 size={10}
-                className="absolute -right-5 top-1/2 -translate-y-1/2 text-wc-bone/40 group-hover:text-wc-white/70 transition-colors"
+                className="absolute -right-5 top-1/2 -translate-y-1/2 text-wc-black/40 dark:text-wc-bone/40 group-hover:text-wc-black/70 dark:group-hover:text-wc-white/70 transition-colors"
               />
             </button>
           )}
@@ -307,7 +307,7 @@ export function ProfileSettings() {
           <button
             onClick={() => avatarInputRef.current?.click()}
             disabled={avatarLoading}
-            className="mt-5 flex items-center gap-2 text-xs text-wc-bone/35 hover:text-wc-bone/60 border border-wc-white/8 hover:border-wc-white/15 rounded-full px-4 py-1.5 transition-colors disabled:opacity-50"
+            className="mt-5 flex items-center gap-2 text-xs text-wc-black/35 dark:text-wc-bone/35 hover:text-wc-black/60 dark:hover:text-wc-bone/60 border border-wc-black/8 dark:border-wc-white/8 hover:border-wc-black/15 dark:hover:border-wc-white/15 rounded-full px-4 py-1.5 transition-colors disabled:opacity-50"
           >
             <Upload size={10} />
             {avatarLoading ? 'Uploading…' : 'Change photo'}
@@ -332,8 +332,8 @@ export function ProfileSettings() {
       </div>
 
       {/* ── Predictions card ── */}
-      <div className="bg-wc-ink rounded-2xl p-5">
-        <p className="font-display font-bold text-sm text-wc-white mb-4">Predictions</p>
+      <div className="bg-white dark:bg-wc-ink rounded-2xl p-5">
+        <p className="font-display font-bold text-sm text-wc-black dark:text-wc-white mb-4">Predictions</p>
 
         <PredictionsTracker hasPredictions={hasPredictions} />
 
@@ -341,21 +341,21 @@ export function ProfileSettings() {
           <a
             href="/predictions-template.xlsx"
             download
-            className="flex items-center justify-center gap-2 text-sm text-wc-bone border border-wc-white/10 rounded-lg px-4 py-2.5 hover:border-wc-white/30 hover:text-wc-white transition-colors"
+            className="flex items-center justify-center gap-2 text-sm text-wc-black/70 dark:text-wc-bone border border-wc-black/10 dark:border-wc-white/10 rounded-lg px-4 py-2.5 hover:border-wc-black/30 dark:hover:border-wc-white/30 hover:text-wc-black dark:hover:text-wc-white transition-colors"
           >
             <Download size={14} />
             Download template
           </a>
 
           {hasPredictions && (
-            <div className="flex items-center gap-3 bg-wc-black/30 border border-wc-white/10 rounded-lg px-3 py-2.5">
+            <div className="flex items-center gap-3 bg-wc-black/5 dark:bg-wc-black/30 border border-wc-black/10 dark:border-wc-white/10 rounded-lg px-3 py-2.5">
               <FileSpreadsheet size={16} className="text-wc-blue shrink-0" />
               <div className="flex-1 min-w-0">
-                <p className="text-wc-white text-xs font-medium truncate">
+                <p className="text-wc-black dark:text-wc-white text-xs font-medium truncate">
                   {profile.predictionFileName ?? 'predictions file'}
                 </p>
                 {profile.predictionUploadedAt && (
-                  <p className="text-wc-bone/40 text-xs mt-0.5">
+                  <p className="text-wc-black/40 dark:text-wc-bone/40 text-xs mt-0.5">
                     Uploaded {formatDate(profile.predictionUploadedAt)}
                   </p>
                 )}
@@ -397,7 +397,7 @@ export function ProfileSettings() {
       {/* ── Sign out ── */}
       <button
         onClick={signOut}
-        className="flex items-center justify-center gap-2 text-wc-bone text-sm border border-wc-ink rounded-lg py-3 hover:border-red-400 hover:text-red-400 transition-colors"
+        className="flex items-center justify-center gap-2 text-wc-black/70 dark:text-wc-bone text-sm border border-wc-black/10 dark:border-wc-ink rounded-lg py-3 hover:border-red-400 hover:text-red-400 transition-colors"
       >
         <X size={14} />
         Sign out
@@ -463,13 +463,13 @@ function PredictionsTracker({ hasPredictions }: { hasPredictions: boolean }) {
                   ? 'rgba(64,96,240,0.2)'
                   : step.failed
                     ? 'rgba(248,113,113,0.1)'
-                    : 'rgba(255,255,255,0.06)',
+                    : 'var(--ui-surface)',
                 border: step.done
                   ? '1.5px solid rgba(64,96,240,0.6)'
                   : step.failed
                     ? '1.5px solid rgba(248,113,113,0.3)'
-                    : '1.5px solid rgba(255,255,255,0.12)',
-                color: step.done ? '#4060f0' : step.failed ? '#f87171' : 'rgba(255,255,255,0.2)',
+                    : '1.5px solid var(--ui-border)',
+                color: step.done ? '#4060f0' : step.failed ? '#f87171' : 'var(--ui-fg-faint)',
               }}
             >
               {step.done ? '✓' : step.failed ? '✕' : i + 1}
@@ -479,7 +479,7 @@ function PredictionsTracker({ hasPredictions }: { hasPredictions: boolean }) {
                 className="w-px flex-1 my-1"
                 style={{
                   minHeight: 16,
-                  background: step.done ? 'rgba(64,96,240,0.25)' : 'rgba(255,255,255,0.07)',
+                  background: step.done ? 'rgba(64,96,240,0.25)' : 'var(--ui-border)',
                 }}
               />
             )}
@@ -491,10 +491,10 @@ function PredictionsTracker({ hasPredictions }: { hasPredictions: boolean }) {
               className="text-sm font-medium leading-tight"
               style={{
                 color: step.done
-                  ? '#ffffff'
+                  ? 'var(--ui-fg)'
                   : step.failed
                     ? 'rgba(248,113,113,0.6)'
-                    : 'rgba(255,255,255,0.35)',
+                    : 'var(--ui-fg-muted)',
               }}
             >
               {step.label}
@@ -503,10 +503,10 @@ function PredictionsTracker({ hasPredictions }: { hasPredictions: boolean }) {
               className="text-xs mt-0.5 flex items-center gap-1"
               style={{
                 color: step.done
-                  ? 'rgba(244,241,234,0.4)'
+                  ? 'var(--ui-fg-muted)'
                   : step.failed
                     ? 'rgba(248,113,113,0.4)'
-                    : 'rgba(255,255,255,0.18)',
+                    : 'var(--ui-fg-faint)',
               }}
             >
               {i === 2 && !deadlinePassed && !hasPredictions && (
@@ -544,14 +544,14 @@ function StatTile({
   error?: boolean;
 }) {
   return (
-    <div className="bg-wc-ink rounded-xl px-3 py-3.5 flex flex-col items-center gap-1">
+    <div className="bg-white dark:bg-wc-ink rounded-xl px-3 py-3.5 flex flex-col items-center gap-1">
       <p
         className="font-display font-bold text-lg leading-none tabular-nums"
-        style={{ color: highlight ? '#4060f0' : error ? '#f87171' : '#ffffff' }}
+        style={{ color: highlight ? '#4060f0' : error ? '#f87171' : 'var(--ui-fg)' }}
       >
         {value}
       </p>
-      <p className="text-wc-bone/40 text-xs">{label}</p>
+      <p className="text-wc-black/40 dark:text-wc-bone/40 text-xs">{label}</p>
     </div>
   );
 }
@@ -580,7 +580,7 @@ function Initials({ name, size }: { name: string; size: number }) {
 function Spinner({ size = 24 }: { size?: number }) {
   return (
     <div
-      className="border-2 border-wc-white/30 border-t-wc-white rounded-full animate-spin"
+      className="border-2 border-wc-black/30 dark:border-wc-white/30 border-t-wc-black dark:border-t-wc-white rounded-full animate-spin"
       style={{ width: size, height: size }}
     />
   );

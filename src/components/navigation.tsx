@@ -42,8 +42,8 @@ function NavLink({ item, isActive, variant, isDisabled = false, showBadge = fals
       'relative px-4 py-2 font-display font-bold text-sm tracking-wide transition-colors border-b-2';
 
     const activeClasses = isActive
-      ? 'border-wc-white text-wc-white'
-      : 'border-transparent text-wc-white/40 hover:text-wc-white';
+      ? 'border-wc-black dark:border-wc-white text-wc-black dark:text-wc-white'
+      : 'border-transparent text-wc-black/40 dark:text-wc-white/40 hover:text-wc-black dark:hover:text-wc-white';
 
     const disabledClasses = isDisabled ? 'opacity-40 pointer-events-none cursor-not-allowed' : '';
 
@@ -63,7 +63,7 @@ function NavLink({ item, isActive, variant, isDisabled = false, showBadge = fals
   const baseClasses =
     'relative flex flex-col items-center justify-center gap-1 flex-1 py-3 pb-5 transition-colors';
 
-  const activeClasses = isActive ? 'text-wc-white' : 'text-gray-400';
+  const activeClasses = isActive ? 'text-wc-black dark:text-wc-white' : 'text-gray-400';
 
   const disabledClasses = isDisabled ? 'opacity-40 pointer-events-none cursor-not-allowed' : '';
 
@@ -98,7 +98,7 @@ export function Navigation() {
 
   return (
     <>
-      <nav className="hidden sm:block bg-wc-ink border-b border-wc-white/10 sticky top-[88px] z-10">
+      <nav className="hidden sm:block bg-white dark:bg-wc-ink border-b border-black/10 dark:border-wc-white/10 sticky top-[88px] z-10">
         <div className="max-w-3xl mx-auto px-4 flex items-center justify-center gap-2">
           {navItems.map((item) => {
             return (
@@ -114,7 +114,7 @@ export function Navigation() {
         </div>
       </nav>
 
-      <nav className="sm:hidden fixed bottom-0 inset-x-0 bg-wc-ink border-t border-wc-white/10 z-20 pb-[env(safe-area-inset-bottom)]">
+      <nav className="sm:hidden fixed bottom-0 inset-x-0 bg-white dark:bg-wc-ink border-t border-black/10 dark:border-wc-white/10 z-20 pb-[env(safe-area-inset-bottom)]">
         <div className="max-w-2xl mx-auto flex items-stretch">
           {navItems.map((item) => {
             return (

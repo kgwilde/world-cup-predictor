@@ -28,11 +28,11 @@ export function SignIn() {
           <Trophy size={36} className="text-wc-gold" />
         </div>
 
-        <h1 className="font-display font-bold text-4xl text-wc-white mb-1">World Cup 2026</h1>
+        <h1 className="font-display font-bold text-4xl text-wc-black dark:text-wc-white mb-1">World Cup 2026</h1>
         <p className="font-display font-bold text-base text-wc-gold tracking-[0.2em] mb-4">
           PREDICT · COMPETE · WIN
         </p>
-        <p className="text-wc-bone/50 text-sm mb-10 max-w-[260px]">
+        <p className="text-wc-black/50 dark:text-wc-bone/50 text-sm mb-10 max-w-[260px]">
           Sign in to submit your predictions and compete with your group on the leaderboard.
         </p>
 

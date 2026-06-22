@@ -10,7 +10,7 @@ export default function ProfilePage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="w-8 h-8 border-2 border-wc-ink border-t-wc-blue rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-wc-black/15 dark:border-wc-ink border-t-wc-blue rounded-full animate-spin" />
       </div>
     );
   }
@@ -18,8 +18,8 @@ export default function ProfilePage() {
   if (profileError) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 text-center">
-        <p className="text-wc-white font-semibold mb-2">Couldn&apos;t load your profile</p>
-        <p className="text-wc-bone text-sm mb-6">
+        <p className="text-wc-black dark:text-wc-white font-semibold mb-2">Couldn&apos;t load your profile</p>
+        <p className="text-wc-black/60 dark:text-wc-bone text-sm mb-6">
           There was a problem setting up your account. Please try signing out and signing in again.
         </p>
         <button

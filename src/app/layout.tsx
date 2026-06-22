@@ -112,10 +112,10 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             so it never appears visually — React's useLayoutEffect then unmounts it after hydration. */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var n=performance.getEntriesByType('navigation')[0];if(n&&n.type==='reload')document.documentElement.classList.add('splash-reload');}catch(e){}})();`,
+            __html: `(function(){try{var n=performance.getEntriesByType('navigation')[0];if(n&&n.type==='reload')document.documentElement.classList.add('splash-reload');}catch(e){}})();(function(){try{var t=JSON.parse(localStorage.getItem('theme')||'{}');if(t.state&&t.state.theme==='light')document.documentElement.classList.remove('dark');}catch(e){}})();`,
           }}
         />
-        <div className="min-h-screen bg-wc-black pb-16 sm:pb-0">
+        <div className="min-h-screen bg-wc-bone dark:bg-wc-black pb-16 sm:pb-0">
           <ClientProviders />
           <SplashScreen />
           <Header />

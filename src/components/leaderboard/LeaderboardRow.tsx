@@ -18,15 +18,15 @@ const RANK_CONFIG: Record<
   { rankClass: string; ringClass: string; rowClass: string; shadowClass: string }
 > = {
   1: {
-    rankClass: 'text-[#FFD000]',
-    ringClass: 'ring-2 ring-[#FFD000] ring-offset-2 ring-offset-[#070a10]',
-    rowClass: 'bg-gradient-to-r from-[#FFD000]/[0.20] to-[#131a26] border border-[#FFD000]/80',
+    rankClass: 'text-[#c8961e] dark:text-[#FFD000]',
+    ringClass: 'ring-2 ring-[#FFD000] ring-offset-2 ring-offset-white dark:ring-offset-[#070a10]',
+    rowClass: 'bg-gradient-to-r from-[#FFD000]/[0.28] to-amber-50 dark:from-[#FFD000]/[0.20] dark:to-[#131a26] border border-[#FFD000]/80',
     shadowClass: 'shadow-[0_8px_22px_-12px_rgba(255,208,0,0.42)]',
   },
   2: {
-    rankClass: 'text-[#E2E8F0]',
-    ringClass: 'ring-2 ring-[#E2E8F0]/90 ring-offset-2 ring-offset-[#070a10]',
-    rowClass: 'bg-gradient-to-r from-[#E2E8F0]/[0.13] to-[#131a26] border border-[#E2E8F0]/65',
+    rankClass: 'text-slate-600 dark:text-[#E2E8F0]',
+    ringClass: 'ring-2 ring-slate-400/90 dark:ring-[#E2E8F0]/90 ring-offset-2 ring-offset-white dark:ring-offset-[#070a10]',
+    rowClass: 'bg-gradient-to-r from-slate-200 to-slate-50 dark:from-[#E2E8F0]/[0.13] dark:to-[#131a26] border border-slate-300/80 dark:border-[#E2E8F0]/65',
     shadowClass: 'shadow-[0_8px_22px_-12px_rgba(226,232,240,0.32)]',
   },
 };
@@ -34,16 +34,16 @@ const RANK_CONFIG: Record<
 const RAINBOW = 'linear-gradient(135deg, #f72585, #f8961e, #90be6d, #4cc9f0, #7209b7)';
 
 const DEFAULT_RANK_CONFIG = {
-  rankClass: 'text-slate-400',
-  ringClass: 'ring-2 ring-white/15 ring-offset-2 ring-offset-[#070a10]',
-  rowClass: 'bg-gradient-to-r from-[#10151f] to-[#131a26] border border-white/[0.07]',
+  rankClass: 'text-slate-500 dark:text-slate-400',
+  ringClass: 'ring-2 ring-black/15 dark:ring-white/15 ring-offset-2 ring-offset-white dark:ring-offset-[#070a10]',
+  rowClass: 'bg-white dark:bg-gradient-to-r dark:from-[#10151f] dark:to-[#131a26] border border-black/[0.10] dark:border-white/[0.07]',
   shadowClass: '',
 };
 
 function RankChangeChip({ rankChange }: { rankChange: number }) {
   if (rankChange > 0) {
     return (
-      <span className="inline-flex items-center gap-0.5 text-[11px] font-bold tabular-nums text-emerald-400">
+      <span className="inline-flex items-center gap-0.5 text-[11px] font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
         <span>▲</span>
         <span>{rankChange}</span>
       </span>
@@ -51,7 +51,7 @@ function RankChangeChip({ rankChange }: { rankChange: number }) {
   }
   if (rankChange < 0) {
     return (
-      <span className="inline-flex items-center gap-0.5 text-[11px] font-bold tabular-nums text-red-400">
+      <span className="inline-flex items-center gap-0.5 text-[11px] font-bold tabular-nums text-red-500 dark:text-red-400">
         <span>▼</span>
         <span>{Math.abs(rankChange)}</span>
       </span>
@@ -74,7 +74,7 @@ function RoundChangeChip({
           className="relative inline-flex shrink-0 rounded-md"
           style={{ padding: 1.5, background: RAINBOW }}
         >
-          <span className="inline-flex items-center text-[11px] font-bold tabular-nums rounded-[5px] px-1.5 py-0.5 text-[#54d08a] bg-wc-ink">
+          <span className="inline-flex items-center text-[11px] font-bold tabular-nums rounded-[5px] px-1.5 py-0.5 text-[#54d08a] bg-gray-100 dark:bg-wc-ink">
             +{points}
           </span>
           <span className="absolute -top-1.5 -right-1.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-wc-gold text-[7px] font-bold leading-none text-wc-black">
@@ -90,7 +90,7 @@ function RoundChangeChip({
     );
   }
   return (
-    <span className="text-[11px] font-bold tabular-nums rounded-md px-1.5 py-0.5 text-slate-400 bg-white/[0.06]">
+    <span className="text-[11px] font-bold tabular-nums rounded-md px-1.5 py-0.5 text-slate-500 dark:text-slate-400 bg-black/[0.06] dark:bg-white/[0.06]">
       +0
     </span>
   );
@@ -127,7 +127,7 @@ export default function LeaderboardRow({
           didScroll.current = true;
         }
       }}
-      className={`w-full flex items-center gap-3 rounded-2xl px-3 py-2.5 min-h-[44px] text-left cursor-pointer transition-all hover:-translate-y-px hover:border-white/20 active:scale-[0.99] active:opacity-80 ${cfg.rowClass} ${cfg.shadowClass}`}
+      className={`w-full flex items-center gap-3 rounded-2xl px-3 py-2.5 min-h-[44px] text-left cursor-pointer transition-all hover:-translate-y-px hover:border-black/20 dark:hover:border-white/20 active:scale-[0.99] active:opacity-80 ${cfg.rowClass} ${cfg.shadowClass}`}
     >
       {/* Rank */}
       <span
@@ -147,13 +147,13 @@ export default function LeaderboardRow({
 
       {/* Name block */}
       <div className="flex-1 min-w-0 flex flex-col gap-[3px]">
-        <span className="font-display text-[15.5px] font-bold text-white whitespace-nowrap">
+        <span className="font-display text-[15.5px] font-bold text-wc-black dark:text-white whitespace-nowrap">
           {displayName}
         </span>
         {(ownerName || isViewer) && (
           <div className="flex items-center">
             {ownerName && (
-              <span className="font-body text-[12.5px] text-slate-400">{ownerName}</span>
+              <span className="font-body text-[12.5px] text-slate-500 dark:text-slate-400">{ownerName}</span>
             )}
             {isViewer && (
               <span className="text-[9px] font-bold tracking-wide text-[#1a1407] bg-[#e6b94e] rounded px-1.5 py-0.5 ml-1.5 shrink-0">
@@ -177,7 +177,7 @@ export default function LeaderboardRow({
             )}
           </div>
           <div className="flex items-baseline gap-1">
-            <span className="font-display text-[22px] font-bold tabular-nums tracking-tight text-white">
+            <span className="font-display text-[22px] font-bold tabular-nums tracking-tight text-wc-black dark:text-white">
               {standing.totalPoints}
             </span>
             <span className="font-body text-[10px] font-bold tracking-wide text-slate-500">

@@ -28,13 +28,13 @@ function GoalStepper({
 }) {
   return (
     <div>
-      <div className="mb-3 text-center text-xs uppercase tracking-wider text-white/40">{label}</div>
+      <div className="mb-3 text-center text-xs uppercase tracking-wider text-wc-black/40 dark:text-white/40">{label}</div>
       <div className="flex items-center justify-between gap-2">
         <button
           type="button"
           onClick={() => onChange(Math.max(0, value - 1))}
           disabled={value === 0}
-          className="flex h-10 w-10 items-center justify-center rounded-full border border-white/15 text-lg font-bold transition hover:border-wc-blue/60 hover:text-wc-blue disabled:cursor-not-allowed disabled:opacity-25"
+          className="flex h-10 w-10 items-center justify-center rounded-full border border-black/15 dark:border-white/15 text-lg font-bold transition hover:border-wc-blue/60 hover:text-wc-blue disabled:cursor-not-allowed disabled:opacity-25"
           aria-label={`Decrease ${label}`}
         >
           −
@@ -44,7 +44,7 @@ function GoalStepper({
           type="button"
           onClick={() => onChange(Math.min(MAX_GOALS, value + 1))}
           disabled={value === MAX_GOALS}
-          className="flex h-10 w-10 items-center justify-center rounded-full border border-white/15 text-lg font-bold transition hover:border-wc-blue/60 hover:text-wc-blue disabled:cursor-not-allowed disabled:opacity-25"
+          className="flex h-10 w-10 items-center justify-center rounded-full border border-black/15 dark:border-white/15 text-lg font-bold transition hover:border-wc-blue/60 hover:text-wc-blue disabled:cursor-not-allowed disabled:opacity-25"
           aria-label={`Increase ${label}`}
         >
           +
@@ -65,7 +65,7 @@ function ScoreEditor({
 }) {
   return (
     <div className="space-y-3">
-      <div className="text-xs font-semibold uppercase tracking-wider text-white/40">{label}</div>
+      <div className="text-xs font-semibold uppercase tracking-wider text-wc-black/40 dark:text-white/40">{label}</div>
       <div className="grid grid-cols-2 gap-4">
         <GoalStepper
           label="Home"
@@ -101,14 +101,14 @@ function BreakdownRow({
 }) {
   return (
     <div
-      className={`flex items-center justify-between gap-4 border-b border-white/8 py-3 last:border-0 transition-opacity ${awarded ? 'opacity-100' : 'opacity-30'}`}
+      className={`flex items-center justify-between gap-4 border-b border-black/8 dark:border-white/8 py-3 last:border-0 transition-opacity ${awarded ? 'opacity-100' : 'opacity-30'}`}
     >
       <div className="min-w-0">
         <div className="text-sm font-semibold leading-snug">{label}</div>
-        <div className="mt-0.5 text-xs text-white/55 leading-snug">{detail}</div>
+        <div className="mt-0.5 text-xs text-wc-black/55 dark:text-white/55 leading-snug">{detail}</div>
       </div>
       <span
-        className={`shrink-0 text-sm font-bold tabular-nums ${awarded ? 'text-wc-blue' : 'text-white/40'}`}
+        className={`shrink-0 text-sm font-bold tabular-nums ${awarded ? 'text-wc-blue' : 'text-wc-black/40 dark:text-white/40'}`}
       >
         {value}
       </span>
@@ -131,11 +131,11 @@ function ScoringCalculator() {
   }
 
   return (
-    <div className="overflow-hidden rounded-2xl bg-wc-ink">
-      <div className="flex items-start justify-between gap-4 border-b border-white/10 px-5 py-4">
+    <div className="overflow-hidden rounded-2xl bg-white dark:bg-wc-ink">
+      <div className="flex items-start justify-between gap-4 border-b border-black/10 dark:border-white/10 px-5 py-4">
         <div>
           <h2 className="text-base font-semibold">Calculator</h2>
-          <p className="mt-0.5 text-sm text-white/50">
+          <p className="mt-0.5 text-sm text-wc-black/50 dark:text-white/50">
             Set a prediction and result to see how points are awarded.
           </p>
         </div>
@@ -164,23 +164,23 @@ function ScoringCalculator() {
           className={`flex w-full items-center justify-between rounded-xl border px-4 py-3 transition-colors ${
             multiChip
               ? 'border-wc-gold/40 bg-wc-gold/10'
-              : 'border-white/10 bg-white/5 hover:border-white/20'
+              : 'border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 hover:border-black/20 dark:hover:border-white/20'
           }`}
         >
           <div className="flex items-center gap-3">
             <span
-              className={`text-base font-bold leading-none ${multiChip ? 'text-wc-gold' : 'text-white/30'}`}
+              className={`text-base font-bold leading-none ${multiChip ? 'text-wc-gold' : 'text-wc-black/30 dark:text-white/30'}`}
             >
               ×2
             </span>
             <span
-              className={`text-sm font-semibold ${multiChip ? 'text-white' : 'text-white/50'}`}
+              className={`text-sm font-semibold ${multiChip ? 'text-wc-black dark:text-white' : 'text-wc-black/50 dark:text-white/50'}`}
             >
               Multi chip
             </span>
           </div>
           <div
-            className={`h-5 w-9 rounded-full transition-colors ${multiChip ? 'bg-wc-gold' : 'bg-white/15'}`}
+            className={`h-5 w-9 rounded-full transition-colors ${multiChip ? 'bg-wc-gold' : 'bg-black/15 dark:bg-white/15'}`}
           >
             <div
               className={`mt-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${multiChip ? 'translate-x-[18px]' : 'translate-x-0.5'}`}
@@ -188,7 +188,7 @@ function ScoringCalculator() {
           </div>
         </button>
 
-        <div className="rounded-xl border border-white/10 px-4">
+        <div className="rounded-xl border border-black/10 dark:border-white/10 px-4">
           <BreakdownRow
             label="Match result"
             detail={
@@ -232,8 +232,8 @@ function ScoringCalculator() {
             />
           )}
 
-          <div className="flex items-center justify-between border-t border-white/10 py-4">
-            <span className="text-sm font-semibold text-white/60">Total</span>
+          <div className="flex items-center justify-between border-t border-black/10 dark:border-white/10 py-4">
+            <span className="text-sm font-semibold text-wc-black/60 dark:text-white/60">Total</span>
             <span className="text-2xl font-bold tabular-nums text-wc-blue">
               {bd.total}
               <span className="ml-1 text-sm font-semibold text-wc-blue/60">
@@ -249,32 +249,32 @@ function ScoringCalculator() {
 
 export default function ScoringPage() {
   return (
-    <main className="min-h-screen bg-wc-black px-4 py-6 text-white sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-wc-bone dark:bg-wc-black px-4 py-6 text-wc-black dark:text-white sm:px-6 lg:px-8">
       <div className="mx-auto max-w-3xl space-y-8">
         <div>
           <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Scoring</h1>
-          <p className="mt-2 max-w-lg text-sm text-white/55">
+          <p className="mt-2 max-w-lg text-sm text-wc-black/55 dark:text-white/55">
             Earn points on every match by predicting the result and exact scoreline.
           </p>
         </div>
 
-        <div className="overflow-hidden rounded-2xl bg-wc-ink">
+        <div className="overflow-hidden rounded-2xl bg-white dark:bg-wc-ink">
           {RULES.map((rule, i) => (
             <div
               key={rule.title}
-              className={`flex items-center gap-4 px-5 py-4 ${i < RULES.length - 1 ? 'border-b border-white/8' : ''}`}
+              className={`flex items-center gap-4 px-5 py-4 ${i < RULES.length - 1 ? 'border-b border-black/8 dark:border-white/8' : ''}`}
             >
               <span className="font-display w-10 shrink-0 text-center text-xl font-bold tabular-nums text-wc-blue">
                 {rule.badge}
               </span>
               <div className="min-w-0 flex-1">
                 <div className="text-sm font-semibold">{rule.title}</div>
-                <div className="mt-0.5 text-xs text-white/50">{rule.description}</div>
+                <div className="mt-0.5 text-xs text-wc-black/50 dark:text-white/50">{rule.description}</div>
               </div>
             </div>
           ))}
-          <div className="border-t border-white/8 bg-white/[0.02] px-5 py-3">
-            <p className="text-xs text-white/35">
+          <div className="border-t border-black/8 dark:border-white/8 bg-black/[0.02] dark:bg-white/[0.02] px-5 py-3">
+            <p className="text-xs text-wc-black/35 dark:text-white/35">
               Up to 5 pts per match, doubled with multi chip
             </p>
           </div>

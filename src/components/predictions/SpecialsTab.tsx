@@ -31,7 +31,7 @@ function teamName(code: string): string {
 
 function TeamChip({ code }: { code: string }) {
   return (
-    <span className="inline-block text-[11px] font-medium text-white/75 bg-white/8 rounded px-1.5 py-0.5 whitespace-nowrap">
+    <span className="inline-block text-[11px] font-medium text-wc-black/75 dark:text-white/75 bg-black/8 dark:bg-white/8 rounded px-1.5 py-0.5 whitespace-nowrap">
       {teamName(code)}
     </span>
   );
@@ -50,12 +50,12 @@ function CardHeader({
     <button
       type="button"
       onClick={onToggle}
-      className="w-full flex items-center justify-between px-4 py-3.5 border-b border-white/8 text-left"
+      className="w-full flex items-center justify-between px-4 py-3.5 border-b border-black/8 dark:border-white/8 text-left"
     >
-      <span className="text-sm font-bold text-white">{title}</span>
+      <span className="text-sm font-bold text-wc-black dark:text-white">{title}</span>
       <ChevronDown
         size={16}
-        className={`text-white/40 transition-transform duration-200 ${isOpen ? 'rotate-0' : '-rotate-90'}`}
+        className={`text-wc-black/40 dark:text-white/40 transition-transform duration-200 ${isOpen ? 'rotate-0' : '-rotate-90'}`}
       />
     </button>
   );
@@ -68,14 +68,14 @@ function CollapsibleSection({ label, children }: { label: string; children: Reac
       <button
         type="button"
         onClick={() => setIsOpen((o) => !o)}
-        className="w-full flex items-center justify-between px-4 py-2.5 bg-white/[0.03] border-b border-white/8 text-left"
+        className="w-full flex items-center justify-between px-4 py-2.5 bg-black/[0.03] dark:bg-white/[0.03] border-b border-black/8 dark:border-white/8 text-left"
       >
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-white/35">
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-wc-black/35 dark:text-white/35">
           {label}
         </span>
         <ChevronDown
           size={14}
-          className={`text-white/30 transition-transform duration-200 ${isOpen ? 'rotate-0' : '-rotate-90'}`}
+          className={`text-wc-black/30 dark:text-white/30 transition-transform duration-200 ${isOpen ? 'rotate-0' : '-rotate-90'}`}
         />
       </button>
       {isOpen && children}
@@ -85,9 +85,9 @@ function CollapsibleSection({ label, children }: { label: string; children: Reac
 
 function PlayerRow({ player, children }: { player: Player; children: React.ReactNode }) {
   return (
-    <div className="flex items-start gap-3 py-3 border-b border-white/8 last:border-0">
+    <div className="flex items-start gap-3 py-3 border-b border-black/8 dark:border-white/8 last:border-0">
       <Avatar name={player.name} photoUrl={player.photoUrl} size={24} />
-      <span className="text-xs text-white/80 w-16 shrink-0 pt-0.5 truncate">{player.name}</span>
+      <span className="text-xs text-wc-black/80 dark:text-white/80 w-16 shrink-0 pt-0.5 truncate">{player.name}</span>
       <div className="flex flex-wrap gap-1.5 flex-1">{children}</div>
     </div>
   );
@@ -112,7 +112,7 @@ function KnockoutCard({
   const [isOpen, toggle] = useLocalStorageToggle('specials_knockout_open');
 
   return (
-    <div className="overflow-hidden rounded-2xl bg-wc-ink">
+    <div className="overflow-hidden rounded-2xl bg-white dark:bg-wc-ink">
       <CardHeader title="Knockout Bracket" isOpen={isOpen} onToggle={toggle} />
       {isOpen &&
         stages.map(({ label, getTeams }) => (
@@ -124,7 +124,7 @@ function KnockoutCard({
                 return (
                   <PlayerRow key={player.id} player={player}>
                     {teams == null ? (
-                      <span className="text-xs text-white/30 italic pt-0.5">No picks</span>
+                      <span className="text-xs text-wc-black/30 dark:text-white/30 italic pt-0.5">No picks</span>
                     ) : typeof teams === 'string' ? (
                       <TeamChip code={teams} />
                     ) : (
@@ -150,7 +150,7 @@ function GroupStageCard({
   const [isOpen, toggle] = useLocalStorageToggle('specials_group_stage_open');
 
   return (
-    <div className="overflow-hidden rounded-2xl bg-wc-ink">
+    <div className="overflow-hidden rounded-2xl bg-white dark:bg-wc-ink">
       <CardHeader title="Group Stage Picks" isOpen={isOpen} onToggle={toggle} />
 
       {isOpen &&
@@ -165,20 +165,20 @@ function GroupStageCard({
                     {gp ? (
                       <>
                         <div className="flex items-center gap-1">
-                          <span className="text-[9px] font-semibold uppercase tracking-wider text-white/35">
+                          <span className="text-[9px] font-semibold uppercase tracking-wider text-wc-black/35 dark:text-white/35">
                             1st
                           </span>
                           <TeamChip code={gp.winner} />
                         </div>
                         <div className="flex items-center gap-1">
-                          <span className="text-[9px] font-semibold uppercase tracking-wider text-white/35">
+                          <span className="text-[9px] font-semibold uppercase tracking-wider text-wc-black/35 dark:text-white/35">
                             2nd
                           </span>
                           <TeamChip code={gp.runnerUp} />
                         </div>
                       </>
                     ) : (
-                      <span className="text-xs text-white/30 italic pt-0.5">No picks</span>
+                      <span className="text-xs text-wc-black/30 dark:text-white/30 italic pt-0.5">No picks</span>
                     )}
                   </PlayerRow>
                 );
@@ -209,7 +209,7 @@ function BonusCard({
   const [isOpen, toggle] = useLocalStorageToggle('specials_bonus_open');
 
   return (
-    <div className="overflow-hidden rounded-2xl bg-wc-ink">
+    <div className="overflow-hidden rounded-2xl bg-white dark:bg-wc-ink">
       <CardHeader title="Bonus Predictions" isOpen={isOpen} onToggle={toggle} />
       {isOpen &&
         rows.map(({ label, getValue, sortDesc }) => (
@@ -227,14 +227,14 @@ function BonusCard({
                 return (
                   <div
                     key={player.id}
-                    className="flex items-center gap-3 py-3 border-b border-white/8 last:border-0"
+                    className="flex items-center gap-3 py-3 border-b border-black/8 dark:border-white/8 last:border-0"
                   >
                     <Avatar name={player.name} photoUrl={player.photoUrl} size={24} />
-                    <span className="text-xs text-white/80 flex-1">{player.name}</span>
+                    <span className="text-xs text-wc-black/80 dark:text-white/80 flex-1">{player.name}</span>
                     {bonus ? (
-                      <span className="text-sm font-medium text-white/90">{getValue(bonus)}</span>
+                      <span className="text-sm font-medium text-wc-black/90 dark:text-white/90">{getValue(bonus)}</span>
                     ) : (
-                      <span className="text-xs text-white/30">—</span>
+                      <span className="text-xs text-wc-black/30 dark:text-white/30">—</span>
                     )}
                   </div>
                 );
@@ -255,7 +255,7 @@ interface Props {
 
 export default function SpecialsTab({ players, tournamentPicks, bonusPredictions }: Props) {
   if (players.length === 0) {
-    return <p className="text-center text-white/30 text-sm py-16">No data yet.</p>;
+    return <p className="text-center text-wc-black/30 dark:text-white/30 text-sm py-16">No data yet.</p>;
   }
 
   return (

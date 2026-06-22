@@ -17,19 +17,19 @@ interface StatusLineProps {
 function StatusLine({ currentIndex, currentFixture }: StatusLineProps) {
   if (currentIndex === -1) {
     return (
-      <div className="text-xs font-body text-wc-white/60">
-        <span className="font-semibold text-wc-white">Before any matches</span>
+      <div className="text-xs font-body text-wc-black/60 dark:text-wc-white/60">
+        <span className="font-semibold text-wc-black dark:text-wc-white">Before any matches</span>
       </div>
     );
   }
 
   if (!currentFixture) {
-    return <div className="text-xs font-body text-wc-white/40">No matches yet</div>;
+    return <div className="text-xs font-body text-wc-black/40 dark:text-wc-white/40">No matches yet</div>;
   }
 
   return (
-    <div className="text-xs font-body text-wc-white/60 truncate">
-      <span className="font-semibold text-wc-white">
+    <div className="text-xs font-body text-wc-black/60 dark:text-wc-white/60 truncate">
+      <span className="font-semibold text-wc-black dark:text-wc-white">
         Latest Update: {currentFixture.homeTeam.name} vs {currentFixture.awayTeam.name}
       </span>
     </div>
@@ -44,10 +44,10 @@ export default function ReplayControls({ fixtures, currentIndex, onPrev, onNext 
     fixtures.length > 0 ? (Math.max(0, currentIndex + 1) / fixtures.length) * 100 : 0;
 
   const buttonClasses =
-    'w-8 h-8 flex items-center justify-center rounded text-wc-bone hover:text-wc-white hover:bg-wc-white/5 cursor-pointer disabled:text-wc-gray disabled:cursor-not-allowed transition-colors';
+    'w-8 h-8 flex items-center justify-center rounded text-wc-black/60 dark:text-wc-bone hover:text-wc-black dark:hover:text-wc-white hover:bg-wc-black/5 dark:hover:bg-wc-white/5 cursor-pointer disabled:text-wc-gray disabled:cursor-not-allowed transition-colors';
 
   return (
-    <div className="bg-wc-ink border border-wc-white/10 rounded-lg overflow-hidden">
+    <div className="bg-white dark:bg-wc-ink border border-black/10 dark:border-wc-white/10 rounded-lg overflow-hidden">
       <div className="flex items-center gap-2 px-3 py-2">
         <button
           onClick={onPrev}
@@ -60,7 +60,7 @@ export default function ReplayControls({ fixtures, currentIndex, onPrev, onNext 
 
         <div className="flex-1 text-center min-w-0">
           <StatusLine currentIndex={currentIndex} currentFixture={currentFixture} />
-          <div className="text-[10px] text-wc-white/30 uppercase tracking-wider">
+          <div className="text-[10px] text-wc-black/30 dark:text-wc-white/30 uppercase tracking-wider">
             {Math.max(0, currentIndex + 1)} / {fixtures.length} matches
           </div>
         </div>
@@ -75,7 +75,7 @@ export default function ReplayControls({ fixtures, currentIndex, onPrev, onNext 
         </button>
       </div>
 
-      <div className="h-0.5 bg-wc-white/5">
+      <div className="h-0.5 bg-black/5 dark:bg-wc-white/5">
         <div
           className="h-full bg-wc-blue transition-all duration-500"
           style={{ width: `${progressPct}%` }}

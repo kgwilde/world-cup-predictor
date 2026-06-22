@@ -4,11 +4,15 @@
 import Link from 'next/link';
 
 import { useEffect, useState } from 'react';
+import { Moon, Sun } from 'lucide-react';
 
 import { fixtures } from '@/data/fixtures';
+import { useThemeStore } from '@/app/stores/useThemeStore';
 
 
 export function Header() {
+  const { theme, toggle } = useThemeStore();
+
   return (
     <header
       className="border-b border-white/10 sticky top-0 z-10 relative overflow-hidden"
@@ -48,8 +52,28 @@ export function Header() {
             </p>
           </div>
         </Link>
-        <WorldCupCountdown />
-        {/* <PlayerRankWidget /> */}
+        <div className="flex items-center gap-3 shrink-0">
+          <button
+            onClick={toggle}
+            role="switch"
+            aria-checked={theme === 'light'}
+            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            className="relative h-6 w-11 rounded-full bg-white/20 hover:bg-white/30 transition-colors shrink-0"
+          >
+            <span
+              className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform duration-200 flex items-center justify-center ${
+                theme === 'light' ? 'translate-x-[22px]' : 'translate-x-0.5'
+              }`}
+            >
+              {theme === 'dark' ? (
+                <Sun size={11} className="text-wc-blue-dark" />
+              ) : (
+                <Moon size={11} className="text-wc-blue-dark" />
+              )}
+            </span>
+          </button>
+          <WorldCupCountdown />
+        </div>
       </div>
     </header>
   );
@@ -93,7 +117,7 @@ type CountdownUnitProps = {
 function CountdownUnit({ value, label }: CountdownUnitProps) {
   return (
     <div className="flex flex-col items-center">
-      <span className="font-display font-bold text-lg sm:text-2xl leading-none tabular-nums">
+      <span className="font-display font-bold text-lg sm:text-2xl leading-none tabular-nums text-white">
         {formatTwoDigits(value)}
       </span>
       <span className="text-wc-bone text-[10px] sm:text-xs font-body tracking-wider mt-0.5 sm:mt-1">

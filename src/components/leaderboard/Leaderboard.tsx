@@ -208,9 +208,9 @@ function buildMatchDelta(
 function EmptyState() {
   return (
     <div className="text-center py-20">
-      <div className="font-display text-4xl font-bold text-wc-white/20 mb-2">WE ARE</div>
-      <div className="font-display text-6xl font-bold text-wc-white/20">26</div>
-      <p className="text-wc-white/40 text-sm font-body mt-4">
+      <div className="font-display text-4xl font-bold text-wc-black/20 dark:text-wc-white/20 mb-2">WE ARE</div>
+      <div className="font-display text-6xl font-bold text-wc-black/20 dark:text-wc-white/20">26</div>
+      <p className="text-wc-black/40 dark:text-wc-white/40 text-sm font-body mt-4">
         No results yet. Check back after the first match.
       </p>
     </div>
@@ -222,25 +222,25 @@ const SKELETON_NAME_WIDTHS = ['w-36', 'w-24', 'w-32', 'w-28', 'w-40', 'w-20'];
 function SkeletonRow({ index }: { index: number }) {
   return (
     <div
-      className="flex items-center gap-3 px-3 py-2.5 rounded-2xl bg-gradient-to-r from-[#10151f] to-[#131a26] border border-white/[0.07] animate-pulse"
+      className="flex items-center gap-3 px-3 py-2.5 rounded-2xl bg-gradient-to-r from-gray-100 to-gray-50 dark:from-[#10151f] dark:to-[#131a26] border border-black/[0.07] dark:border-white/[0.07] animate-pulse"
       style={{ animationDelay: `${index * 80}ms` }}
     >
-      <div className="w-[18px] h-5 rounded bg-wc-white/10 shrink-0" />
-      <div className="w-[42px] h-[42px] rounded-full bg-wc-white/10 shrink-0" />
+      <div className="w-[18px] h-5 rounded bg-wc-black/10 dark:bg-wc-white/10 shrink-0" />
+      <div className="w-[42px] h-[42px] rounded-full bg-wc-black/10 dark:bg-wc-white/10 shrink-0" />
       <div className="flex-1 min-w-0 space-y-1.5">
-        <div className={`h-5 rounded bg-wc-white/10 ${SKELETON_NAME_WIDTHS[index]}`} />
-        <div className="h-3 rounded bg-wc-white/10 w-16" />
+        <div className={`h-5 rounded bg-wc-black/10 dark:bg-wc-white/10 ${SKELETON_NAME_WIDTHS[index]}`} />
+        <div className="h-3 rounded bg-wc-black/10 dark:bg-wc-white/10 w-16" />
       </div>
       <div className="flex flex-col items-end gap-1 shrink-0">
         <div className="h-5 flex items-center justify-end">
-          <div className="w-8 h-4 rounded-md bg-wc-white/10" />
+          <div className="w-8 h-4 rounded-md bg-wc-black/10 dark:bg-wc-white/10" />
         </div>
         <div className="flex items-baseline gap-1">
-          <div className="w-9 h-7 rounded bg-wc-white/10" />
-          <div className="w-5 h-2.5 rounded bg-wc-white/10" />
+          <div className="w-9 h-7 rounded bg-wc-black/10 dark:bg-wc-white/10" />
+          <div className="w-5 h-2.5 rounded bg-wc-black/10 dark:bg-wc-white/10" />
         </div>
       </div>
-      <div className="w-4 h-4 rounded bg-wc-white/10 shrink-0" />
+      <div className="w-4 h-4 rounded bg-wc-black/10 dark:bg-wc-white/10 shrink-0" />
     </div>
   );
 }

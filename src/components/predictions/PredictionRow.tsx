@@ -10,6 +10,7 @@ interface Props {
   fixture: Fixture;
   points?: number;
   multiChipApplied?: boolean;
+  live?: boolean;
   onPlayerClick?: (playerId: string) => void;
 }
 
@@ -19,20 +20,21 @@ export default function PredictionRow({
   fixture,
   points,
   multiChipApplied,
+  live,
   onPlayerClick,
 }: Props) {
   const name = player?.name ?? 'Unknown';
   const resultType = getResultType(prediction.homeGoals, prediction.awayGoals);
 
   return (
-    <div className="flex items-center justify-between gap-3 border-b border-white/10 py-3 last:border-0">
+    <div className="flex items-center justify-between gap-3 border-b border-black/10 dark:border-white/10 py-3 last:border-0">
       <button
         type="button"
         onClick={() => onPlayerClick?.(prediction.playerId)}
         className="flex min-w-0 flex-1 items-center gap-3 cursor-pointer active:opacity-70 transition-opacity text-left"
       >
         <Avatar name={name} photoUrl={player?.photoUrl} size={30} />
-        <span className="text-sm font-medium leading-snug text-white/90 hover:text-white transition-colors truncate">
+        <span className="text-sm font-medium leading-snug text-wc-black/90 dark:text-white/90 hover:text-wc-black dark:hover:text-white transition-colors truncate">
           {name}
         </span>
       </button>
@@ -53,7 +55,7 @@ export default function PredictionRow({
           )}
         </span>
         {points !== undefined && (
-          <PointsBadge points={points} multiChipApplied={multiChipApplied} />
+          <PointsBadge points={points} multiChipApplied={multiChipApplied} live={live} />
         )}
       </div>
     </div>

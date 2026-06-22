@@ -1,5 +1,7 @@
 @import 'tailwindcss';
 
+@variant dark (&:where(.dark, .dark *));
+
 @font-face {
   font-family: 'FIFASans';
   src: url('/fonts/FIFASans-Regular.woff2') format('woff2');
@@ -41,11 +43,30 @@
 html {
   background-color: var(--color-wc-bone);
   color: var(--color-wc-black);
+  /* CSS variables used in inline styles that must flip with theme */
+  --fixture-card-base: #ffffff;
+  --card-gradient-mid: #dcd7cc;
+  --card-gradient-end: #f0ece3;
+  /* Adaptive semantic tokens for inline styles */
+  --ui-fg: #0a0a0a;
+  --ui-fg-muted: rgba(0,0,0,0.50);
+  --ui-fg-faint: rgba(0,0,0,0.28);
+  --ui-border: rgba(0,0,0,0.12);
+  --ui-surface: rgba(0,0,0,0.05);
 }
 
 html.dark {
   background-color: var(--color-wc-black);
   color: var(--color-wc-white);
+  --fixture-card-base: #0a0a0a;
+  --card-gradient-mid: #020F2A;
+  --card-gradient-end: #0a0a0a;
+  /* Adaptive semantic tokens for inline styles */
+  --ui-fg: #ffffff;
+  --ui-fg-muted: rgba(255,255,255,0.35);
+  --ui-fg-faint: rgba(255,255,255,0.18);
+  --ui-border: rgba(255,255,255,0.12);
+  --ui-surface: rgba(255,255,255,0.06);
 }
 
 .tabular-nums {
@@ -176,6 +197,23 @@ html.splash-reload .splash-screen {
   inset: 0;
   background: radial-gradient(ellipse 70% 70% at center, transparent 0%, rgba(2, 15, 42, 0.7) 100%);
   pointer-events: none;
+}
+
+html:not(.dark) .splash-screen {
+  background-color: var(--color-wc-bone);
+}
+
+html:not(.dark) .splash-screen::before {
+  background: radial-gradient(ellipse 70% 70% at center, transparent 0%, rgba(244, 241, 234, 0.6) 100%);
+}
+
+html:not(.dark) .splash-logo {
+  filter: drop-shadow(0 0 20px rgba(239, 191, 4, 0.4)) drop-shadow(0 4px 24px rgba(0, 0, 0, 0.25));
+}
+
+html:not(.dark) .splash-text {
+  color: var(--color-wc-black);
+  text-shadow: none;
 }
 
 .splash-fading {

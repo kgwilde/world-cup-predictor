@@ -3,7 +3,7 @@ import { FixtureSlider } from '@/components/FixtureSlider';
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-wc-black">
+    <main className="min-h-screen bg-wc-bone dark:bg-wc-black">
       <FixtureSlider />
       <Leaderboard />
     </main>
