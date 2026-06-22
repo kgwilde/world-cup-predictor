@@ -7,7 +7,8 @@ import { isFixtureLive } from '@/components/FixtureSlider';
 import { useAuthStore } from '@/app/stores/useAuthStore';
 import type { MatchResult } from '@/lib/types';
 
-const SYNC_INTERVAL_MS = 30_000;
+const SYNC_INTERVAL_MS = 15_000;
+const SYNC_COOLDOWN_MS = 15_000;
 
 function anyFixtureLive(results: MatchResult[]): boolean {
   const now = new Date();
@@ -19,17 +20,21 @@ export function useLiveSync(): void {
   const user = useAuthStore((s) => s.user);
   const resultsLoading = useAuthStore((s) => s.resultsLoading);
   const results = useAuthStore((s) => s.results);
+  const lastSyncedAt = useAuthStore((s) => s.lastSyncedAt);
 
   const resultsRef = useRef(results);
-  useEffect(() => {
-    resultsRef.current = results;
-  }, [results]);
+  const lastSyncedAtRef = useRef(lastSyncedAt);
+
+  useEffect(() => { resultsRef.current = results; }, [results]);
+  useEffect(() => { lastSyncedAtRef.current = lastSyncedAt; }, [lastSyncedAt]);
 
   useEffect(() => {
     if (!user || resultsLoading) return;
 
     const sync = async () => {
       if (!anyFixtureLive(resultsRef.current)) return;
+      const last = lastSyncedAtRef.current;
+      if (last && Date.now() - last.getTime() < SYNC_COOLDOWN_MS) return;
       try {
         const token = await user.getIdToken();
         await fetch('/api/sync-scores', {

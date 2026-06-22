@@ -347,9 +347,166 @@ function ResultsTab({
   );
 }
 
+// ─── Analytics Tab ────────────────────────────────────────────────────────────
+
+interface LiveResult {
+  fixtureId: string;
+  homeGoals: number;
+  awayGoals: number;
+  minute?: number;
+  injuryTime?: number;
+}
+
+interface AnalyticsData {
+  sync: { lastSyncedAt: string | null; liveResults: LiveResult[] };
+}
+
+const MATCH_DURATION_MS = 150 * 60 * 1000;
+
+function formatElapsed(ms: number): string {
+  const totalSecs = Math.floor(ms / 1000);
+  const h = Math.floor(totalSecs / 3600);
+  const m = Math.floor((totalSecs % 3600) / 60);
+  const s = totalSecs % 60;
+  if (h > 0) return `${h}h ${m}m ${s}s`;
+  if (m > 0) return `${m}m ${s}s`;
+  return `${s}s`;
+}
+
+function AnalyticsTab() {
+  const { user } = useAuthStore();
+  const [data, setData] = useState<AnalyticsData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    getIdToken(user)
+      .then((idToken) =>
+        fetch('/api/admin/analytics', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ idToken }),
+        }),
+      )
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json() as Promise<AnalyticsData>;
+      })
+      .then(setData)
+      .catch((e) => setError(e instanceof Error ? e.message : 'Failed'))
+      .finally(() => setLoading(false));
+  }, [user]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <div className="w-8 h-8 border-2 border-white/20 border-t-wc-blue rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <p className="text-red-400 text-sm bg-red-400/10 rounded-lg px-4 py-3">{error ?? 'No data'}</p>
+    );
+  }
+
+  const syncDate = data.sync.lastSyncedAt ? new Date(data.sync.lastSyncedAt) : null;
+  const diffMs = syncDate ? now - syncDate.getTime() : null;
+  const diffMins = diffMs !== null ? Math.floor(diffMs / 60_000) : null;
+  const stalenessColor =
+    diffMins === null
+      ? 'text-wc-bone/40'
+      : diffMins < 5
+        ? 'text-green-400'
+        : diffMins < 30
+          ? 'text-yellow-400'
+          : 'text-red-400';
+
+  const fixtureMap = new Map(fixtures.map((f) => [f.id, f]));
+  const liveMatches = data.sync.liveResults.map((r) => {
+    const fixture = fixtureMap.get(r.fixtureId);
+    const kickoff = fixture ? new Date(fixture.kickoff).getTime() : null;
+    const isGenuinelyLive =
+      kickoff !== null && Date.now() >= kickoff && Date.now() < kickoff + MATCH_DURATION_MS;
+    return { ...r, fixture, isGenuinelyLive };
+  });
+
+  return (
+    <div className="space-y-8">
+      <section>
+        <h2 className="text-sm font-semibold text-wc-white/60 uppercase tracking-wider mb-3">
+          Sync Health
+        </h2>
+
+        <div className="bg-wc-ink rounded-xl px-4 py-4 mb-4">
+          <p className="text-wc-bone/50 text-xs mb-1">Last Synced</p>
+          <p className={`text-2xl font-bold tabular-nums ${stalenessColor}`}>
+            {diffMs !== null ? formatElapsed(diffMs) : '—'}
+          </p>
+          {syncDate && (
+            <p className="text-wc-bone/40 text-xs mt-1">
+              {syncDate.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+            </p>
+          )}
+        </div>
+
+        <p className="text-wc-bone/50 text-xs font-semibold uppercase tracking-wider mb-2">
+          Live in DB ({liveMatches.length})
+        </p>
+        {liveMatches.length === 0 ? (
+          <p className="text-wc-bone/30 text-sm">No live matches in database.</p>
+        ) : (
+          <div className="space-y-2">
+            {liveMatches.map(({ fixtureId, homeGoals, awayGoals, minute, injuryTime, fixture, isGenuinelyLive }) => (
+              <div key={fixtureId} className="bg-wc-ink rounded-xl px-4 py-3 flex items-center gap-3">
+                <span
+                  className={`text-xs font-bold rounded-full px-2 py-0.5 shrink-0 ${
+                    isGenuinelyLive
+                      ? 'bg-green-500/20 text-green-400'
+                      : 'bg-red-500/20 text-red-400'
+                  }`}
+                >
+                  {isGenuinelyLive ? 'LIVE' : 'STUCK'}
+                </span>
+                <p className="text-wc-white text-sm font-semibold flex-1 min-w-0 truncate">
+                  {fixture ? (
+                    <>
+                      {fixture.homeTeam.name}{' '}
+                      <span className="text-wc-bone/50">
+                        {homeGoals} : {awayGoals}
+                      </span>{' '}
+                      {fixture.awayTeam.name}
+                    </>
+                  ) : (
+                    <span className="text-wc-bone/50 font-mono">{fixtureId}</span>
+                  )}
+                </p>
+                {minute != null && (
+                  <span className="text-wc-bone/50 text-xs tabular-nums shrink-0">
+                    {minute}
+                    {injuryTime ? `+${injuryTime}` : ''}&apos;
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-type Tab = 'users' | 'results';
+type Tab = 'users' | 'results' | 'analytics';
 
 export default function AdminPage() {
   const { user, loading } = useAuthStore();
@@ -402,7 +559,7 @@ export default function AdminPage() {
         </header>
 
         <div className="flex border-b border-white/10">
-          {(['users', 'results'] as Tab[]).map((t) => (
+          {(['users', 'results', 'analytics'] as Tab[]).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -412,7 +569,7 @@ export default function AdminPage() {
                   : 'border-transparent text-white/50 hover:text-white/70'
               }`}
             >
-              {t === 'users' ? 'Users' : 'Results'}
+              {t === 'users' ? 'Users' : t === 'results' ? 'Results' : 'Analytics'}
             </button>
           ))}
         </div>
@@ -424,13 +581,15 @@ export default function AdminPage() {
               loading={adminUsersLoading}
               onUsersChange={setAdminUsers}
             />
-          ) : (
+          ) : tab === 'results' ? (
             <ResultsTab
               key={resultsLoading ? 'loading' : 'loaded'}
               results={results}
               loading={resultsLoading}
               onResultsChange={setResults}
             />
+          ) : (
+            <AnalyticsTab />
           )}
         </div>
       </div>

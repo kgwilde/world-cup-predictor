@@ -161,13 +161,26 @@ export async function GET(request: Request) {
   const existing = (summarySnap.exists ? (summarySnap.data() ?? {}) : {}) as Record<
     string,
     { status?: string }
-  >;
+  > & { lastSyncedAt?: FirebaseFirestore.Timestamp };
 
-  const hasStuckLiveMatch = Object.values(existing).some((r) => r.status === 'live');
+  const hasStuckLiveMatch = Object.values(existing).some(
+    (r): r is { status?: string } => typeof r === 'object' && r !== null && 'status' in r && r.status === 'live',
+  );
 
   if (getLiveMatches().length === 0 && !hasStuckLiveMatch) {
     return NextResponse.json({ written: 0, skipped: 0, warnings: [], noLiveMatches: true });
   }
+
+  // Server-side cooldown guard — prevents multiple clients racing to call the
+  // external API in the same 15s window.
+  const lastSyncedAt = existing.lastSyncedAt?.toDate();
+  if (lastSyncedAt && Date.now() - lastSyncedAt.getTime() < 15_000) {
+    return NextResponse.json({ written: 0, skipped: 0, warnings: [], recentlySynced: true });
+  }
+
+  // Claim this sync window before hitting the external API so concurrent
+  // requests bail out on the check above.
+  await summaryRef.set({ lastSyncedAt: new Date() }, { merge: true });
 
   const competitionId = 'WC';
   const res = await fetch(

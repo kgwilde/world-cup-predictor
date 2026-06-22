@@ -1,6 +1,26 @@
 'use client';
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+
+function FlashingScore({ value, className }: { value: number; className: string }) {
+  const [flashing, setFlashing] = useState(false);
+  const prevRef = useRef(value);
+
+  useEffect(() => {
+    if (prevRef.current !== value) {
+      prevRef.current = value;
+      setFlashing(true);
+      const id = setTimeout(() => setFlashing(false), 650);
+      return () => clearTimeout(id);
+    }
+  }, [value]);
+
+  return (
+    <span className={`${className}${flashing ? ' animate-score-pop' : ''}`}>
+      {value}
+    </span>
+  );
+}
 import { getFlagByCode } from '@/lib/flags';
 import type { Fixture, FixtureStage, MatchResult, Team } from '@/lib/types';
 
@@ -220,13 +240,15 @@ export function FixtureCard({ fixture, now, isFullWidth, result }: FixtureCardPr
             {result ? (
               <div className="flex flex-col items-center gap-0.5">
                 <div className="flex items-center gap-1.5">
-                  <span className="font-display font-bold text-xl text-wc-black dark:text-wc-white tabular-nums leading-none">
-                    {result.homeGoals}
-                  </span>
+                  <FlashingScore
+                    value={result.homeGoals}
+                    className="font-display font-bold text-xl text-wc-black dark:text-wc-white tabular-nums leading-none inline-block"
+                  />
                   <span className="text-wc-black/30 dark:text-wc-white/30 text-sm">–</span>
-                  <span className="font-display font-bold text-xl text-wc-black dark:text-wc-white tabular-nums leading-none">
-                    {result.awayGoals}
-                  </span>
+                  <FlashingScore
+                    value={result.awayGoals}
+                    className="font-display font-bold text-xl text-wc-black dark:text-wc-white tabular-nums leading-none inline-block"
+                  />
                 </div>
                 {isLive && result.minute != null ? (
                   <span className="text-[9px] font-semibold tabular-nums text-red-400/80">

@@ -37,6 +37,7 @@ interface AuthState {
   usersLoading: boolean;
   results: MatchResult[];
   resultsLoading: boolean;
+  lastSyncedAt: Date | null;
   init: () => () => void;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -57,6 +58,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   usersLoading: true,
   results: [],
   resultsLoading: true,
+  lastSyncedAt: null,
 
   init: () => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -106,7 +108,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // then again whenever any client writes a new score to Firestore.
       if (!resultsUnsubscribe) {
         resultsUnsubscribe = subscribeToResults(
-          (results) => set({ results, resultsLoading: false }),
+          (results, lastSyncedAt) => set({ results, lastSyncedAt, resultsLoading: false }),
           () => set({ resultsLoading: false }),
         );
       }

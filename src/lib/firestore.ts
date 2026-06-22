@@ -39,19 +39,35 @@ export async function getResults(): Promise<MatchResult[]> {
   );
 }
 
-function parseResultsDoc(data: Record<string, unknown>): MatchResult[] {
-  return Object.values(data).filter(
+function parseResultsDoc(data: Record<string, unknown>): {
+  results: MatchResult[];
+  lastSyncedAt: Date | null;
+} {
+  const results = Object.values(data).filter(
     (v): v is MatchResult => typeof v === 'object' && v !== null && 'fixtureId' in v,
   );
+  const raw = data['lastSyncedAt'];
+  const lastSyncedAt =
+    raw != null && typeof raw === 'object' && 'toDate' in raw
+      ? (raw as { toDate: () => Date }).toDate()
+      : null;
+  return { results, lastSyncedAt };
 }
 
 export function subscribeToResults(
-  onUpdate: (results: MatchResult[]) => void,
+  onUpdate: (results: MatchResult[], lastSyncedAt: Date | null) => void,
   onError?: () => void,
 ): () => void {
   return onSnapshot(
     doc(db, 'results', 'all'),
-    (snap) => onUpdate(snap.exists() ? parseResultsDoc(snap.data() as Record<string, unknown>) : []),
+    (snap) => {
+      if (snap.exists()) {
+        const { results, lastSyncedAt } = parseResultsDoc(snap.data() as Record<string, unknown>);
+        onUpdate(results, lastSyncedAt);
+      } else {
+        onUpdate([], null);
+      }
+    },
     () => onError?.(),
   );
 }
