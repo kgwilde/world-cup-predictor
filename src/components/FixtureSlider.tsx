@@ -182,6 +182,12 @@ export function FixtureCard({ fixture, now, isFullWidth, result }: FixtureCardPr
           className="absolute inset-x-0 top-0 h-1"
           style={{ background: accentBar }}
         />
+        {/* Light mode: wash out dark team glows behind the header text */}
+        <div
+          aria-hidden
+          className="absolute inset-0 dark:hidden pointer-events-none"
+          style={{ background: 'linear-gradient(to bottom, rgba(255,255,255,0.72) 0%, rgba(255,255,255,0.3) 40%, rgba(255,255,255,0) 75%)' }}
+        />
         <div className="relative flex h-full flex-col px-4 py-2.5">
           <header className="flex h-9 items-start justify-between gap-2">
             <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-wc-black/75 dark:text-white/75">
@@ -224,7 +230,7 @@ export function FixtureCard({ fixture, now, isFullWidth, result }: FixtureCardPr
                 </div>
                 {isLive && result.minute != null ? (
                   <span className="text-[9px] font-semibold tabular-nums text-red-400/80">
-                    {result.injuryTime ? `${result.minute}+${result.injuryTime}'` : `${result.minute}'`}
+                    {result.minute}'
                   </span>
                 ) : !isLive ? (
                   <span className="text-[9px] font-semibold uppercase tracking-widest text-wc-black/40 dark:text-wc-white/40">
