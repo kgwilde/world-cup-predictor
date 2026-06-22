@@ -161,31 +161,19 @@ html.splash-reload .splash-screen {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background-color: var(--color-wc-navy);
+  background-color: var(--color-wc-black);
   background-image: repeating-linear-gradient(
     -45deg,
     transparent 0px,
     transparent 20px,
-    rgba(239, 191, 4, 0.08) 20px,
-    rgba(239, 191, 4, 0.08) 26px,
+    rgba(64, 96, 240, 0.07) 20px,
+    rgba(64, 96, 240, 0.07) 26px,
     transparent 26px,
-    transparent 46px,
-    rgba(64, 96, 240, 0.08) 46px,
-    rgba(64, 96, 240, 0.08) 52px,
     transparent 52px,
-    transparent 72px,
-    rgba(0, 184, 255, 0.07) 72px,
-    rgba(0, 184, 255, 0.07) 78px,
-    transparent 78px,
-    transparent 98px,
-    rgba(228, 0, 43, 0.07) 98px,
-    rgba(228, 0, 43, 0.07) 104px,
-    transparent 104px,
-    transparent 124px,
-    rgba(6, 158, 108, 0.07) 124px,
-    rgba(6, 158, 108, 0.07) 130px,
-    transparent 130px,
-    transparent 160px
+    rgba(37, 62, 207, 0.05) 52px,
+    rgba(37, 62, 207, 0.05) 58px,
+    transparent 58px,
+    transparent 104px
   );
   animation: splash-flow 5s linear infinite;
   transition: opacity 600ms ease;
@@ -195,7 +183,7 @@ html.splash-reload .splash-screen {
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse 70% 70% at center, transparent 0%, rgba(2, 15, 42, 0.7) 100%);
+  background: radial-gradient(ellipse 80% 60% at center, rgba(37, 62, 207, 0.28) 0%, rgba(64, 96, 240, 0.1) 45%, transparent 70%);
   pointer-events: none;
 }
 
@@ -204,7 +192,7 @@ html:not(.dark) .splash-screen {
 }
 
 html:not(.dark) .splash-screen::before {
-  background: radial-gradient(ellipse 70% 70% at center, transparent 0%, rgba(244, 241, 234, 0.6) 100%);
+  background: radial-gradient(ellipse 80% 60% at center, rgba(37, 62, 207, 0.12) 0%, rgba(64, 96, 240, 0.05) 45%, transparent 70%);
 }
 
 html:not(.dark) .splash-logo {
