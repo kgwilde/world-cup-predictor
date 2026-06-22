@@ -40,17 +40,37 @@ export function PointsBadge({
     );
   }
 
-  if (points >= 4) {
+  // 5 pts — perfect prediction: richest green
+  if (points === 5) {
     return (
-      <span className={`${base} text-wc-black dark:text-wc-bone bg-wc-green/20 dark:bg-wc-green/40 border-wc-green`}>
+      <span className={`${base} text-wc-black dark:text-wc-bone bg-wc-green/45 dark:bg-wc-green/60 border-wc-green`}>
         {live && <LiveDot />}
         {label}
       </span>
     );
   }
-  if (points >= 2) {
+  // 4 pts — great: solid green
+  if (points === 4) {
     return (
-      <span className={`${base} text-wc-black dark:text-wc-bone bg-wc-green/10 dark:bg-wc-green/[0.18] border-wc-green/50`}>
+      <span className={`${base} text-wc-black dark:text-wc-bone bg-wc-green/25 dark:bg-wc-green/40 border-wc-green`}>
+        {live && <LiveDot />}
+        {label}
+      </span>
+    );
+  }
+  // 3 pts — good: medium green
+  if (points === 3) {
+    return (
+      <span className={`${base} text-wc-black dark:text-wc-bone bg-wc-green/[0.13] dark:bg-wc-green/[0.28] border-wc-green/70`}>
+        {live && <LiveDot />}
+        {label}
+      </span>
+    );
+  }
+  // 2 pts — partial: clearly green but light
+  if (points === 2) {
+    return (
+      <span className={`${base} text-wc-black dark:text-wc-bone bg-wc-green/[0.07] dark:bg-wc-green/[0.18] border-wc-green/45`}>
         {live && <LiveDot />}
         {label}
       </span>
@@ -58,7 +78,7 @@ export function PointsBadge({
   }
   if (points === 1) {
     return (
-      <span className={`${base} text-wc-black/60 dark:text-wc-bone bg-black/5 dark:bg-wc-gray/40 border-black/20 dark:border-wc-bone/25`}>
+      <span className={`${base} text-wc-black/60 dark:text-wc-bone bg-black/[0.07] dark:bg-wc-gray/40 border-black/25 dark:border-wc-bone/25`}>
         {live && <LiveDot />}
         1 pt
       </span>
