@@ -155,7 +155,17 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'FOOTBALL_DATA_API_KEY not set' }, { status: 500 });
   }
 
-  if (getLiveMatches().length === 0) {
+  const db = getAdminDb();
+  const summaryRef = db.collection('results').doc('all');
+  const summarySnap = await summaryRef.get();
+  const existing = (summarySnap.exists ? (summarySnap.data() ?? {}) : {}) as Record<
+    string,
+    { status?: string }
+  >;
+
+  const hasStuckLiveMatch = Object.values(existing).some((r) => r.status === 'live');
+
+  if (getLiveMatches().length === 0 && !hasStuckLiveMatch) {
     return NextResponse.json({ written: 0, skipped: 0, warnings: [], noLiveMatches: true });
   }
 
@@ -173,15 +183,6 @@ export async function GET(request: Request) {
   }
 
   const { matches } = await res.json();
-  const db = getAdminDb();
-
-  // Read the single summary document once — avoids one read per match for the "already final" check.
-  const summaryRef = db.collection('results').doc('all');
-  const summarySnap = await summaryRef.get();
-  const existing = (summarySnap.exists ? (summarySnap.data() ?? {}) : {}) as Record<
-    string,
-    { status?: string }
-  >;
 
   let written = 0;
   let skipped = 0;
