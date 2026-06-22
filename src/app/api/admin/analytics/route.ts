@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
       typeof v === 'object' &&
       v !== null &&
       'fixtureId' in v &&
-      (v as { status?: string }).status === 'live',
+      ['live', 'half_time'].includes((v as { status?: string }).status ?? ''),
   );
 
   return NextResponse.json({ sync: { lastSyncedAt, liveResults } });

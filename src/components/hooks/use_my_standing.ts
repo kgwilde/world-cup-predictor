@@ -28,7 +28,7 @@ export function useMyStanding(): { rank: number; totalPoints: number } | null {
   return useMemo(() => {
     if (!uid || usersLoading || resultsLoading) return null;
 
-    const finalResults = storeResults.filter((r) => r.status !== 'live');
+    const finalResults = storeResults.filter((r) => r.status !== 'live' && r.status !== 'half_time');
 
     const playedFixtures = (() => {
       const withResults = new Set(finalResults.map((r) => r.fixtureId));

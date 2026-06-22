@@ -353,6 +353,7 @@ interface LiveResult {
   fixtureId: string;
   homeGoals: number;
   awayGoals: number;
+  status: 'live' | 'half_time';
   minute?: number;
   injuryTime?: number;
 }
@@ -465,16 +466,18 @@ function AnalyticsTab() {
           <p className="text-wc-bone/30 text-sm">No live matches in database.</p>
         ) : (
           <div className="space-y-2">
-            {liveMatches.map(({ fixtureId, homeGoals, awayGoals, minute, injuryTime, fixture, isGenuinelyLive }) => (
+            {liveMatches.map(({ fixtureId, homeGoals, awayGoals, status, minute, injuryTime, fixture, isGenuinelyLive }) => (
               <div key={fixtureId} className="bg-wc-ink rounded-xl px-4 py-3 flex items-center gap-3">
                 <span
                   className={`text-xs font-bold rounded-full px-2 py-0.5 shrink-0 ${
-                    isGenuinelyLive
-                      ? 'bg-green-500/20 text-green-400'
-                      : 'bg-red-500/20 text-red-400'
+                    !isGenuinelyLive
+                      ? 'bg-red-500/20 text-red-400'
+                      : status === 'half_time'
+                        ? 'bg-amber-500/20 text-amber-400'
+                        : 'bg-green-500/20 text-green-400'
                   }`}
                 >
-                  {isGenuinelyLive ? 'LIVE' : 'STUCK'}
+                  {!isGenuinelyLive ? 'STUCK' : status === 'half_time' ? 'HT' : 'LIVE'}
                 </span>
                 <p className="text-wc-white text-sm font-semibold flex-1 min-w-0 truncate">
                   {fixture ? (

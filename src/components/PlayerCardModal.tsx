@@ -307,7 +307,7 @@ export default function PlayerCardModal({
                         const showChip = hasChip && (isViewer || hasStarted);
                         const result = resultMap.get(fixture.id);
                         const isFinal = result?.status === 'final';
-                        const isMatchLive = result?.status === 'live';
+                        const isMatchLive = result?.status === 'live' || result?.status === 'half_time';
                         const pts = (isFinal || isMatchLive)
                           ? scoreMatch({ ...prediction, multiChip: showChip }, result!).points
                           : undefined;

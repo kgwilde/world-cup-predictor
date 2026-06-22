@@ -107,7 +107,7 @@ function formatCountdown(kickoff: Date, now: Date): string | null {
 
 export function isFixtureLive(kickoff: Date, now: Date, result?: MatchResult) {
   // If the API has told us the status, trust it — matches can run beyond 90 minutes.
-  if (result?.status === 'live') return true;
+  if (result?.status === 'live' || result?.status === 'half_time') return true;
   if (result?.status === 'final') return false;
   // No result yet: use the kickoff window as a best-guess until the first sync.
   const kickoffTime = kickoff.getTime();
@@ -250,7 +250,11 @@ export function FixtureCard({ fixture, now, isFullWidth, result }: FixtureCardPr
                     className="font-display font-bold text-xl text-wc-black dark:text-wc-white tabular-nums leading-none inline-block"
                   />
                 </div>
-                {isLive && result.minute != null ? (
+                {result?.status === 'half_time' ? (
+                  <span className="text-[9px] font-semibold uppercase tracking-widest text-wc-black/40 dark:text-wc-white/40">
+                    HT
+                  </span>
+                ) : isLive && result.minute != null ? (
                   <span className="text-[9px] font-semibold tabular-nums text-red-400/80">
                     {result.minute}'
                   </span>
@@ -361,7 +365,7 @@ export function FixtureSlider({ initialResults }: { initialResults?: MatchResult
     } else {
       targetIndex = allFixtures.findIndex((f) => {
         const result = resultsMap.get(f.id);
-        return !result || result.status === 'live';
+        return !result || result.status === 'live' || result.status === 'half_time';
       });
       scrollDone.current = true;
     }

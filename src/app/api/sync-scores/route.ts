@@ -121,7 +121,7 @@ const FIXTURE_LOOKUP = new Map([
 const API_STATUS_MAP: Record<string, string> = {
   FINISHED: 'final',
   IN_PLAY: 'live',
-  PAUSED: 'live',
+  PAUSED: 'half_time',
 };
 
 function normalizeTeamName(name: string): string {
@@ -164,7 +164,11 @@ export async function GET(request: Request) {
   > & { lastSyncedAt?: FirebaseFirestore.Timestamp };
 
   const hasStuckLiveMatch = Object.values(existing).some(
-    (r): r is { status?: string } => typeof r === 'object' && r !== null && 'status' in r && r.status === 'live',
+    (r): r is { status?: string } =>
+      typeof r === 'object' &&
+      r !== null &&
+      'status' in r &&
+      (r.status === 'live' || r.status === 'half_time'),
   );
 
   if (getLiveMatches().length === 0 && !hasStuckLiveMatch) {

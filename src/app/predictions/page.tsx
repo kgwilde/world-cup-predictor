@@ -327,7 +327,7 @@ function MatchPredictionCard({
 }) {
   const hasStarted = new Date(fixture.kickoff) <= now;
   const isFinal = result?.status === 'final';
-  const isLive = result?.status === 'live';
+  const isLive = result?.status === 'live' || result?.status === 'half_time';
 
   const fixturePredictions = useMemo(
     () => allPredictions.filter((p) => p.fixtureId === fixture.id),
@@ -888,7 +888,7 @@ export default function PredictionsPage() {
   const visibleBonusPredictions = allBonusPredictions;
 
   const finalResults = useMemo(
-    () => storeResults.filter((r) => r.status !== 'live'),
+    () => storeResults.filter((r) => r.status !== 'live' && r.status !== 'half_time'),
     [storeResults]
   );
 
