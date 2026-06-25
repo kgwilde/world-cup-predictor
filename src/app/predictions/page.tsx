@@ -492,6 +492,12 @@ export default function PredictionsPage() {
   }, []);
 
   useEffect(() => {
+    if (activeTab === 'matches' || activeTab === 'specials') {
+      window.scrollTo(0, 0);
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
     if (activeTab !== 'matches') return;
     if (activeButtonRef.current) {
       activeButtonRef.current.scrollIntoView({
