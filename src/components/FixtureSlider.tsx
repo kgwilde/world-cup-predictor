@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { FixturePredictionModal } from '@/components/FixturePredictionModal';
 
 function FlashingScore({ value, className }: { value: number; className: string }) {
   const [flashing, setFlashing] = useState(false);
@@ -174,9 +175,10 @@ interface FixtureCardProps {
   now: Date;
   isFullWidth?: boolean;
   result?: MatchResult;
+  onClick?: () => void;
 }
 
-export function FixtureCard({ fixture, now, isFullWidth, result }: FixtureCardProps) {
+export function FixtureCard({ fixture, now, isFullWidth, result, onClick }: FixtureCardProps) {
   const kickoff = new Date(fixture.kickoff);
   const isLive = isFixtureLive(kickoff, now, result);
   const dayLabel = formatKickoffDay(kickoff, now);
@@ -192,7 +194,10 @@ export function FixtureCard({ fixture, now, isFullWidth, result }: FixtureCardPr
   const accentBar = `linear-gradient(to right, ${fixture.homeTeam.accentColor} 0%, ${fixture.homeTeam.accentColor} 35%, ${fixture.awayTeam.accentColor} 65%, ${fixture.awayTeam.accentColor} 100%)`;
 
   return (
-    <article className={`snap-start shrink-0 ${isFullWidth ? 'w-full' : 'w-[15rem] sm:w-[17rem]'}`}>
+    <article
+      className={`snap-start shrink-0 ${isFullWidth ? 'w-full' : 'w-[15rem] sm:w-[17rem]'} ${onClick ? 'cursor-pointer active:opacity-75 transition-opacity' : ''}`}
+      onClick={onClick}
+    >
       <div
         className="relative h-[9.5rem] overflow-hidden rounded-xl ring-1 ring-black/10 dark:ring-white/10 shadow-lg"
         style={{ background: cardBackground }}
@@ -303,6 +308,7 @@ export function FixtureSlider({ initialResults }: { initialResults?: MatchResult
   const scrollDone = useRef(false);
   const storeResults = useAuthStore((s) => s.results);
   const resultsLoading = useAuthStore((s) => s.resultsLoading);
+  const [selectedFixture, setSelectedFixture] = useState<Fixture | null>(null);
 
   // Use server-prefetched results while the client store is still fetching
   const activeResults = resultsLoading && initialResults ? initialResults : storeResults;
@@ -393,6 +399,7 @@ export function FixtureSlider({ initialResults }: { initialResults?: MatchResult
               fixture={fixture}
               now={now}
               result={resultsMap.get(fixture.id)}
+              onClick={() => setSelectedFixture(fixture)}
             />
           ))}
           {renderedFixtures.length < allFixtures.length && (
@@ -411,6 +418,13 @@ export function FixtureSlider({ initialResults }: { initialResults?: MatchResult
           )}
         </div>
       </div>
+
+      {selectedFixture && (
+        <FixturePredictionModal
+          fixture={selectedFixture}
+          onClose={() => setSelectedFixture(null)}
+        />
+      )}
     </>
   );
 }
