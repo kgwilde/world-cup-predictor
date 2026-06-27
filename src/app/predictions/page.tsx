@@ -945,7 +945,7 @@ export default function PredictionsPage() {
             <button
               type="button"
               onClick={() => setActiveTab('matches')}
-              className={`flex-1 text-center pb-3 pt-1 text-sm font-semibold transition-colors border-b-2 -mb-px ${
+              className={`flex-1 text-center pb-3 pt-1 text-xs font-semibold transition-colors border-b-2 -mb-px ${
                 activeTab === 'matches'
                   ? 'text-wc-black dark:text-white border-wc-blue'
                   : 'text-wc-black/40 dark:text-white/40 border-transparent hover:text-wc-black/70 dark:hover:text-white/70'
@@ -956,7 +956,7 @@ export default function PredictionsPage() {
             <button
               type="button"
               onClick={() => setActiveTab('specials')}
-              className={`flex-1 text-center pb-3 pt-1 text-sm font-semibold transition-colors border-b-2 -mb-px ${
+              className={`flex-1 text-center pb-3 pt-1 text-xs font-semibold transition-colors border-b-2 -mb-px ${
                 activeTab === 'specials'
                   ? 'text-wc-black dark:text-white border-wc-blue'
                   : 'text-wc-black/40 dark:text-white/40 border-transparent hover:text-wc-black/70 dark:hover:text-white/70'
@@ -968,7 +968,7 @@ export default function PredictionsPage() {
               <button
                 type="button"
                 onClick={() => setActiveTab('my-predictions')}
-                className={`flex-1 text-center pb-3 pt-1 text-sm font-semibold transition-colors border-b-2 -mb-px ${
+                className={`flex-1 text-center pb-3 pt-1 text-xs font-semibold transition-colors border-b-2 -mb-px ${
                   activeTab === 'my-predictions'
                     ? 'text-wc-black dark:text-white border-wc-blue'
                     : 'text-wc-black/40 dark:text-white/40 border-transparent hover:text-wc-black/70 dark:hover:text-white/70'
