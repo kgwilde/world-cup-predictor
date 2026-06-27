@@ -45,8 +45,8 @@ export default function ReplayControls({ timeline, currentIndex, onPrev, onNext 
   const isAtEnd = currentIndex === timeline.length - 1;
   const progressPct = timeline.length > 0 ? (Math.max(0, currentIndex + 1) / timeline.length) * 100 : 0;
 
-  const matchCount = timeline.filter((s) => s.kind === 'fixture').length;
-  const specialCount = timeline.filter((s) => s.kind === 'special').length;
+  const totalUpdates = timeline.length;
+  const currentUpdateNumber = currentIndex === -1 ? 0 : currentIndex + 1;
 
   const buttonClasses =
     'w-8 h-8 flex items-center justify-center rounded text-wc-black/60 dark:text-wc-bone hover:text-wc-black dark:hover:text-wc-white hover:bg-wc-black/5 dark:hover:bg-wc-white/5 cursor-pointer disabled:text-wc-gray disabled:cursor-not-allowed transition-colors';
@@ -61,8 +61,7 @@ export default function ReplayControls({ timeline, currentIndex, onPrev, onNext 
         <div className="flex-1 text-center min-w-0">
           <StatusLine currentIndex={currentIndex} currentStep={currentStep} />
           <div className="text-[10px] text-wc-black/30 dark:text-wc-white/30 uppercase tracking-wider">
-            {matchCount} matches
-            {specialCount > 0 && ` · ${specialCount} specials`}
+            {currentUpdateNumber} / {totalUpdates} updates
           </div>
         </div>
 

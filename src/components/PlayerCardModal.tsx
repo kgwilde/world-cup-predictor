@@ -144,16 +144,24 @@ export default function PlayerCardModal({
   const fixtureMap = useMemo(() => new Map(fixtures.map((f) => [f.id, f])), [fixtures]);
 
   const groupChipsUsed = useMemo(
-    () => [...playerChips].filter((id) => fixtureMap.get(id)?.stage === 'group').length,
-    [playerChips, fixtureMap]
+    () => [...playerChips].filter((id) => {
+      const fixture = fixtureMap.get(id);
+      if (!fixture) return false;
+      if (!isViewer && new Date(fixture.kickoff) > now) return false;
+      return fixture.stage === 'group';
+    }).length,
+    [playerChips, fixtureMap, isViewer, now]
   );
 
   const knockoutChipsUsed = useMemo(
     () => [...playerChips].filter((id) => {
-      const stage = fixtureMap.get(id)?.stage;
+      const fixture = fixtureMap.get(id);
+      if (!fixture) return false;
+      if (!isViewer && new Date(fixture.kickoff) > now) return false;
+      const stage = fixture.stage;
       return stage && stage !== 'group';
     }).length,
-    [playerChips, fixtureMap]
+    [playerChips, fixtureMap, isViewer, now]
   );
 
   const grouped = useMemo(() => {
