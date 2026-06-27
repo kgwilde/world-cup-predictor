@@ -5,8 +5,11 @@ import { useEffect, useState } from 'react';
 
 import { useAuthStore } from '@/app/stores/useAuthStore';
 import { fixtures } from '@/data/fixtures';
-import { getAllUsersAdmin, getResults } from '@/lib/firestore';
-import type { FixtureStage, MatchResult, UserProfile } from '@/lib/types';
+import { allBonusPredictions } from '@/data/entries';
+import { getAllUsersAdmin, getResults, getSpecialOutcomes, getSpecialEvents } from '@/lib/firestore';
+import type { FixtureStage, GroupCode, MatchResult, SpecialEvent, SpecialEventType, SpecialOutcomes, UserProfile } from '@/lib/types';
+
+const GROUP_CODES: GroupCode[] = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
 
 const PALETTE = ['bg-wc-teal', 'bg-wc-blue', 'bg-wc-magenta', 'bg-wc-red', 'bg-wc-green'];
 
@@ -507,9 +510,333 @@ function AnalyticsTab() {
   );
 }
 
+// ─── Specials Tab ─────────────────────────────────────────────────────────────
+
+const UNIQUE_TOP_SCORERS = [...new Set(allBonusPredictions.map((b) => b.topScorer))].sort();
+
+function AppliedBadge({ event }: { event: SpecialEvent | undefined }) {
+  if (!event) return null;
+  const d = new Date(event.appliedAt);
+  return (
+    <span className="text-xs text-green-400 bg-green-400/10 rounded-full px-2 py-0.5">
+      Applied {d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}{' '}
+      {d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+    </span>
+  );
+}
+
+function SectionHeader({ title }: { title: string }) {
+  return (
+    <h3 className="text-xs font-semibold text-wc-white/50 uppercase tracking-wider mb-3">{title}</h3>
+  );
+}
+
+function SpecialsTab() {
+  const { user } = useAuthStore();
+  const [outcomes, setOutcomes] = useState<SpecialOutcomes>({});
+  const [appliedEvents, setAppliedEvents] = useState<Partial<Record<SpecialEventType, SpecialEvent>>>({});
+  const [applying, setApplying] = useState<Partial<Record<SpecialEventType, boolean>>>({});
+  const [errors, setErrors] = useState<Partial<Record<SpecialEventType, string>>>({});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([getSpecialOutcomes(), getSpecialEvents()])
+      .then(([savedOutcomes, savedEvents]) => {
+        if (savedOutcomes) setOutcomes(savedOutcomes);
+        const eventsMap: Partial<Record<SpecialEventType, SpecialEvent>> = {};
+        for (const event of savedEvents) eventsMap[event.id] = event;
+        setAppliedEvents(eventsMap);
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  async function applyEvent(eventType: SpecialEventType) {
+    if (!user) return;
+    setApplying((prev) => ({ ...prev, [eventType]: true }));
+    setErrors((prev) => ({ ...prev, [eventType]: undefined }));
+    try {
+      const idToken = await getIdToken(user);
+      const res = await fetch('/api/admin/apply-special', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken, eventType, outcomes }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error ?? `HTTP ${res.status}`);
+      }
+      const { event } = await res.json();
+      setAppliedEvents((prev) => ({ ...prev, [eventType]: event }));
+    } catch (e) {
+      setErrors((prev) => ({ ...prev, [eventType]: e instanceof Error ? e.message : 'Failed' }));
+    } finally {
+      setApplying((prev) => ({ ...prev, [eventType]: false }));
+    }
+  }
+
+  function updateGroup(group: GroupCode, field: 'winner' | 'runnerUp', value: string) {
+    setOutcomes((prev) => ({
+      ...prev,
+      groupResults: {
+        ...prev.groupResults,
+        [group]: { ...prev.groupResults?.[group], [field]: value.toUpperCase() },
+      } as Record<GroupCode, { winner: string; runnerUp: string }>,
+    }));
+  }
+
+  function updateTeamList(field: keyof SpecialOutcomes, raw: string) {
+    const codes = raw.split(',').map((s) => s.trim().toUpperCase()).filter(Boolean);
+    setOutcomes((prev) => ({ ...prev, [field]: codes }));
+  }
+
+  function ApplyButton({ eventType, label }: { eventType: SpecialEventType; label: string }) {
+    const isApplying = applying[eventType];
+    const error = errors[eventType];
+    const applied = appliedEvents[eventType];
+    return (
+      <div className="flex items-center gap-3 mt-3">
+        <button
+          onClick={() => applyEvent(eventType)}
+          disabled={!!isApplying}
+          className="text-xs font-semibold rounded-lg px-3 py-1.5 bg-wc-blue text-wc-white hover:opacity-90 transition-opacity disabled:opacity-60"
+        >
+          {isApplying ? 'Applying…' : label}
+        </button>
+        <AppliedBadge event={applied} />
+        {error && <span className="text-xs text-red-400">{error}</span>}
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <div className="w-8 h-8 border-2 border-white/20 border-t-wc-blue rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  const groupResultsStr = (group: GroupCode, field: 'winner' | 'runnerUp') =>
+    outcomes.groupResults?.[group]?.[field] ?? '';
+
+  return (
+    <div className="space-y-8">
+      {/* Group Stage Picks */}
+      <section>
+        <SectionHeader title="Group Stage Picks" />
+        <div className="bg-wc-ink rounded-xl overflow-hidden mb-3">
+          <div className="grid grid-cols-[auto_1fr_1fr] text-[11px] text-wc-bone/50 font-semibold uppercase tracking-wider px-4 py-2 border-b border-white/8">
+            <span className="w-8">Grp</span>
+            <span>Winner</span>
+            <span>Runner-up</span>
+          </div>
+          {GROUP_CODES.map((group) => (
+            <div key={group} className="grid grid-cols-[auto_1fr_1fr] items-center px-4 py-2 border-b border-white/8 last:border-0 gap-2">
+              <span className="w-8 text-xs font-bold text-wc-bone/50">{group}</span>
+              <input
+                value={groupResultsStr(group, 'winner')}
+                onChange={(e) => updateGroup(group, 'winner', e.target.value)}
+                placeholder="e.g. ES"
+                className="bg-wc-black border border-white/15 rounded-lg px-2 py-1 text-xs font-mono text-wc-white focus:border-wc-blue/60 outline-none w-full"
+              />
+              <input
+                value={groupResultsStr(group, 'runnerUp')}
+                onChange={(e) => updateGroup(group, 'runnerUp', e.target.value)}
+                placeholder="e.g. FR"
+                className="bg-wc-black border border-white/15 rounded-lg px-2 py-1 text-xs font-mono text-wc-white focus:border-wc-blue/60 outline-none w-full"
+              />
+            </div>
+          ))}
+        </div>
+        <ApplyButton eventType="group_stage_picks" label="Apply Group Stage Picks" />
+      </section>
+
+      {/* Best 3rd Place */}
+      <section>
+        <SectionHeader title="Best 3rd Place Teams (8 teams)" />
+        <input
+          value={(outcomes.bestThirdPlace ?? []).join(', ')}
+          onChange={(e) => updateTeamList('bestThirdPlace', e.target.value)}
+          placeholder="e.g. KR, GHA, SCO, PAR, DZ, AU, JP, CV"
+          className="w-full bg-wc-ink border border-white/15 rounded-xl px-4 py-3 text-sm font-mono text-wc-white focus:border-wc-blue/60 outline-none"
+        />
+        <ApplyButton eventType="best_third_place" label="Apply Best 3rd Place" />
+      </section>
+
+      {/* Knockout bracket */}
+      <section>
+        <SectionHeader title="Knockout Bracket" />
+        <div className="space-y-3">
+          {(
+            [
+              { field: 'roundOf16' as const, label: 'Round of 16 (16 teams)', eventType: 'round_of_16_picks' as SpecialEventType },
+              { field: 'quarterFinalists' as const, label: 'Quarter-finalists (8 teams)', eventType: 'quarter_final_picks' as SpecialEventType },
+              { field: 'semiFinalists' as const, label: 'Semi-finalists (4 teams)', eventType: 'semi_final_picks' as SpecialEventType },
+              { field: 'finalists' as const, label: 'Finalists (2 teams)', eventType: 'finalist_picks' as SpecialEventType },
+              { field: 'winner' as const, label: 'Winner (1 team)', eventType: 'winner_pick' as SpecialEventType },
+            ] as const
+          ).map(({ field, label, eventType }) => (
+            <div key={field}>
+              <p className="text-xs text-wc-bone/50 mb-1">{label}</p>
+              <input
+                value={field === 'winner'
+                  ? (outcomes.winner ?? '')
+                  : ((outcomes[field] ?? []) as string[]).join(', ')}
+                onChange={(e) => {
+                  if (field === 'winner') {
+                    setOutcomes((prev) => ({ ...prev, winner: e.target.value.trim().toUpperCase() }));
+                  } else {
+                    updateTeamList(field, e.target.value);
+                  }
+                }}
+                placeholder={field === 'winner' ? 'e.g. ES' : 'Comma-separated team codes'}
+                className="w-full bg-wc-ink border border-white/15 rounded-xl px-4 py-2.5 text-sm font-mono text-wc-white focus:border-wc-blue/60 outline-none"
+              />
+              <ApplyButton eventType={eventType} label={`Apply ${label.split(' (')[0]}`} />
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Group Stage Stats */}
+      <section>
+        <SectionHeader title="Group Stage Stats" />
+        <div className="space-y-4">
+          <div>
+            <p className="text-xs text-wc-bone/50 mb-1">Highest Scoring Team (team code)</p>
+            <div className="flex gap-2">
+              <input
+                value={outcomes.highestScoringTeam ?? ''}
+                onChange={(e) => setOutcomes((prev) => ({ ...prev, highestScoringTeam: e.target.value.trim().toUpperCase() }))}
+                placeholder="e.g. ES"
+                className="bg-wc-ink border border-white/15 rounded-xl px-4 py-2.5 text-sm font-mono text-wc-white focus:border-wc-blue/60 outline-none w-24"
+              />
+              <input
+                type="number"
+                min={0}
+                value={outcomes.highestScoringTeamGoals ?? ''}
+                onChange={(e) => setOutcomes((prev) => ({ ...prev, highestScoringTeamGoals: parseInt(e.target.value) || 0 }))}
+                placeholder="Goals"
+                className="bg-wc-ink border border-white/15 rounded-xl px-4 py-2.5 text-sm tabular-nums text-wc-white focus:border-wc-blue/60 outline-none w-24"
+              />
+            </div>
+            <ApplyButton eventType="group_stage_highest_scorers" label="Apply Group Stage Highest Scorers" />
+          </div>
+
+          <div>
+            <p className="text-xs text-wc-bone/50 mb-1">Best Defence Team (team code + goals conceded)</p>
+            <div className="flex gap-2">
+              <input
+                value={outcomes.bestDefenceTeam ?? ''}
+                onChange={(e) => setOutcomes((prev) => ({ ...prev, bestDefenceTeam: e.target.value.trim().toUpperCase() }))}
+                placeholder="e.g. GB_ENG"
+                className="bg-wc-ink border border-white/15 rounded-xl px-4 py-2.5 text-sm font-mono text-wc-white focus:border-wc-blue/60 outline-none w-28"
+              />
+              <input
+                type="number"
+                min={0}
+                value={outcomes.bestDefenceGoalsConceded ?? ''}
+                onChange={(e) => setOutcomes((prev) => ({ ...prev, bestDefenceGoalsConceded: parseInt(e.target.value) || 0 }))}
+                placeholder="Conceded"
+                className="bg-wc-ink border border-white/15 rounded-xl px-4 py-2.5 text-sm tabular-nums text-wc-white focus:border-wc-blue/60 outline-none w-28"
+              />
+            </div>
+            <ApplyButton eventType="best_group_stage_defence" label="Apply Best Group Stage Defence" />
+          </div>
+        </div>
+      </section>
+
+      {/* Bonus Stats */}
+      <section>
+        <SectionHeader title="Bonus Stats" />
+        <div className="space-y-4">
+          <div>
+            <p className="text-xs text-wc-bone/50 mb-1">Total Yellow Cards</p>
+            <input
+              type="number"
+              min={0}
+              value={outcomes.totalYellowCards ?? ''}
+              onChange={(e) => setOutcomes((prev) => ({ ...prev, totalYellowCards: parseInt(e.target.value) || 0 }))}
+              className="bg-wc-ink border border-white/15 rounded-xl px-4 py-2.5 text-sm tabular-nums text-wc-white focus:border-wc-blue/60 outline-none w-32"
+            />
+            <ApplyButton eventType="yellow_cards" label="Apply Yellow Cards" />
+          </div>
+
+          <div>
+            <p className="text-xs text-wc-bone/50 mb-1">Total Red Cards</p>
+            <input
+              type="number"
+              min={0}
+              value={outcomes.totalRedCards ?? ''}
+              onChange={(e) => setOutcomes((prev) => ({ ...prev, totalRedCards: parseInt(e.target.value) || 0 }))}
+              className="bg-wc-ink border border-white/15 rounded-xl px-4 py-2.5 text-sm tabular-nums text-wc-white focus:border-wc-blue/60 outline-none w-32"
+            />
+            <ApplyButton eventType="red_cards" label="Apply Red Cards" />
+          </div>
+
+          <div>
+            <p className="text-xs text-wc-bone/50 mb-1">Number of Penalty Shootouts</p>
+            <input
+              type="number"
+              min={0}
+              value={outcomes.penaltyShootouts ?? ''}
+              onChange={(e) => setOutcomes((prev) => ({ ...prev, penaltyShootouts: parseInt(e.target.value) || 0 }))}
+              className="bg-wc-ink border border-white/15 rounded-xl px-4 py-2.5 text-sm tabular-nums text-wc-white focus:border-wc-blue/60 outline-none w-32"
+            />
+            <ApplyButton eventType="penalty_shootouts" label="Apply Penalty Shootouts" />
+          </div>
+        </div>
+      </section>
+
+      {/* Top Goalscorer */}
+      <section>
+        <SectionHeader title="Top Goalscorer" />
+        <div className="space-y-3">
+          <div>
+            <p className="text-xs text-wc-bone/50 mb-1">Actual tournament top goalscorer</p>
+            <input
+              value={outcomes.actualTopScorer ?? ''}
+              onChange={(e) => setOutcomes((prev) => ({ ...prev, actualTopScorer: e.target.value }))}
+              placeholder="e.g. Harry Kane"
+              className="w-full bg-wc-ink border border-white/15 rounded-xl px-4 py-2.5 text-sm text-wc-white focus:border-wc-blue/60 outline-none"
+            />
+          </div>
+          <div>
+            <p className="text-xs text-wc-bone/50 mb-2">Goals scored by each predicted player</p>
+            <div className="bg-wc-ink rounded-xl overflow-hidden">
+              {UNIQUE_TOP_SCORERS.map((name) => (
+                <div key={name} className="flex items-center justify-between px-4 py-2.5 border-b border-white/8 last:border-0">
+                  <span className="text-sm text-wc-white">{name}</span>
+                  <input
+                    type="number"
+                    min={0}
+                    value={outcomes.topScorerGoalsMap?.[name] ?? ''}
+                    onChange={(e) =>
+                      setOutcomes((prev) => ({
+                        ...prev,
+                        topScorerGoalsMap: {
+                          ...prev.topScorerGoalsMap,
+                          [name]: parseInt(e.target.value) || 0,
+                        },
+                      }))
+                    }
+                    placeholder="0"
+                    className="bg-wc-black border border-white/15 rounded-lg px-2 py-1 text-sm tabular-nums text-wc-white focus:border-wc-blue/60 outline-none w-16 text-center"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        <ApplyButton eventType="top_goalscorer" label="Apply Top Goalscorer" />
+      </section>
+    </div>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-type Tab = 'users' | 'results' | 'analytics';
+type Tab = 'users' | 'results' | 'analytics' | 'specials';
 
 export default function AdminPage() {
   const { user, loading } = useAuthStore();
@@ -561,18 +888,18 @@ export default function AdminPage() {
           <h1 className="font-display font-bold text-3xl text-wc-white">Admin Dashboard</h1>
         </header>
 
-        <div className="flex border-b border-white/10">
-          {(['users', 'results', 'analytics'] as Tab[]).map((t) => (
+        <div className="flex border-b border-white/10 overflow-x-auto">
+          {(['users', 'results', 'specials', 'analytics'] as Tab[]).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`px-5 py-2.5 text-sm font-semibold capitalize border-b-2 transition-colors ${
+              className={`shrink-0 px-5 py-2.5 text-sm font-semibold capitalize border-b-2 transition-colors ${
                 tab === t
                   ? 'border-wc-blue text-wc-blue'
                   : 'border-transparent text-white/50 hover:text-white/70'
               }`}
             >
-              {t === 'users' ? 'Users' : t === 'results' ? 'Results' : 'Analytics'}
+              {t === 'users' ? 'Users' : t === 'results' ? 'Results' : t === 'specials' ? 'Specials' : 'Analytics'}
             </button>
           ))}
         </div>
@@ -591,6 +918,8 @@ export default function AdminPage() {
               loading={resultsLoading}
               onResultsChange={setResults}
             />
+          ) : tab === 'specials' ? (
+            <SpecialsTab />
           ) : (
             <AnalyticsTab />
           )}

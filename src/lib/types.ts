@@ -73,6 +73,7 @@ export interface PlayerStanding {
   totalPoints: number;
   rank: number;
   matchPoints: MatchPoints[];
+  specialPoints: Array<{ eventId: SpecialEventType; eventLabel: string; points: number }>;
   previousRank?: number;
 }
 
@@ -100,6 +101,49 @@ export type PublicProfile = Omit<UserProfile, 'email'>;
 export interface MultiChip {
   playerId: string;
   fixtureId: string;
+}
+
+// ─── Special Events ───────────────────────────────────────────────────────────
+
+export type SpecialEventType =
+  | 'group_stage_picks'
+  | 'best_third_place'
+  | 'round_of_16_picks'
+  | 'quarter_final_picks'
+  | 'semi_final_picks'
+  | 'finalist_picks'
+  | 'winner_pick'
+  | 'top_goalscorer'
+  | 'group_stage_highest_scorers'
+  | 'best_group_stage_defence'
+  | 'yellow_cards'
+  | 'red_cards'
+  | 'penalty_shootouts';
+
+export interface SpecialEvent {
+  id: SpecialEventType;
+  label: string;
+  appliedAt: string; // ISO timestamp — controls replay ordering
+  playerPoints: Record<string, number>; // playerId → pts awarded
+}
+
+export interface SpecialOutcomes {
+  groupResults?: Record<GroupCode, GroupPicks>;
+  bestThirdPlace?: string[];
+  roundOf16?: string[];
+  quarterFinalists?: string[];
+  semiFinalists?: string[];
+  finalists?: string[];
+  winner?: string;
+  highestScoringTeam?: string;
+  highestScoringTeamGoals?: number;
+  bestDefenceTeam?: string;
+  bestDefenceGoalsConceded?: number;
+  totalYellowCards?: number;
+  totalRedCards?: number;
+  penaltyShootouts?: number;
+  topScorerGoalsMap?: Record<string, number>; // player name → goals scored
+  actualTopScorer?: string;
 }
 
 // ─── Specials Predictions ────────────────────────────────────────────────────

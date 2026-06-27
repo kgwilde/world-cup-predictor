@@ -4,9 +4,9 @@ import { onAuthStateChanged, signOut as firebaseSignOut, type User } from 'fireb
 import { create } from 'zustand';
 
 import { auth } from '@/lib/firebase';
-import { applyMultiChip, createUserProfile, getAllUsers, getUserProfile, removeMultiChip, subscribeToResults } from '@/lib/firestore';
+import { applyMultiChip, createUserProfile, getAllUsers, getUserProfile, removeMultiChip, subscribeToResults, subscribeToSpecialEvents } from '@/lib/firestore';
 import { preloadedAvatarUrls, resolveAvatarSrc } from '@/lib/avatar';
-import type { MatchResult, PublicProfile, UserProfile } from '@/lib/types';
+import type { MatchResult, PublicProfile, SpecialEvent, UserProfile } from '@/lib/types';
 
 function preloadAvatars(users: PublicProfile[]): Promise<void> {
   const urls = users
@@ -38,6 +38,8 @@ interface AuthState {
   results: MatchResult[];
   resultsLoading: boolean;
   lastSyncedAt: Date | null;
+  specialEvents: SpecialEvent[];
+  specialEventsLoading: boolean;
   init: () => () => void;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -48,6 +50,7 @@ interface AuthState {
 // Module-level guards so we only ever fire one request per session
 let allUsersFetchPromise: Promise<void> | null = null;
 let resultsUnsubscribe: (() => void) | null = null;
+let specialEventsUnsubscribe: (() => void) | null = null;
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
@@ -59,6 +62,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   results: [],
   resultsLoading: true,
   lastSyncedAt: null,
+  specialEvents: [],
+  specialEventsLoading: true,
 
   init: () => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -110,6 +115,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         resultsUnsubscribe = subscribeToResults(
           (results, lastSyncedAt) => set({ results, lastSyncedAt, resultsLoading: false }),
           () => set({ resultsLoading: false }),
+        );
+      }
+
+      if (!specialEventsUnsubscribe) {
+        specialEventsUnsubscribe = subscribeToSpecialEvents(
+          (specialEvents) => set({ specialEvents, specialEventsLoading: false }),
+          () => set({ specialEventsLoading: false }),
         );
       }
     });

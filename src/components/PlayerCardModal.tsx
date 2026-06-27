@@ -22,6 +22,10 @@ import type {
 
 const GROUP_CODES: GroupCode[] = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
 
+const GROUP_CHIP_LIMIT = 10;
+const KNOCKOUT_CHIP_LIMIT = 5;
+const KNOCKOUT_TEAL = '#2DD4BF';
+
 function teamName(code: string): string {
   return getTeamByCode(code)?.name ?? code;
 }
@@ -70,14 +74,15 @@ function formatDateLabel(dateKey: string) {
   }).format(new Date(dateKey));
 }
 
-function ChipPips({ used, total = 10 }: { used: number; total?: number }) {
+function ChipPips({ used, total = 10, color }: { used: number; total?: number; color?: string }) {
   const remaining = total - used;
   return (
     <div className="flex gap-1">
       {Array.from({ length: total }).map((_, i) => (
         <div
           key={i}
-          className={`w-2 h-2 rounded-full ${i < remaining ? 'bg-wc-gold' : 'bg-black/15 dark:bg-white/15'}`}
+          style={color && i < remaining ? { backgroundColor: color } : undefined}
+          className={`w-2 h-2 rounded-full ${i < remaining ? (color ? '' : 'bg-wc-gold') : 'bg-black/15 dark:bg-white/15'}`}
         />
       ))}
     </div>
@@ -137,20 +142,18 @@ export default function PlayerCardModal({
 
   const resultMap = useMemo(() => new Map(results.map((r) => [r.fixtureId, r])), [results]);
   const fixtureMap = useMemo(() => new Map(fixtures.map((f) => [f.id, f])), [fixtures]);
-  if (player.id === 'BT4kIKcu0yRz70hJrLXhcA9P43s2') {
-    console.log(playerChips);
-    console.log(fixtureMap);
-  }
-  const chipsUsed = useMemo(
-    () =>
-      [...playerChips].filter((id) => {
-        const f = fixtureMap.get(id);
-        if (f && new Date(f.kickoff) <= now) {
-          console.log(id);
-        }
-        return f && new Date(f.kickoff) <= now;
-      }).length,
-    [playerChips, fixtureMap, now]
+
+  const groupChipsUsed = useMemo(
+    () => [...playerChips].filter((id) => fixtureMap.get(id)?.stage === 'group').length,
+    [playerChips, fixtureMap]
+  );
+
+  const knockoutChipsUsed = useMemo(
+    () => [...playerChips].filter((id) => {
+      const stage = fixtureMap.get(id)?.stage;
+      return stage && stage !== 'group';
+    }).length,
+    [playerChips, fixtureMap]
   );
 
   const grouped = useMemo(() => {
@@ -234,11 +237,19 @@ export default function PlayerCardModal({
           <div className="shrink-0 grid grid-cols-3 items-center px-6 py-3 border-b border-black/10 dark:border-white/10 bg-wc-bone dark:bg-wc-black">
             <StatCell label="Rank" value={standing ? `#${standing.rank}` : '—'} />
             <StatCell label="Points" value={standing ? String(standing.totalPoints) : '—'} />
-            <div className="flex flex-col items-center gap-1">
-              <ChipPips used={chipsUsed} />
-              <span className="text-wc-black/40 dark:text-white/40 text-[10px] uppercase tracking-wider">
-                {10 - chipsUsed}/10 chips left
-              </span>
+            <div className="flex flex-col items-center gap-2">
+              <div className="flex flex-col items-center gap-0.5">
+                <ChipPips used={groupChipsUsed} total={GROUP_CHIP_LIMIT} />
+                <span className="text-wc-black/40 dark:text-white/40 text-[10px] uppercase tracking-wider">
+                  {GROUP_CHIP_LIMIT - groupChipsUsed}/{GROUP_CHIP_LIMIT} group
+                </span>
+              </div>
+              <div className="flex flex-col items-center gap-0.5">
+                <ChipPips used={knockoutChipsUsed} total={KNOCKOUT_CHIP_LIMIT} color={KNOCKOUT_TEAL} />
+                <span className="text-[10px] uppercase tracking-wider" style={{ color: KNOCKOUT_TEAL, opacity: 0.65 }}>
+                  {KNOCKOUT_CHIP_LIMIT - knockoutChipsUsed}/{KNOCKOUT_CHIP_LIMIT} knockout
+                </span>
+              </div>
             </div>
           </div>
 
@@ -357,6 +368,7 @@ export default function PlayerCardModal({
               <PlayerSpecialsTab
                 tournamentPicks={tournamentPicks}
                 bonusPredictions={bonusPredictions}
+                standing={standing}
               />
             )}
           </div>
@@ -395,13 +407,17 @@ function ModalCollapsibleSection({
 function PlayerSpecialsTab({
   tournamentPicks,
   bonusPredictions,
+  standing,
 }: {
   tournamentPicks: TournamentPicks | null;
   bonusPredictions: BonusPredictions | null;
+  standing: PlayerStanding | null;
 }) {
   if (!tournamentPicks && !bonusPredictions) {
     return <p className="text-center text-wc-black/30 dark:text-white/30 text-sm py-10">No specials data yet</p>;
   }
+
+  const earnedEvents = standing?.specialPoints.filter((sp) => sp.points !== 0) ?? [];
 
   const knockoutStages: Array<{ label: string; teams: string[] }> = tournamentPicks
     ? [
@@ -428,6 +444,26 @@ function PlayerSpecialsTab({
 
   return (
     <div className="divide-y divide-black/8 dark:divide-white/8 px-4 py-2">
+      {earnedEvents.length > 0 && (
+        <ModalCollapsibleSection label="Special Points Earned">
+          <div className="rounded-xl bg-white dark:bg-wc-ink overflow-hidden mb-3">
+            {earnedEvents.map(({ eventId, eventLabel, points }) => (
+              <div
+                key={eventId}
+                className="flex items-center justify-between px-4 py-2.5 border-b border-black/8 dark:border-white/8 last:border-0"
+              >
+                <span className="text-xs text-wc-black/70 dark:text-white/70">{eventLabel}</span>
+                <span
+                  className={`text-sm font-bold tabular-nums ${points > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'}`}
+                >
+                  {points > 0 ? `+${points}` : points}
+                </span>
+              </div>
+            ))}
+          </div>
+        </ModalCollapsibleSection>
+      )}
+
       {tournamentPicks && (
         <>
           <ModalCollapsibleSection label="Tournament Winner">

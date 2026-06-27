@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import { useAuthStore } from '@/app/stores/useAuthStore';
-import { useStandings } from '@/components/hooks/use_standings';
+import { useStandings, buildTimeline, applySpecialPoints } from '@/components/hooks/use_standings';
 import { useMultiChips } from '@/components/hooks/use_multi_chips';
 import LeaderboardRow from '@/components/leaderboard/LeaderboardRow';
 import PlayerCardModal from '@/components/PlayerCardModal';
@@ -36,6 +36,8 @@ export default function Leaderboard() {
   const usersLoading = useAuthStore((s) => s.usersLoading);
   const storeResults = useAuthStore((s) => s.results);
   const resultsLoading = useAuthStore((s) => s.resultsLoading);
+  const specialEvents = useAuthStore((s) => s.specialEvents);
+  const specialEventsLoading = useAuthStore((s) => s.specialEventsLoading);
 
   const activeResults: MatchResult[] = storeResults.filter((r) => r.status !== 'live' && r.status !== 'half_time');
 
@@ -46,17 +48,22 @@ export default function Leaderboard() {
       .sort((a, b) => new Date(a.kickoff).getTime() - new Date(b.kickoff).getTime());
   }, [activeResults]);
 
+  const timeline = useMemo(
+    () => buildTimeline(playedFixtures, specialEvents),
+    [playedFixtures, specialEvents],
+  );
+
   const [replayIndex, setReplayIndex] = useState(-1);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
 
   const { chips: allChips } = useMultiChips();
 
   useEffect(() => {
-    if (!resultsLoading) {
+    if (!resultsLoading && !specialEventsLoading) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setReplayIndex(playedFixtures.length - 1);
+      setReplayIndex(timeline.length - 1);
     }
-  }, [resultsLoading, playedFixtures.length]);
+  }, [resultsLoading, specialEventsLoading, timeline.length]);
 
   const deadlinePassed = getNow() >= PREDICTIONS_DEADLINE;
   const players: Player[] = firestoreUsers
@@ -72,19 +79,18 @@ export default function Leaderboard() {
     [allChips]
   );
 
-  const { currentStandings, previousStandings, currentFixture } = useStandings(
+  const { currentStandings, previousStandings, currentStep } = useStandings(
     players,
     predictions,
     activeResults,
-    playedFixtures,
-    replayIndex
+    timeline,
+    replayIndex,
   );
 
-  // Always use full standings (not replay-sliced) for the player card modal
-  const latestStandings = useMemo(
-    () => calculateStandings(players, predictions, activeResults),
-    [players, predictions, activeResults]
-  );
+  const latestStandings = useMemo(() => {
+    const base = calculateStandings(players, predictions, activeResults);
+    return applySpecialPoints(base, specialEvents);
+  }, [players, predictions, activeResults, specialEvents]);
 
   const selectedPlayer = useMemo(
     () => players.find((p) => p.id === selectedPlayerId) ?? null,
@@ -107,18 +113,17 @@ export default function Leaderboard() {
   );
 
   const now = useMemo(() => new Date(), []);
-
-  const isLoading = usersLoading || resultsLoading;
+  const isLoading = usersLoading || resultsLoading || specialEventsLoading;
 
   return (
     <>
       <div className="max-w-3xl mx-auto px-4 space-y-4 pb-8">
         <div className="space-y-4">
           <ReplayControls
-            fixtures={playedFixtures}
+            timeline={timeline}
             currentIndex={replayIndex}
             onPrev={() => setReplayIndex((i) => Math.max(-1, i - 1))}
-            onNext={() => setReplayIndex((i) => Math.min(playedFixtures.length - 1, i + 1))}
+            onNext={() => setReplayIndex((i) => Math.min(timeline.length - 1, i + 1))}
           />
 
           {!isLoading && currentStandings.length === 0 && <EmptyState />}
@@ -135,16 +140,7 @@ export default function Leaderboard() {
                       allTournamentPicks.find((t) => t.playerId === standing.player.id)?.winner
                     }
                     onClick={() => setSelectedPlayerId(standing.player.id)}
-                    matchDelta={
-                      currentFixture
-                        ? buildMatchDelta(
-                            currentStandings,
-                            previousStandings,
-                            currentFixture.id,
-                            standing.player.id
-                          )
-                        : null
-                    }
+                    matchDelta={buildDelta(currentStandings, previousStandings, currentStep, standing.player.id)}
                   />
                 ))}
           </div>
@@ -180,6 +176,11 @@ function getMultiChipApplied(standings: PlayerStanding[], playerId: string, fixt
   return standing?.matchPoints.find((mp) => mp.fixtureId === fixtureId)?.multiChipApplied ?? false;
 }
 
+function getSpecialEventPoints(standings: PlayerStanding[], playerId: string, eventId: string) {
+  const standing = standings.find((s) => s.player.id === playerId);
+  return standing?.specialPoints.find((sp) => sp.eventId === eventId)?.points ?? 0;
+}
+
 function getRankChange(
   currentStandings: PlayerStanding[],
   previousStandings: PlayerStanding[] | null,
@@ -191,17 +192,29 @@ function getRankChange(
   return previousRank - currentRank;
 }
 
-function buildMatchDelta(
+function buildDelta(
   standings: PlayerStanding[],
   previousStandings: PlayerStanding[] | null,
-  currentFixtureId: string,
-  playerId: string
+  currentStep: import('@/components/hooks/use_standings').TimelineStep | null,
+  playerId: string,
 ) {
+  if (!currentStep) return null;
   if (!standings.some((s) => s.player.id === playerId)) return null;
+
+  const rankChange = getRankChange(standings, previousStandings, playerId);
+
+  if (currentStep.kind === 'fixture') {
+    return {
+      points: getFixturePoints(standings, playerId, currentStep.fixture.id),
+      rankChange,
+      multiChipApplied: getMultiChipApplied(standings, playerId, currentStep.fixture.id),
+    };
+  }
+
   return {
-    points: getFixturePoints(standings, playerId, currentFixtureId),
-    rankChange: getRankChange(standings, previousStandings, playerId),
-    multiChipApplied: getMultiChipApplied(standings, playerId, currentFixtureId),
+    points: getSpecialEventPoints(standings, playerId, currentStep.event.id),
+    rankChange,
+    multiChipApplied: false,
   };
 }
 

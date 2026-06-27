@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useRef, useState, useEffect } from 'react';
-import { Clock, Lock, X } from 'lucide-react';
+import { ChevronDown, Clock, Lock, X } from 'lucide-react';
 import { fixtures } from '@/data/fixtures';
 import { allPredictions, allTournamentPicks, allBonusPredictions } from '@/data/entries';
 import type {
@@ -26,9 +26,20 @@ import PlayerCardModal from '@/components/PlayerCardModal';
 import { MatchPredictionCard } from '@/components/predictions/MatchPredictionCard';
 
 const GROUP_FIXTURE_IDS = new Set(fixtures.filter((f) => f.stage === 'group').map((f) => f.id));
+const KNOCKOUT_FIXTURE_IDS = new Set(fixtures.filter((f) => f.stage !== 'group').map((f) => f.id));
 const GROUP_CHIP_LIMIT = 10;
-// 03:00 Irish time (UTC+1 in summer)
+const KNOCKOUT_CHIP_LIMIT = 5;
+// 03:00 Irish time (UTC+1 in summer) — also when the group stage ends
 const KNOCKOUT_UNLOCK = new Date('2026-06-28T02:00:00Z');
+
+const STAGE_LABELS: Record<string, string> = {
+  round_of_32: 'Round of 32',
+  round_of_16: 'Round of 16',
+  quarter_final: 'Quarter-finals',
+  semi_final: 'Semi-finals',
+  third_place: 'Third Place',
+  final: 'Final',
+};
 
 function userToPlayer(profile: PublicProfile): Player {
   return {
@@ -83,6 +94,8 @@ function getSnapDateKey(dateKeys: string[], now: Date): string | null {
 
 // ─── My Chips tab ─────────────────────────────────────────────────────────────
 
+const KNOCKOUT_TEAL = '#2DD4BF';
+
 function ChipCounter({ used }: { used: number }) {
   const total = GROUP_CHIP_LIMIT;
   const remaining = total - used;
@@ -90,7 +103,7 @@ function ChipCounter({ used }: { used: number }) {
     <div className="bg-white dark:bg-wc-ink rounded-xl px-4 py-3.5">
       <div className="flex items-center justify-between mb-2.5">
         <span className="text-sm font-bold text-wc-black dark:text-white">
-          {remaining} of {total} chips remaining
+          {remaining} of {total} group chips remaining
         </span>
         <span className="text-xs text-wc-black/60 dark:text-white/60">{used} used</span>
       </div>
@@ -103,122 +116,12 @@ function ChipCounter({ used }: { used: number }) {
         ))}
       </div>
       <p className="text-xs text-wc-black/60 dark:text-white/60 mt-3">A chip doubles points for that prediction.</p>
-      <div className="flex items-center gap-2 mt-2 rounded-lg bg-amber-500/10 border border-amber-500/20 px-3 py-2">
-        <Clock size={11} className="text-amber-400/80 shrink-0" />
-        <p className="text-[11px] text-amber-700 dark:text-amber-300/80">
-          These chips can only be used on group stage fixtures
-        </p>
-      </div>
     </div>
   );
 }
 
-function ChipFixtureRow({
-  fixture,
-  prediction,
-  hasChip,
-  chipsUsed,
-  hasStarted,
-  result,
-  onApply,
-  onRemove,
-}: {
-  fixture: Fixture;
-  prediction: Prediction | undefined;
-  hasChip: boolean;
-  chipsUsed: number;
-  hasStarted: boolean;
-  result?: MatchResult;
-  onApply: () => void;
-  onRemove: () => void;
-}) {
-  const resultType = prediction
-    ? getResultType(prediction.homeGoals, prediction.awayGoals)
-    : 'draw';
-  const pts =
-    result && prediction
-      ? scoreMatch({ ...prediction, multiChip: hasChip }, result).points
-      : undefined;
-
-  return (
-    <div className="flex items-center gap-3 py-3 border-b border-black/8 dark:border-white/8 last:border-0">
-      {/* Teams */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5 text-xs text-wc-black/70 dark:text-white/70 truncate">
-          <span>{fixture.homeTeam.name}</span>
-          <span className="text-wc-black/45 dark:text-white/45">vs</span>
-          <span>{fixture.awayTeam.name}</span>
-        </div>
-        {!hasStarted && (
-          <p className="text-[10px] text-wc-black/45 dark:text-white/45 mt-0.5 tabular-nums">
-            {new Intl.DateTimeFormat('en-IE', { hour: '2-digit', minute: '2-digit' }).format(
-              new Date(fixture.kickoff)
-            )}
-          </p>
-        )}
-      </div>
-
-      {/* Score chip */}
-      {prediction ? (
-        <ScoreChip
-          homeGoals={prediction.homeGoals}
-          awayGoals={prediction.awayGoals}
-          resultType={resultType}
-          homeAccentColor={fixture.homeTeam.accentColor}
-          awayAccentColor={fixture.awayTeam.accentColor}
-          multiChip={false}
-        />
-      ) : (
-        <span className="text-xs text-wc-black/20 dark:text-white/20 italic">No prediction</span>
-      )}
-
-      {/* Points (if result exists) */}
-      {pts !== undefined && <PointsBadge points={pts} multiChipApplied={hasChip && hasStarted} />}
-
-      {/* Chip toggle */}
-      {prediction &&
-        (hasStarted ? (
-          hasChip ? (
-            <span className="shrink-0 flex items-center gap-1 text-[11px] font-bold text-wc-black/35 dark:text-white/35 bg-black/[0.07] dark:bg-white/[0.07] border border-black/12 dark:border-white/12 rounded-full px-2 py-1">
-              <Lock size={10} />
-              Locked
-            </span>
-          ) : null
-        ) : hasChip ? (
-          <button
-            type="button"
-            onClick={onRemove}
-            className="shrink-0 flex items-center gap-1 text-[11px] font-bold rounded-full px-2 py-1 border transition-colors text-wc-gold bg-wc-gold/20 border-wc-gold/60 active:bg-red-500/15 active:border-red-500/40 active:text-red-400"
-          >
-            ✓ Applied
-            <X size={9} className="opacity-70" />
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={onApply}
-            disabled={chipsUsed >= GROUP_CHIP_LIMIT}
-            className="shrink-0 text-[11px] font-semibold text-wc-gold/60 border border-wc-gold/25 rounded-full px-2.5 py-1 hover:text-wc-gold hover:border-wc-gold/60 active:opacity-70 transition-colors disabled:opacity-25 disabled:cursor-not-allowed"
-          >
-            + Chip
-          </button>
-        ))}
-    </div>
-  );
-}
-
-const KNOCKOUT_CHIP_LIMIT = 5;
-const KNOCKOUT_TEAL = '#2DD4BF';
-
-function KnockoutChipCounter({ used }: { used: number }) {
-  const [isLocked, setIsLocked] = useState(true);
-
-  useEffect(() => {
-    setIsLocked(Date.now() < KNOCKOUT_UNLOCK.getTime());
-  }, []);
-
+function KnockoutChipCounter({ used, isLocked }: { used: number; isLocked: boolean }) {
   const remaining = KNOCKOUT_CHIP_LIMIT - used;
-
   return (
     <div className={`bg-white dark:bg-wc-ink rounded-xl px-4 py-3.5 transition-opacity ${isLocked ? 'opacity-50' : ''}`}>
       <div className="flex items-center justify-between mb-2.5">
@@ -238,10 +141,108 @@ function KnockoutChipCounter({ used }: { used: number }) {
         ))}
       </div>
       <p className="text-xs text-wc-black/60 dark:text-white/60 mt-3">
-        {isLocked
-          ? 'Unlocks when the group stage ends'
-          : 'A chip doubles points for that prediction.'}
+        {isLocked ? 'Unlocks when the group stage ends' : 'A chip doubles points for that prediction.'}
       </p>
+    </div>
+  );
+}
+
+function ChipFixtureRow({
+  fixture,
+  prediction,
+  hasChip,
+  chipsUsed,
+  chipLimit,
+  hasStarted,
+  result,
+  isKnockout,
+  isLocked,
+  onApply,
+  onRemove,
+}: {
+  fixture: Fixture;
+  prediction: Prediction | undefined;
+  hasChip: boolean;
+  chipsUsed: number;
+  chipLimit: number;
+  hasStarted: boolean;
+  result?: MatchResult;
+  isKnockout?: boolean;
+  isLocked?: boolean;
+  onApply: () => void;
+  onRemove: () => void;
+}) {
+  const resultType = prediction
+    ? getResultType(prediction.homeGoals, prediction.awayGoals)
+    : 'draw';
+  const pts =
+    result && prediction
+      ? scoreMatch({ ...prediction, multiChip: hasChip }, result).points
+      : undefined;
+
+  const chipColor = isKnockout ? KNOCKOUT_TEAL : undefined;
+
+  return (
+    <div className="flex items-center gap-3 py-3 border-b border-black/8 dark:border-white/8 last:border-0">
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5 text-xs text-wc-black/70 dark:text-white/70 truncate">
+          <span>{fixture.homeTeam.name}</span>
+          <span className="text-wc-black/45 dark:text-white/45">vs</span>
+          <span>{fixture.awayTeam.name}</span>
+        </div>
+        {!hasStarted && (
+          <p className="text-[10px] text-wc-black/45 dark:text-white/45 mt-0.5 tabular-nums">
+            {new Intl.DateTimeFormat('en-IE', { hour: '2-digit', minute: '2-digit' }).format(
+              new Date(fixture.kickoff)
+            )}
+          </p>
+        )}
+      </div>
+
+      {prediction ? (
+        <ScoreChip
+          homeGoals={prediction.homeGoals}
+          awayGoals={prediction.awayGoals}
+          resultType={resultType}
+          homeAccentColor={fixture.homeTeam.accentColor}
+          awayAccentColor={fixture.awayTeam.accentColor}
+          multiChip={false}
+        />
+      ) : (
+        <span className="text-xs text-wc-black/20 dark:text-white/20 italic">No prediction</span>
+      )}
+
+      {pts !== undefined && <PointsBadge points={pts} multiChipApplied={hasChip && hasStarted} />}
+
+      {prediction &&
+        (hasStarted ? (
+          hasChip ? (
+            <span className="shrink-0 flex items-center gap-1 text-[11px] font-bold text-wc-black/35 dark:text-white/35 bg-black/[0.07] dark:bg-white/[0.07] border border-black/12 dark:border-white/12 rounded-full px-2 py-1">
+              <Lock size={10} />
+              Locked
+            </span>
+          ) : null
+        ) : hasChip ? (
+          <button
+            type="button"
+            onClick={onRemove}
+            style={chipColor ? { color: chipColor, backgroundColor: `${chipColor}22`, borderColor: `${chipColor}99` } : undefined}
+            className={`shrink-0 flex items-center gap-1 text-[11px] font-bold rounded-full px-2 py-1 border transition-colors active:bg-red-500/15 active:border-red-500/40 active:text-red-400 ${!chipColor ? 'text-wc-gold bg-wc-gold/20 border-wc-gold/60' : ''}`}
+          >
+            ✓ Applied
+            <X size={9} className="opacity-70" />
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={onApply}
+            disabled={isLocked || chipsUsed >= chipLimit}
+            style={chipColor ? { color: `${chipColor}99`, borderColor: `${chipColor}44` } : undefined}
+            className={`shrink-0 text-[11px] font-semibold border rounded-full px-2.5 py-1 active:opacity-70 transition-colors disabled:opacity-25 disabled:cursor-not-allowed ${!chipColor ? 'text-wc-gold/60 border-wc-gold/25 hover:text-wc-gold hover:border-wc-gold/60' : 'hover:opacity-100'}`}
+          >
+            + Chip
+          </button>
+        ))}
     </div>
   );
 }
@@ -252,6 +253,7 @@ function MyChipsTab({
   allChips,
   results,
   now,
+  isKnockoutLocked,
   onApply,
   onRemove,
 }: {
@@ -260,6 +262,7 @@ function MyChipsTab({
   allChips: MultiChip[];
   results: MatchResult[];
   now: Date;
+  isKnockoutLocked: boolean;
   onApply: (fixtureId: string) => void;
   onRemove: (fixtureId: string) => void;
 }) {
@@ -269,11 +272,21 @@ function MyChipsTab({
     [allPredictions, viewerId]
   );
 
-  const myChipIds = useMemo(
+  const myGroupChipIds = useMemo(
     () =>
       new Set(
         allChips
           .filter((c) => c.playerId === viewerId && GROUP_FIXTURE_IDS.has(c.fixtureId))
+          .map((c) => c.fixtureId)
+      ),
+    [allChips, viewerId]
+  );
+
+  const myKnockoutChipIds = useMemo(
+    () =>
+      new Set(
+        allChips
+          .filter((c) => c.playerId === viewerId && KNOCKOUT_FIXTURE_IDS.has(c.fixtureId))
           .map((c) => c.fixtureId)
       ),
     [allChips, viewerId]
@@ -289,7 +302,7 @@ function MyChipsTab({
     []
   );
 
-  const fixturesByDate = useMemo(() => {
+  const groupFixturesByDate = useMemo(() => {
     const map = new Map<string, Fixture[]>();
     for (const fixture of groupFixtures) {
       const key = getFixtureDateKey(fixture.kickoff);
@@ -300,48 +313,121 @@ function MyChipsTab({
     return [...map.entries()].sort(([a], [b]) => a.localeCompare(b));
   }, [groupFixtures]);
 
-  const dateKeys = useMemo(() => fixturesByDate.map(([key]) => key), [fixturesByDate]);
+  const knockoutByStage = useMemo(() => {
+    const order = ['round_of_32', 'round_of_16', 'quarter_final', 'semi_final', 'third_place', 'final'];
+    return order
+      .map((stage) => ({
+        stage,
+        stageFixtures: fixtures
+          .filter((f) => f.stage === stage)
+          .sort((a, b) => new Date(a.kickoff).getTime() - new Date(b.kickoff).getTime()),
+      }))
+      .filter(({ stageFixtures }) => stageFixtures.length > 0);
+  }, []);
+
+  // Default collapsed once the group stage is over
+  const [groupExpanded, setGroupExpanded] = useState(
+    () => Date.now() < KNOCKOUT_UNLOCK.getTime()
+  );
+
+  const dateKeys = useMemo(() => groupFixturesByDate.map(([key]) => key), [groupFixturesByDate]);
   const snapDateKey = useMemo(() => getSnapDateKey(dateKeys, now), [dateKeys, now]);
   const sectionRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   useEffect(() => {
-    if (!snapDateKey) return;
+    if (!snapDateKey || !groupExpanded) return;
     const el = sectionRefs.current.get(snapDateKey);
     if (!el) return;
     const headerHeight = document.querySelector('header')?.getBoundingClientRect().height ?? 0;
     const tabBarHeight = document.querySelector('[data-tab-bar]')?.getBoundingClientRect().height ?? 0;
     const top = el.getBoundingClientRect().top + window.scrollY - headerHeight - tabBarHeight - 8;
     window.scrollTo({ top, behavior: 'smooth' });
-  }, [snapDateKey]);
+  }, [snapDateKey, groupExpanded]);
 
   return (
     <div className="space-y-4">
-      <ChipCounter used={myChipIds.size} />
-      <KnockoutChipCounter used={0} />
-
-      {fixturesByDate.map(([dateKey, dayFixtures]) => (
-        <div
-          key={dateKey}
-          ref={(el) => {
-            if (el) sectionRefs.current.set(dateKey, el);
-            else sectionRefs.current.delete(dateKey);
-          }}
-          className="bg-white dark:bg-wc-ink rounded-2xl overflow-hidden">
-          <div className="px-4 py-2 bg-black/[0.03] dark:bg-white/[0.03] border-b border-black/8 dark:border-white/8">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-wc-black/55 dark:text-white/55">
-              {formatDateLabel(new Date(dateKey))}
+      {/* Group Stage — collapsible */}
+      <div className="bg-white dark:bg-wc-ink rounded-2xl overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setGroupExpanded((e) => !e)}
+          className="w-full flex items-center justify-between px-4 py-3.5 border-b border-black/8 dark:border-white/8 text-left"
+        >
+          <span className="text-sm font-bold text-wc-black dark:text-white">Group Stage</span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-wc-black/45 dark:text-white/45">
+              {myGroupChipIds.size}/{GROUP_CHIP_LIMIT} chips used
             </span>
+            <ChevronDown
+              size={16}
+              className={`text-wc-black/40 dark:text-white/40 transition-transform duration-200 ${groupExpanded ? 'rotate-0' : '-rotate-90'}`}
+            />
+          </div>
+        </button>
+
+        {groupExpanded &&
+          groupFixturesByDate.map(([dateKey, dayFixtures]) => (
+            <div
+              key={dateKey}
+              ref={(el) => {
+                if (el) sectionRefs.current.set(dateKey, el);
+                else sectionRefs.current.delete(dateKey);
+              }}
+            >
+              <div className="px-4 py-2 bg-black/[0.03] dark:bg-white/[0.03] border-b border-black/8 dark:border-white/8">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-wc-black/55 dark:text-white/55">
+                  {formatDateLabel(new Date(dateKey))}
+                </span>
+              </div>
+              <div className="px-4">
+                {dayFixtures.map((fixture) => (
+                  <ChipFixtureRow
+                    key={fixture.id}
+                    fixture={fixture}
+                    prediction={myPredictions.get(fixture.id)}
+                    hasChip={myGroupChipIds.has(fixture.id)}
+                    chipsUsed={myGroupChipIds.size}
+                    chipLimit={GROUP_CHIP_LIMIT}
+                    hasStarted={new Date(fixture.kickoff) <= now}
+                    result={resultMap.get(fixture.id)}
+                    onApply={() => onApply(fixture.id)}
+                    onRemove={() => onRemove(fixture.id)}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
+      </div>
+
+      {/* Knockout stages */}
+      {knockoutByStage.map(({ stage, stageFixtures }) => (
+        <div key={stage} className="bg-white dark:bg-wc-ink rounded-2xl overflow-hidden">
+          <div className="px-4 py-3 border-b border-black/8 dark:border-white/8 flex items-center justify-between">
+            <span className="text-sm font-bold" style={{ color: KNOCKOUT_TEAL }}>
+              {STAGE_LABELS[stage]}
+            </span>
+            {isKnockoutLocked && stage === 'round_of_32' && (
+              <div className="flex items-center gap-1.5">
+                <Clock size={11} className="opacity-50" style={{ color: KNOCKOUT_TEAL }} />
+                <span className="text-[11px] opacity-50" style={{ color: KNOCKOUT_TEAL }}>
+                  Unlocks soon
+                </span>
+              </div>
+            )}
           </div>
           <div className="px-4">
-            {dayFixtures.map((fixture) => (
+            {stageFixtures.map((fixture) => (
               <ChipFixtureRow
                 key={fixture.id}
                 fixture={fixture}
                 prediction={myPredictions.get(fixture.id)}
-                hasChip={myChipIds.has(fixture.id)}
-                chipsUsed={myChipIds.size}
+                hasChip={myKnockoutChipIds.has(fixture.id)}
+                chipsUsed={myKnockoutChipIds.size}
+                chipLimit={KNOCKOUT_CHIP_LIMIT}
                 hasStarted={new Date(fixture.kickoff) <= now}
                 result={resultMap.get(fixture.id)}
+                isKnockout
+                isLocked={isKnockoutLocked}
                 onApply={() => onApply(fixture.id)}
                 onRemove={() => onRemove(fixture.id)}
               />
@@ -349,7 +435,6 @@ function MyChipsTab({
           </div>
         </div>
       ))}
-
     </div>
   );
 }
@@ -380,13 +465,27 @@ export default function PredictionsPage() {
 
   const { chips: allChips, apply: applyChip, remove: removeChip } = useMultiChips();
 
-  const myChipsRemaining = useMemo(() => {
-    if (!viewerId) return 0;
-    const used = allChips.filter(
-      (c) => c.playerId === viewerId && GROUP_FIXTURE_IDS.has(c.fixtureId)
-    ).length;
-    return GROUP_CHIP_LIMIT - used;
-  }, [allChips, viewerId]);
+  const [isKnockoutLocked, setIsKnockoutLocked] = useState(true);
+  useEffect(() => {
+    setIsKnockoutLocked(Date.now() < KNOCKOUT_UNLOCK.getTime());
+  }, []);
+
+  const groupChipsUsed = useMemo(
+    () =>
+      !viewerId
+        ? 0
+        : allChips.filter((c) => c.playerId === viewerId && GROUP_FIXTURE_IDS.has(c.fixtureId)).length,
+    [allChips, viewerId]
+  );
+  const knockoutChipsUsed = useMemo(
+    () =>
+      !viewerId
+        ? 0
+        : allChips.filter((c) => c.playerId === viewerId && KNOCKOUT_FIXTURE_IDS.has(c.fixtureId)).length,
+    [allChips, viewerId]
+  );
+  const myChipsRemaining =
+    GROUP_CHIP_LIMIT - groupChipsUsed + KNOCKOUT_CHIP_LIMIT - knockoutChipsUsed;
 
   const deadlinePassed = useMemo(() => getNow() >= PREDICTIONS_DEADLINE, []);
   const players = useMemo<Player[]>(
@@ -565,6 +664,14 @@ export default function PredictionsPage() {
               </button>
             )}
           </div>
+
+          {/* Chip counters — sticky inside tab bar when My Chips is active */}
+          {activeTab === 'my-chips' && viewerId && (
+            <div className="mx-auto max-w-3xl pt-4 pb-1 space-y-3">
+              <ChipCounter used={groupChipsUsed} />
+              <KnockoutChipCounter used={knockoutChipsUsed} isLocked={isKnockoutLocked} />
+            </div>
+          )}
         </div>
 
         {/* Tab content */}
@@ -671,6 +778,7 @@ export default function PredictionsPage() {
                 allChips={allChips}
                 results={storeResults}
                 now={now}
+                isKnockoutLocked={isKnockoutLocked}
                 onApply={(fixtureId) => applyChip(viewerId, fixtureId)}
                 onRemove={(fixtureId) => removeChip(viewerId, fixtureId)}
               />

@@ -75,7 +75,7 @@ export function calculateStandings(
 
     const totalPoints = matchPoints.reduce((sum, mp) => sum + mp.points, 0);
 
-    return { player, totalPoints, rank: 0, matchPoints };
+    return { player, totalPoints, rank: 0, matchPoints, specialPoints: [] };
   });
 
   standings.sort((a, b) => {
