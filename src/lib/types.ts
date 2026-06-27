@@ -36,11 +36,16 @@ export interface Fixture {
 
 export interface MatchResult {
   fixtureId: string;
-  homeGoals: number;
+  homeGoals: number;    // 90-min score — what predictions are scored against
   awayGoals: number;
   status?: MatchStatus;
   minute?: number;
   injuryTime?: number;
+  duration?: 'REGULAR' | 'EXTRA_TIME' | 'PENALTY_SHOOTOUT';
+  aetHomeGoals?: number; // final score after ET (only when duration is EXTRA_TIME)
+  aetAwayGoals?: number;
+  penHomeGoals?: number; // penalty kicks only (only when duration is PENALTY_SHOOTOUT)
+  penAwayGoals?: number;
 }
 
 export interface Player {

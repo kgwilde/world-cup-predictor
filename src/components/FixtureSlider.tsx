@@ -261,13 +261,31 @@ export function FixtureCard({ fixture, now, isFullWidth, result, onClick }: Fixt
                   </span>
                 ) : isLive && result.minute != null ? (
                   <span className="text-[9px] font-semibold tabular-nums text-red-400/80">
-                    {result.minute}'
+                    {result.minute > 90 ? `ET ${result.minute}` : result.minute}'
+                  </span>
+                ) : !isLive && result.duration === 'EXTRA_TIME' ? (
+                  <span className="text-[9px] font-semibold uppercase tracking-widest text-wc-black/40 dark:text-wc-white/40">
+                    AET
+                  </span>
+                ) : !isLive && result.duration === 'PENALTY_SHOOTOUT' ? (
+                  <span className="text-[9px] font-semibold uppercase tracking-widest text-wc-black/40 dark:text-wc-white/40">
+                    PEN
                   </span>
                 ) : !isLive ? (
                   <span className="text-[9px] font-semibold uppercase tracking-widest text-wc-black/40 dark:text-wc-white/40">
                     FT
                   </span>
                 ) : null}
+                {!isLive && result.duration === 'EXTRA_TIME' && result.aetHomeGoals != null && (
+                  <span className="text-[9px] tabular-nums text-wc-black/35 dark:text-wc-white/35">
+                    {result.aetHomeGoals}–{result.aetAwayGoals}
+                  </span>
+                )}
+                {!isLive && result.duration === 'PENALTY_SHOOTOUT' && result.penHomeGoals != null && (
+                  <span className="text-[9px] tabular-nums text-wc-black/35 dark:text-wc-white/35">
+                    {result.penHomeGoals}–{result.penAwayGoals} pens
+                  </span>
+                )}
               </div>
             ) : (
               <span className="text-[10px] font-bold uppercase tracking-widest text-wc-black/50 dark:text-white/50">

@@ -215,8 +215,11 @@ export async function GET(request: Request) {
     }
 
     const isLive = status === 'IN_PLAY' || status === 'PAUSED';
-    const homeGoals = score.fullTime?.home ?? score.halfTime?.home ?? (isLive ? 0 : null);
-    const awayGoals = score.fullTime?.away ?? score.halfTime?.away ?? (isLive ? 0 : null);
+    // score.fullTime is cumulative (regular + ET + pens). Use score.regularTime for the
+    // 90-min result, which is what predictions are scored against. regularTime is only
+    // populated by the API for matches that went beyond 90 minutes.
+    const homeGoals = score.regularTime?.home ?? score.fullTime?.home ?? score.halfTime?.home ?? (isLive ? 0 : null);
+    const awayGoals = score.regularTime?.away ?? score.fullTime?.away ?? score.halfTime?.away ?? (isLive ? 0 : null);
 
     if (homeGoals === null || homeGoals === undefined || awayGoals === null || awayGoals === undefined) {
       skipped++;
@@ -241,6 +244,14 @@ export async function GET(request: Request) {
       continue;
     }
 
+    // Only derive duration/ET/pen data for finished matches — these fields are
+    // not meaningful during live play and score.duration may not be set yet.
+    const duration = status === 'FINISHED' ? (score.duration as 'REGULAR' | 'EXTRA_TIME' | 'PENALTY_SHOOTOUT' | undefined) : undefined;
+    const aetHomeGoals = duration === 'EXTRA_TIME' ? score.fullTime?.home : undefined;
+    const aetAwayGoals = duration === 'EXTRA_TIME' ? score.fullTime?.away : undefined;
+    const penHomeGoals = duration === 'PENALTY_SHOOTOUT' ? score.penalties?.home : undefined;
+    const penAwayGoals = duration === 'PENALTY_SHOOTOUT' ? score.penalties?.away : undefined;
+
     updates[fixtureId] = {
       fixtureId,
       homeGoals,
@@ -248,6 +259,11 @@ export async function GET(request: Request) {
       status: matchStatus,
       ...(minute != null ? { minute } : {}),
       ...(injuryTime != null ? { injuryTime } : {}),
+      ...(duration ? { duration } : {}),
+      ...(aetHomeGoals != null ? { aetHomeGoals } : {}),
+      ...(aetAwayGoals != null ? { aetAwayGoals } : {}),
+      ...(penHomeGoals != null ? { penHomeGoals } : {}),
+      ...(penAwayGoals != null ? { penAwayGoals } : {}),
     };
     written++;
   }
