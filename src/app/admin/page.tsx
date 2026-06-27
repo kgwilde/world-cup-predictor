@@ -7,7 +7,7 @@ import { useAuthStore } from '@/app/stores/useAuthStore';
 import { fixtures } from '@/data/fixtures';
 import { allBonusPredictions } from '@/data/entries';
 import { getAllUsersAdmin, getResults, getSpecialOutcomes, getSpecialEvents } from '@/lib/firestore';
-import type { FixtureStage, GroupCode, MatchResult, SpecialEvent, SpecialEventType, SpecialOutcomes, UserProfile } from '@/lib/types';
+import type { FixtureStage, GroupCode, MatchResult, SpecialEvent, SpecialEventType, SpecialOutcomes, Team, UserProfile } from '@/lib/types';
 
 const GROUP_CODES: GroupCode[] = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
 
@@ -512,7 +512,125 @@ function AnalyticsTab() {
 
 // ─── Specials Tab ─────────────────────────────────────────────────────────────
 
+// Derive all 48 teams and group membership from static fixture data
+const ALL_TEAMS: Team[] = (() => {
+  const seen = new Set<string>();
+  const teams: Team[] = [];
+  for (const f of fixtures) {
+    if (f.stage !== 'group') continue;
+    for (const team of [f.homeTeam, f.awayTeam]) {
+      if (team.code === 'TBD' || seen.has(team.code)) continue;
+      seen.add(team.code);
+      teams.push(team);
+    }
+  }
+  return teams.sort((a, b) => a.name.localeCompare(b.name));
+})();
+
+const GROUP_TEAMS: Record<string, Team[]> = (() => {
+  const map: Record<string, Team[]> = {};
+  for (const f of fixtures) {
+    if (f.stage !== 'group' || !f.group) continue;
+    if (!map[f.group]) map[f.group] = [];
+    for (const team of [f.homeTeam, f.awayTeam]) {
+      if (team.code !== 'TBD' && !map[f.group].some((t) => t.code === team.code)) {
+        map[f.group].push(team);
+      }
+    }
+  }
+  return map;
+})();
+
+const UNIQUE_DEFENCE_TEAMS = [...new Set(allBonusPredictions.map((b) => b.bestDefence))].sort();
+const UNIQUE_ATTACK_TEAMS = [...new Set(allBonusPredictions.map((b) => b.highestScoringTeam))].sort();
 const UNIQUE_TOP_SCORERS = [...new Set(allBonusPredictions.map((b) => b.topScorer))].sort();
+
+function TeamSelect({
+  value,
+  onChange,
+  teams,
+  placeholder = 'Select team…',
+  className,
+}: {
+  value: string;
+  onChange: (name: string) => void;
+  teams: Team[];
+  placeholder?: string;
+  className?: string;
+}) {
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className={`bg-wc-ink border border-white/15 rounded-lg px-3 py-2 text-sm text-wc-white focus:border-wc-blue/60 outline-none appearance-none ${className ?? ''}`}
+    >
+      <option value="">{placeholder}</option>
+      {teams.map((t) => (
+        <option key={t.code} value={t.name}>
+          {t.name}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+function TeamPicker({
+  selected,
+  onChange,
+  max,
+  teams,
+}: {
+  selected: string[];
+  onChange: (teams: string[]) => void;
+  max: number;
+  teams: Team[];
+}) {
+  const selectedSet = new Set(selected);
+  const full = selected.length >= max;
+  return (
+    <div>
+      <p className="text-xs text-wc-bone/40 mb-2 tabular-nums">
+        {selected.length} / {max} selected
+        {selected.length > 0 && (
+          <button
+            onClick={() => onChange([])}
+            className="ml-3 text-wc-bone/50 hover:text-wc-bone underline"
+          >
+            Clear
+          </button>
+        )}
+      </p>
+      <div className="grid grid-cols-3 gap-1">
+        {teams.map((team) => {
+          const sel = selectedSet.has(team.name);
+          const disabled = !sel && full;
+          return (
+            <button
+              key={team.code}
+              onClick={() => {
+                if (sel) {
+                  onChange(selected.filter((n) => n !== team.name));
+                } else if (!full) {
+                  onChange([...selected, team.name]);
+                }
+              }}
+              disabled={disabled}
+              className={`text-left px-2 py-1.5 rounded-md text-xs font-medium transition-colors truncate ${
+                sel
+                  ? 'bg-wc-blue text-wc-white'
+                  : disabled
+                    ? 'bg-wc-ink/30 text-wc-bone/20 cursor-not-allowed'
+                    : 'bg-wc-ink text-wc-bone hover:bg-white/10'
+              }`}
+            >
+              {team.name}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 function AppliedBadge({ event }: { event: SpecialEvent | undefined }) {
   if (!event) return null;
@@ -574,21 +692,6 @@ function SpecialsTab() {
     }
   }
 
-  function updateGroup(group: GroupCode, field: 'winner' | 'runnerUp', value: string) {
-    setOutcomes((prev) => ({
-      ...prev,
-      groupResults: {
-        ...prev.groupResults,
-        [group]: { ...prev.groupResults?.[group], [field]: value.toUpperCase() },
-      } as Record<GroupCode, { winner: string; runnerUp: string }>,
-    }));
-  }
-
-  function updateTeamList(field: keyof SpecialOutcomes, raw: string) {
-    const codes = raw.split(',').map((s) => s.trim().toUpperCase()).filter(Boolean);
-    setOutcomes((prev) => ({ ...prev, [field]: codes }));
-  }
-
   function ApplyButton({ eventType, label }: { eventType: SpecialEventType; label: string }) {
     const isApplying = applying[eventType];
     const error = errors[eventType];
@@ -616,196 +719,331 @@ function SpecialsTab() {
     );
   }
 
-  const groupResultsStr = (group: GroupCode, field: 'winner' | 'runnerUp') =>
-    outcomes.groupResults?.[group]?.[field] ?? '';
-
   return (
-    <div className="space-y-8">
-      {/* Group Stage Picks */}
+    <div className="space-y-10">
+
+      {/* ─── (1) Group Stage Picks ────────────────────────────────── */}
       <section>
-        <SectionHeader title="Group Stage Picks" />
+        <SectionHeader title="(1) Group Stage Picks" />
         <div className="bg-wc-ink rounded-xl overflow-hidden mb-3">
-          <div className="grid grid-cols-[auto_1fr_1fr] text-[11px] text-wc-bone/50 font-semibold uppercase tracking-wider px-4 py-2 border-b border-white/8">
-            <span className="w-8">Grp</span>
+          <div className="grid grid-cols-[2rem_1fr_1fr] text-[11px] text-wc-bone/50 font-semibold uppercase tracking-wider px-4 py-2 border-b border-white/8">
+            <span>Grp</span>
             <span>Winner</span>
             <span>Runner-up</span>
           </div>
-          {GROUP_CODES.map((group) => (
-            <div key={group} className="grid grid-cols-[auto_1fr_1fr] items-center px-4 py-2 border-b border-white/8 last:border-0 gap-2">
-              <span className="w-8 text-xs font-bold text-wc-bone/50">{group}</span>
-              <input
-                value={groupResultsStr(group, 'winner')}
-                onChange={(e) => updateGroup(group, 'winner', e.target.value)}
-                placeholder="e.g. ES"
-                className="bg-wc-black border border-white/15 rounded-lg px-2 py-1 text-xs font-mono text-wc-white focus:border-wc-blue/60 outline-none w-full"
-              />
-              <input
-                value={groupResultsStr(group, 'runnerUp')}
-                onChange={(e) => updateGroup(group, 'runnerUp', e.target.value)}
-                placeholder="e.g. FR"
-                className="bg-wc-black border border-white/15 rounded-lg px-2 py-1 text-xs font-mono text-wc-white focus:border-wc-blue/60 outline-none w-full"
-              />
-            </div>
-          ))}
+          {GROUP_CODES.map((group) => {
+            const groupTeams = GROUP_TEAMS[group] ?? [];
+            const winner = outcomes.groupResults?.[group]?.winner ?? '';
+            const runnerUp = outcomes.groupResults?.[group]?.runnerUp ?? '';
+            const update = (field: 'winner' | 'runnerUp', value: string) =>
+              setOutcomes((prev) => ({
+                ...prev,
+                groupResults: {
+                  ...prev.groupResults,
+                  [group]: { ...prev.groupResults?.[group], [field]: value },
+                } as Record<GroupCode, { winner: string; runnerUp: string }>,
+              }));
+            return (
+              <div
+                key={group}
+                className="grid grid-cols-[2rem_1fr_1fr] items-center px-4 py-2 border-b border-white/8 last:border-0 gap-2"
+              >
+                <span className="text-xs font-bold text-wc-blue">{group}</span>
+                <select
+                  value={winner}
+                  onChange={(e) => update('winner', e.target.value)}
+                  className="bg-wc-black border border-white/15 rounded-lg px-2 py-1.5 text-xs text-wc-white focus:border-wc-blue/60 outline-none w-full appearance-none"
+                >
+                  <option value="">Winner…</option>
+                  {groupTeams.map((t) => (
+                    <option key={t.code} value={t.name}>{t.name}</option>
+                  ))}
+                </select>
+                <select
+                  value={runnerUp}
+                  onChange={(e) => update('runnerUp', e.target.value)}
+                  className="bg-wc-black border border-white/15 rounded-lg px-2 py-1.5 text-xs text-wc-white focus:border-wc-blue/60 outline-none w-full appearance-none"
+                >
+                  <option value="">Runner-up…</option>
+                  {groupTeams.map((t) => (
+                    <option key={t.code} value={t.name}>{t.name}</option>
+                  ))}
+                </select>
+              </div>
+            );
+          })}
         </div>
+        <p className="text-[11px] text-wc-bone/40 mb-2">
+          2 pts per correct winner · 10 bonus if all 12 correct · 2 pts per correct runner-up · 10 bonus if all 12 correct
+        </p>
         <ApplyButton eventType="group_stage_picks" label="Apply Group Stage Picks" />
       </section>
 
-      {/* Best 3rd Place */}
+      {/* ─── (2) Best 3rd Place ───────────────────────────────────── */}
       <section>
-        <SectionHeader title="Best 3rd Place Teams (8 teams)" />
-        <input
-          value={(outcomes.bestThirdPlace ?? []).join(', ')}
-          onChange={(e) => updateTeamList('bestThirdPlace', e.target.value)}
-          placeholder="e.g. KR, GHA, SCO, PAR, DZ, AU, JP, CV"
-          className="w-full bg-wc-ink border border-white/15 rounded-xl px-4 py-3 text-sm font-mono text-wc-white focus:border-wc-blue/60 outline-none"
+        <SectionHeader title="(2) Eight Best 3rd Place Teams" />
+        <TeamPicker
+          selected={outcomes.bestThirdPlace ?? []}
+          onChange={(teams) => setOutcomes((prev) => ({ ...prev, bestThirdPlace: teams }))}
+          max={8}
+          teams={ALL_TEAMS}
         />
+        <p className="text-[11px] text-wc-bone/40 mt-2 mb-2">
+          5 pts per correct team · 10 bonus if all 8 correct
+        </p>
         <ApplyButton eventType="best_third_place" label="Apply Best 3rd Place" />
       </section>
 
-      {/* Knockout bracket */}
+      {/* ─── (3) Round of 16 ──────────────────────────────────────── */}
       <section>
-        <SectionHeader title="Knockout Bracket" />
-        <div className="space-y-3">
-          {(
-            [
-              { field: 'roundOf16' as const, label: 'Round of 16 (16 teams)', eventType: 'round_of_16_picks' as SpecialEventType },
-              { field: 'quarterFinalists' as const, label: 'Quarter-finalists (8 teams)', eventType: 'quarter_final_picks' as SpecialEventType },
-              { field: 'semiFinalists' as const, label: 'Semi-finalists (4 teams)', eventType: 'semi_final_picks' as SpecialEventType },
-              { field: 'finalists' as const, label: 'Finalists (2 teams)', eventType: 'finalist_picks' as SpecialEventType },
-              { field: 'winner' as const, label: 'Winner (1 team)', eventType: 'winner_pick' as SpecialEventType },
-            ] as const
-          ).map(({ field, label, eventType }) => (
-            <div key={field}>
-              <p className="text-xs text-wc-bone/50 mb-1">{label}</p>
-              <input
-                value={field === 'winner'
-                  ? (outcomes.winner ?? '')
-                  : ((outcomes[field] ?? []) as string[]).join(', ')}
-                onChange={(e) => {
-                  if (field === 'winner') {
-                    setOutcomes((prev) => ({ ...prev, winner: e.target.value.trim().toUpperCase() }));
-                  } else {
-                    updateTeamList(field, e.target.value);
-                  }
-                }}
-                placeholder={field === 'winner' ? 'e.g. ES' : 'Comma-separated team codes'}
-                className="w-full bg-wc-ink border border-white/15 rounded-xl px-4 py-2.5 text-sm font-mono text-wc-white focus:border-wc-blue/60 outline-none"
-              />
-              <ApplyButton eventType={eventType} label={`Apply ${label.split(' (')[0]}`} />
-            </div>
-          ))}
-        </div>
+        <SectionHeader title="(3) Round of 16 Finalists" />
+        <TeamPicker
+          selected={outcomes.roundOf16 ?? []}
+          onChange={(teams) => setOutcomes((prev) => ({ ...prev, roundOf16: teams }))}
+          max={16}
+          teams={ALL_TEAMS}
+        />
+        <p className="text-[11px] text-wc-bone/40 mt-2 mb-2">
+          5 pts per correct team · 10 bonus if all 16 correct
+        </p>
+        <ApplyButton eventType="round_of_16_picks" label="Apply Round of 16" />
       </section>
 
-      {/* Group Stage Stats */}
+      {/* ─── (4) Quarter-finalists ────────────────────────────────── */}
       <section>
-        <SectionHeader title="Group Stage Stats" />
-        <div className="space-y-4">
-          <div>
-            <p className="text-xs text-wc-bone/50 mb-1">Highest Scoring Team (team code)</p>
-            <div className="flex gap-2">
-              <input
-                value={outcomes.highestScoringTeam ?? ''}
-                onChange={(e) => setOutcomes((prev) => ({ ...prev, highestScoringTeam: e.target.value.trim().toUpperCase() }))}
-                placeholder="e.g. ES"
-                className="bg-wc-ink border border-white/15 rounded-xl px-4 py-2.5 text-sm font-mono text-wc-white focus:border-wc-blue/60 outline-none w-24"
-              />
-              <input
-                type="number"
-                min={0}
-                value={outcomes.highestScoringTeamGoals ?? ''}
-                onChange={(e) => setOutcomes((prev) => ({ ...prev, highestScoringTeamGoals: parseInt(e.target.value) || 0 }))}
-                placeholder="Goals"
-                className="bg-wc-ink border border-white/15 rounded-xl px-4 py-2.5 text-sm tabular-nums text-wc-white focus:border-wc-blue/60 outline-none w-24"
-              />
-            </div>
-            <ApplyButton eventType="group_stage_highest_scorers" label="Apply Group Stage Highest Scorers" />
-          </div>
-
-          <div>
-            <p className="text-xs text-wc-bone/50 mb-1">Best Defence Team (team code + goals conceded)</p>
-            <div className="flex gap-2">
-              <input
-                value={outcomes.bestDefenceTeam ?? ''}
-                onChange={(e) => setOutcomes((prev) => ({ ...prev, bestDefenceTeam: e.target.value.trim().toUpperCase() }))}
-                placeholder="e.g. GB_ENG"
-                className="bg-wc-ink border border-white/15 rounded-xl px-4 py-2.5 text-sm font-mono text-wc-white focus:border-wc-blue/60 outline-none w-28"
-              />
-              <input
-                type="number"
-                min={0}
-                value={outcomes.bestDefenceGoalsConceded ?? ''}
-                onChange={(e) => setOutcomes((prev) => ({ ...prev, bestDefenceGoalsConceded: parseInt(e.target.value) || 0 }))}
-                placeholder="Conceded"
-                className="bg-wc-ink border border-white/15 rounded-xl px-4 py-2.5 text-sm tabular-nums text-wc-white focus:border-wc-blue/60 outline-none w-28"
-              />
-            </div>
-            <ApplyButton eventType="best_group_stage_defence" label="Apply Best Group Stage Defence" />
-          </div>
-        </div>
+        <SectionHeader title="(4) Quarter-finalists" />
+        <TeamPicker
+          selected={outcomes.quarterFinalists ?? []}
+          onChange={(teams) => setOutcomes((prev) => ({ ...prev, quarterFinalists: teams }))}
+          max={8}
+          teams={ALL_TEAMS}
+        />
+        <p className="text-[11px] text-wc-bone/40 mt-2 mb-2">
+          5 pts per correct team · 10 bonus if all 8 correct
+        </p>
+        <ApplyButton eventType="quarter_final_picks" label="Apply Quarter-finalists" />
       </section>
 
-      {/* Bonus Stats */}
+      {/* ─── (5) Semi-finalists ───────────────────────────────────── */}
       <section>
-        <SectionHeader title="Bonus Stats" />
-        <div className="space-y-4">
-          <div>
-            <p className="text-xs text-wc-bone/50 mb-1">Total Yellow Cards</p>
-            <input
-              type="number"
-              min={0}
-              value={outcomes.totalYellowCards ?? ''}
-              onChange={(e) => setOutcomes((prev) => ({ ...prev, totalYellowCards: parseInt(e.target.value) || 0 }))}
-              className="bg-wc-ink border border-white/15 rounded-xl px-4 py-2.5 text-sm tabular-nums text-wc-white focus:border-wc-blue/60 outline-none w-32"
-            />
-            <ApplyButton eventType="yellow_cards" label="Apply Yellow Cards" />
-          </div>
-
-          <div>
-            <p className="text-xs text-wc-bone/50 mb-1">Total Red Cards</p>
-            <input
-              type="number"
-              min={0}
-              value={outcomes.totalRedCards ?? ''}
-              onChange={(e) => setOutcomes((prev) => ({ ...prev, totalRedCards: parseInt(e.target.value) || 0 }))}
-              className="bg-wc-ink border border-white/15 rounded-xl px-4 py-2.5 text-sm tabular-nums text-wc-white focus:border-wc-blue/60 outline-none w-32"
-            />
-            <ApplyButton eventType="red_cards" label="Apply Red Cards" />
-          </div>
-
-          <div>
-            <p className="text-xs text-wc-bone/50 mb-1">Number of Penalty Shootouts</p>
-            <input
-              type="number"
-              min={0}
-              value={outcomes.penaltyShootouts ?? ''}
-              onChange={(e) => setOutcomes((prev) => ({ ...prev, penaltyShootouts: parseInt(e.target.value) || 0 }))}
-              className="bg-wc-ink border border-white/15 rounded-xl px-4 py-2.5 text-sm tabular-nums text-wc-white focus:border-wc-blue/60 outline-none w-32"
-            />
-            <ApplyButton eventType="penalty_shootouts" label="Apply Penalty Shootouts" />
-          </div>
-        </div>
+        <SectionHeader title="(5) Semi-finalists" />
+        <TeamPicker
+          selected={outcomes.semiFinalists ?? []}
+          onChange={(teams) => setOutcomes((prev) => ({ ...prev, semiFinalists: teams }))}
+          max={4}
+          teams={ALL_TEAMS}
+        />
+        <p className="text-[11px] text-wc-bone/40 mt-2 mb-2">
+          5 pts per correct team · 10 bonus if all 4 correct
+        </p>
+        <ApplyButton eventType="semi_final_picks" label="Apply Semi-finalists" />
       </section>
 
-      {/* Top Goalscorer */}
+      {/* ─── (6) Finalists ────────────────────────────────────────── */}
       <section>
-        <SectionHeader title="Top Goalscorer" />
-        <div className="space-y-3">
+        <SectionHeader title="(6) Finalists" />
+        <TeamPicker
+          selected={outcomes.finalists ?? []}
+          onChange={(teams) => setOutcomes((prev) => ({ ...prev, finalists: teams }))}
+          max={2}
+          teams={ALL_TEAMS}
+        />
+        <p className="text-[11px] text-wc-bone/40 mt-2 mb-2">
+          5 pts per correct finalist · 10 bonus if both correct
+        </p>
+        <ApplyButton eventType="finalist_picks" label="Apply Finalists" />
+      </section>
+
+      {/* ─── (7) Winner ───────────────────────────────────────────── */}
+      <section>
+        <SectionHeader title="(7) Winner" />
+        <TeamSelect
+          value={outcomes.winner ?? ''}
+          onChange={(name) => setOutcomes((prev) => ({ ...prev, winner: name }))}
+          teams={ALL_TEAMS}
+          placeholder="Select tournament winner…"
+        />
+        <p className="text-[11px] text-wc-bone/40 mt-2 mb-2">20 pts for correct winner</p>
+        <ApplyButton eventType="winner_pick" label="Apply Winner" />
+      </section>
+
+      {/* ─── (8) Group Stage Highest Scorers ──────────────────────── */}
+      <section>
+        <SectionHeader title="(8) Group Stage Highest Scorers" />
+        <div className="space-y-3 mb-3">
           <div>
-            <p className="text-xs text-wc-bone/50 mb-1">Actual tournament top goalscorer</p>
-            <input
+            <p className="text-xs text-wc-bone/50 mb-1.5">Actual highest scoring team</p>
+            <TeamSelect
+              value={outcomes.highestScoringTeam ?? ''}
+              onChange={(name) => setOutcomes((prev) => ({ ...prev, highestScoringTeam: name }))}
+              teams={ALL_TEAMS}
+              placeholder="Select team…"
+            />
+          </div>
+          <div>
+            <p className="text-xs text-wc-bone/50 mb-1.5">
+              Group-stage goals scored (enter for each player&apos;s predicted team)
+            </p>
+            <div className="bg-wc-ink rounded-xl overflow-hidden">
+              {UNIQUE_ATTACK_TEAMS.map((teamName) => (
+                <div
+                  key={teamName}
+                  className="flex items-center justify-between px-4 py-2.5 border-b border-white/8 last:border-0"
+                >
+                  <span className="text-sm text-wc-white">{teamName}</span>
+                  <input
+                    type="number"
+                    min={0}
+                    value={outcomes.highestScoringTeamGoalsMap?.[teamName] ?? ''}
+                    onChange={(e) =>
+                      setOutcomes((prev) => ({
+                        ...prev,
+                        highestScoringTeamGoalsMap: {
+                          ...prev.highestScoringTeamGoalsMap,
+                          [teamName]: parseInt(e.target.value) || 0,
+                        },
+                      }))
+                    }
+                    placeholder="0"
+                    className="bg-wc-black border border-white/15 rounded-lg px-2 py-1 text-sm tabular-nums text-wc-white focus:border-wc-blue/60 outline-none w-16 text-center"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        <p className="text-[11px] text-wc-bone/40 mb-2">
+          1 pt per goal scored by your predicted team · 10 bonus if correct team
+        </p>
+        <ApplyButton eventType="group_stage_highest_scorers" label="Apply Highest Scorers" />
+      </section>
+
+      {/* ─── (9) Best Group Stage Defence ─────────────────────────── */}
+      <section>
+        <SectionHeader title="(9) Best Group Stage Defence" />
+        <div className="space-y-3 mb-3">
+          <div>
+            <p className="text-xs text-wc-bone/50 mb-1.5">
+              Actual best defence team (fewest goals conceded)
+            </p>
+            <TeamSelect
+              value={outcomes.bestDefenceTeam ?? ''}
+              onChange={(name) => setOutcomes((prev) => ({ ...prev, bestDefenceTeam: name }))}
+              teams={ALL_TEAMS}
+              placeholder="Select team…"
+            />
+          </div>
+          <div>
+            <p className="text-xs text-wc-bone/50 mb-1.5">
+              Group-stage goals conceded (enter for each player&apos;s predicted team)
+            </p>
+            <div className="bg-wc-ink rounded-xl overflow-hidden">
+              {UNIQUE_DEFENCE_TEAMS.map((teamName) => (
+                <div
+                  key={teamName}
+                  className="flex items-center justify-between px-4 py-2.5 border-b border-white/8 last:border-0"
+                >
+                  <span className="text-sm text-wc-white">{teamName}</span>
+                  <input
+                    type="number"
+                    min={0}
+                    value={outcomes.bestDefenceGoalsConcededMap?.[teamName] ?? ''}
+                    onChange={(e) =>
+                      setOutcomes((prev) => ({
+                        ...prev,
+                        bestDefenceGoalsConcededMap: {
+                          ...prev.bestDefenceGoalsConcededMap,
+                          [teamName]: parseInt(e.target.value) || 0,
+                        },
+                      }))
+                    }
+                    placeholder="0"
+                    className="bg-wc-black border border-white/15 rounded-lg px-2 py-1 text-sm tabular-nums text-wc-white focus:border-wc-blue/60 outline-none w-16 text-center"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        <p className="text-[11px] text-wc-bone/40 mb-2">
+          -1 pt per goal conceded by your predicted team · 10 bonus if correct team
+        </p>
+        <ApplyButton eventType="best_group_stage_defence" label="Apply Best Defence" />
+      </section>
+
+      {/* ─── (10) Yellow Cards ────────────────────────────────────── */}
+      <section>
+        <SectionHeader title="(10) Total Tournament Yellow Cards" />
+        <input
+          type="number"
+          min={0}
+          value={outcomes.totalYellowCards ?? ''}
+          onChange={(e) =>
+            setOutcomes((prev) => ({ ...prev, totalYellowCards: parseInt(e.target.value) || 0 }))
+          }
+          className="bg-wc-ink border border-white/15 rounded-xl px-4 py-2.5 text-sm tabular-nums text-wc-white focus:border-wc-blue/60 outline-none w-36"
+        />
+        <p className="text-[11px] text-wc-bone/40 mt-2 mb-2">Exact: 20 pts · Within 10: 10 pts</p>
+        <ApplyButton eventType="yellow_cards" label="Apply Yellow Cards" />
+      </section>
+
+      {/* ─── (11) Red Cards ───────────────────────────────────────── */}
+      <section>
+        <SectionHeader title="(11) Total Tournament Red Cards" />
+        <input
+          type="number"
+          min={0}
+          value={outcomes.totalRedCards ?? ''}
+          onChange={(e) =>
+            setOutcomes((prev) => ({ ...prev, totalRedCards: parseInt(e.target.value) || 0 }))
+          }
+          className="bg-wc-ink border border-white/15 rounded-xl px-4 py-2.5 text-sm tabular-nums text-wc-white focus:border-wc-blue/60 outline-none w-36"
+        />
+        <p className="text-[11px] text-wc-bone/40 mt-2 mb-2">Exact: 15 pts · Within 1: 10 pts</p>
+        <ApplyButton eventType="red_cards" label="Apply Red Cards" />
+      </section>
+
+      {/* ─── (12) Penalty Shootouts ───────────────────────────────── */}
+      <section>
+        <SectionHeader title="(12) Total Number of Penalty Shootouts" />
+        <input
+          type="number"
+          min={0}
+          value={outcomes.penaltyShootouts ?? ''}
+          onChange={(e) =>
+            setOutcomes((prev) => ({ ...prev, penaltyShootouts: parseInt(e.target.value) || 0 }))
+          }
+          className="bg-wc-ink border border-white/15 rounded-xl px-4 py-2.5 text-sm tabular-nums text-wc-white focus:border-wc-blue/60 outline-none w-36"
+        />
+        <p className="text-[11px] text-wc-bone/40 mt-2 mb-2">Exact: 10 pts · Within 1: 5 pts</p>
+        <ApplyButton eventType="penalty_shootouts" label="Apply Penalty Shootouts" />
+      </section>
+
+      {/* ─── (13) Top Goalscorer ──────────────────────────────────── */}
+      <section>
+        <SectionHeader title="(13) Top Goalscorer" />
+        <div className="space-y-3 mb-3">
+          <div>
+            <p className="text-xs text-wc-bone/50 mb-1.5">Actual tournament top goalscorer</p>
+            <select
               value={outcomes.actualTopScorer ?? ''}
               onChange={(e) => setOutcomes((prev) => ({ ...prev, actualTopScorer: e.target.value }))}
-              placeholder="e.g. Harry Kane"
-              className="w-full bg-wc-ink border border-white/15 rounded-xl px-4 py-2.5 text-sm text-wc-white focus:border-wc-blue/60 outline-none"
-            />
+              className="bg-wc-ink border border-white/15 rounded-xl px-3 py-2.5 text-sm text-wc-white focus:border-wc-blue/60 outline-none appearance-none w-full max-w-xs"
+            >
+              <option value="">Select top scorer…</option>
+              {UNIQUE_TOP_SCORERS.map((name) => (
+                <option key={name} value={name}>{name}</option>
+              ))}
+            </select>
           </div>
           <div>
-            <p className="text-xs text-wc-bone/50 mb-2">Goals scored by each predicted player</p>
+            <p className="text-xs text-wc-bone/50 mb-1.5">Goals scored by each predicted player</p>
             <div className="bg-wc-ink rounded-xl overflow-hidden">
               {UNIQUE_TOP_SCORERS.map((name) => (
-                <div key={name} className="flex items-center justify-between px-4 py-2.5 border-b border-white/8 last:border-0">
+                <div
+                  key={name}
+                  className="flex items-center justify-between px-4 py-2.5 border-b border-white/8 last:border-0"
+                >
                   <span className="text-sm text-wc-white">{name}</span>
                   <input
                     type="number"
@@ -828,8 +1066,12 @@ function SpecialsTab() {
             </div>
           </div>
         </div>
+        <p className="text-[11px] text-wc-bone/40 mb-2">
+          3 pts per goal scored · 10 bonus if tournament top goalscorer
+        </p>
         <ApplyButton eventType="top_goalscorer" label="Apply Top Goalscorer" />
       </section>
+
     </div>
   );
 }

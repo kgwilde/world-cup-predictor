@@ -143,8 +143,10 @@ export interface SpecialOutcomes {
   winner?: string;
   highestScoringTeam?: string;
   highestScoringTeamGoals?: number;
+  highestScoringTeamGoalsMap?: Record<string, number>; // team name → group-stage goals scored
   bestDefenceTeam?: string;
   bestDefenceGoalsConceded?: number;
+  bestDefenceGoalsConcededMap?: Record<string, number>; // team name → group-stage goals conceded
   totalYellowCards?: number;
   totalRedCards?: number;
   penaltyShootouts?: number;

@@ -110,15 +110,21 @@ function scoreTopGoalscorer(bonus: BonusPredictions, outcomes: SpecialOutcomes):
 
 // 1 pt per goal scored by predicted team in group stage, 10 bonus if correct team.
 function scoreHighestScorers(bonus: BonusPredictions, outcomes: SpecialOutcomes): number {
-  const goals = outcomes.highestScoringTeamGoals ?? 0;
-  const pts = goals * 1;
+  const goals =
+    outcomes.highestScoringTeamGoalsMap?.[bonus.highestScoringTeam] ??
+    outcomes.highestScoringTeamGoals ??
+    0;
+  const pts = goals;
   const bonus10 = outcomes.highestScoringTeam === bonus.highestScoringTeam ? 10 : 0;
   return pts + bonus10;
 }
 
 // -1 pt per goal conceded by predicted team in group stage, 10 bonus if correct team.
 function scoreBestDefence(bonus: BonusPredictions, outcomes: SpecialOutcomes): number {
-  const conceded = outcomes.bestDefenceGoalsConceded ?? 0;
+  const conceded =
+    outcomes.bestDefenceGoalsConcededMap?.[bonus.bestDefence] ??
+    outcomes.bestDefenceGoalsConceded ??
+    0;
   const pts = conceded * -1;
   const bonus10 = outcomes.bestDefenceTeam === bonus.bestDefence ? 10 : 0;
   return pts + bonus10;
