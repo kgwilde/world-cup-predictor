@@ -1,21 +1,24 @@
 'use client';
 
-import { useMemo, useRef, useState, useEffect } from 'react';
-import { ChevronDown, Clock, Lock, X } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { ChevronDown, Lock, X } from 'lucide-react';
 import { fixtures } from '@/data/fixtures';
-import { allPredictions, allTournamentPicks, allBonusPredictions } from '@/data/entries';
+import { allPredictions as staticPredictions, allTournamentPicks, allBonusPredictions } from '@/data/entries';
 import type {
   Fixture,
+  FixtureStage,
   MatchResult,
   MultiChip,
   Player,
   Prediction,
   PublicProfile,
+  Team,
 } from '@/lib/types';
 import { getNow, PREDICTIONS_DEADLINE } from '@/lib/deadline';
 import { getResultType } from '@/lib/predictions';
 import { scoreMatch, calculateStandings } from '@/lib/scoring';
 import { resolveAvatarSrc } from '@/lib/avatar';
+import { getFlagByCode } from '@/lib/flags';
 import { useAuthStore } from '@/app/stores/useAuthStore';
 import { useMultiChips } from '@/components/hooks/use_multi_chips';
 import { isFixtureLive } from '@/components/FixtureSlider';
@@ -30,7 +33,8 @@ const KNOCKOUT_FIXTURE_IDS = new Set(fixtures.filter((f) => f.stage !== 'group')
 const GROUP_CHIP_LIMIT = 10;
 const KNOCKOUT_CHIP_LIMIT = 5;
 // 03:00 Irish time (UTC+1 in summer) — also when the group stage ends
-const KNOCKOUT_UNLOCK = new Date('2026-06-28T02:00:00Z');
+const KNOCKOUT_UNLOCK = new Date('2026-06-26T00:00:00Z');
+const KNOCKOUT_TEAL = '#2DD4BF';
 
 const STAGE_LABELS: Record<string, string> = {
   round_of_32: 'Round of 32',
@@ -92,57 +96,66 @@ function getSnapDateKey(dateKeys: string[], now: Date): string | null {
   return dateKeys[dateKeys.length - 1];
 }
 
-// ─── My Chips tab ─────────────────────────────────────────────────────────────
+// ─── My Predictions tab ────────────────────────────────────────────────────────
 
-const KNOCKOUT_TEAL = '#2DD4BF';
+const KNOCKOUT_STAGE_ORDER: FixtureStage[] = [
+  'round_of_32', 'round_of_16', 'quarter_final', 'semi_final', 'third_place', 'final',
+];
 
-function ChipCounter({ used }: { used: number }) {
-  const total = GROUP_CHIP_LIMIT;
-  const remaining = total - used;
+function CompactChipBar({
+  groupUsed,
+  knockoutUsed,
+  isKnockoutLocked,
+}: {
+  groupUsed: number;
+  knockoutUsed: number;
+  isKnockoutLocked: boolean;
+}) {
+  const groupRemaining = GROUP_CHIP_LIMIT - groupUsed;
+  const knockoutRemaining = KNOCKOUT_CHIP_LIMIT - knockoutUsed;
+
   return (
-    <div className="bg-white dark:bg-wc-ink rounded-xl px-4 py-3.5">
-      <div className="flex items-center justify-between mb-2.5">
-        <span className="text-sm font-bold text-wc-black dark:text-white">
-          {remaining} of {total} group chips remaining
+    <div className="bg-white dark:bg-wc-ink rounded-xl px-4 py-2.5 space-y-2">
+      {/* Group chips */}
+      <div className="flex items-center gap-2">
+        <span className="w-12 shrink-0 text-[10px] font-bold uppercase tracking-wider text-wc-black/40 dark:text-white/40">
+          Group
         </span>
-        <span className="text-xs text-wc-black/60 dark:text-white/60">{used} used</span>
+        <div className="flex gap-[3px] shrink-0">
+          {Array.from({ length: GROUP_CHIP_LIMIT }).map((_, i) => (
+            <div
+              key={i}
+              className={`w-1.5 h-1.5 rounded-full transition-colors ${i < groupRemaining ? 'bg-wc-gold' : 'bg-black/10 dark:bg-white/10'}`}
+            />
+          ))}
+        </div>
+        <span className="ml-1 text-[11px] font-semibold text-wc-black/45 dark:text-white/45">
+          {groupRemaining} left
+        </span>
       </div>
-      <div className="flex gap-1.5">
-        {Array.from({ length: total }).map((_, i) => (
-          <div
-            key={i}
-            className={`flex-1 h-2 rounded-full transition-colors ${i < remaining ? 'bg-wc-gold' : 'bg-black/12 dark:bg-white/12'}`}
-          />
-        ))}
-      </div>
-      <p className="text-xs text-wc-black/60 dark:text-white/60 mt-3">A chip doubles points for that prediction.</p>
-    </div>
-  );
-}
 
-function KnockoutChipCounter({ used, isLocked }: { used: number; isLocked: boolean }) {
-  const remaining = KNOCKOUT_CHIP_LIMIT - used;
-  return (
-    <div className={`bg-white dark:bg-wc-ink rounded-xl px-4 py-3.5 transition-opacity ${isLocked ? 'opacity-50' : ''}`}>
-      <div className="flex items-center justify-between mb-2.5">
-        <span className="text-sm font-bold text-wc-black dark:text-white flex items-center gap-1.5">
-          {isLocked && <Lock size={13} className="text-wc-black/60 dark:text-white/60" />}
-          {remaining} of {KNOCKOUT_CHIP_LIMIT} knockout chips remaining
+      {/* Knockout chips */}
+      <div className={`flex items-center gap-2 transition-opacity ${isKnockoutLocked ? 'opacity-40' : ''}`}>
+        <span
+          className="w-12 shrink-0 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1"
+          style={{ color: isKnockoutLocked ? undefined : KNOCKOUT_TEAL }}
+        >
+          {isKnockoutLocked && <Lock size={8} />}
+          KO
         </span>
-        <span className="text-xs text-wc-black/60 dark:text-white/60">{used} used</span>
+        <div className="flex gap-[3px] shrink-0">
+          {Array.from({ length: KNOCKOUT_CHIP_LIMIT }).map((_, i) => (
+            <div
+              key={i}
+              className={`w-1.5 h-1.5 rounded-full transition-colors ${i < knockoutRemaining ? '' : 'bg-black/10 dark:bg-white/10'}`}
+              style={i < knockoutRemaining ? { backgroundColor: KNOCKOUT_TEAL } : undefined}
+            />
+          ))}
+        </div>
+        <span className="ml-1 text-[11px] font-semibold text-wc-black/45 dark:text-white/45">
+          {isKnockoutLocked ? 'Locked' : `${knockoutRemaining} left`}
+        </span>
       </div>
-      <div className="flex gap-1.5">
-        {Array.from({ length: KNOCKOUT_CHIP_LIMIT }).map((_, i) => (
-          <div
-            key={i}
-            className="flex-1 h-2 rounded-full transition-colors"
-            style={{ backgroundColor: i < remaining ? KNOCKOUT_TEAL : 'rgba(0,0,0,0.12)' }}
-          />
-        ))}
-      </div>
-      <p className="text-xs text-wc-black/60 dark:text-white/60 mt-3">
-        {isLocked ? 'Unlocks when the group stage ends' : 'A chip doubles points for that prediction.'}
-      </p>
     </div>
   );
 }
@@ -155,8 +168,6 @@ function ChipFixtureRow({
   chipLimit,
   hasStarted,
   result,
-  isKnockout,
-  isLocked,
   onApply,
   onRemove,
 }: {
@@ -167,8 +178,6 @@ function ChipFixtureRow({
   chipLimit: number;
   hasStarted: boolean;
   result?: MatchResult;
-  isKnockout?: boolean;
-  isLocked?: boolean;
   onApply: () => void;
   onRemove: () => void;
 }) {
@@ -179,8 +188,6 @@ function ChipFixtureRow({
     result && prediction
       ? scoreMatch({ ...prediction, multiChip: hasChip }, result).points
       : undefined;
-
-  const chipColor = isKnockout ? KNOCKOUT_TEAL : undefined;
 
   return (
     <div className="flex items-center gap-3 py-3 border-b border-black/8 dark:border-white/8 last:border-0">
@@ -226,8 +233,7 @@ function ChipFixtureRow({
           <button
             type="button"
             onClick={onRemove}
-            style={chipColor ? { color: chipColor, backgroundColor: `${chipColor}22`, borderColor: `${chipColor}99` } : undefined}
-            className={`shrink-0 flex items-center gap-1 text-[11px] font-bold rounded-full px-2 py-1 border transition-colors active:bg-red-500/15 active:border-red-500/40 active:text-red-400 ${!chipColor ? 'text-wc-gold bg-wc-gold/20 border-wc-gold/60' : ''}`}
+            className="shrink-0 flex items-center gap-1 text-[11px] font-bold rounded-full px-2 py-1 border transition-colors active:bg-red-500/15 active:border-red-500/40 active:text-red-400 text-wc-gold bg-wc-gold/20 border-wc-gold/60"
           >
             ✓ Applied
             <X size={9} className="opacity-70" />
@@ -236,9 +242,8 @@ function ChipFixtureRow({
           <button
             type="button"
             onClick={onApply}
-            disabled={isLocked || chipsUsed >= chipLimit}
-            style={chipColor ? { color: `${chipColor}99`, borderColor: `${chipColor}44` } : undefined}
-            className={`shrink-0 text-[11px] font-semibold border rounded-full px-2.5 py-1 active:opacity-70 transition-colors disabled:opacity-25 disabled:cursor-not-allowed ${!chipColor ? 'text-wc-gold/60 border-wc-gold/25 hover:text-wc-gold hover:border-wc-gold/60' : 'hover:opacity-100'}`}
+            disabled={chipsUsed >= chipLimit}
+            className="shrink-0 text-[11px] font-semibold border rounded-full px-2.5 py-1 active:opacity-70 transition-colors disabled:opacity-25 disabled:cursor-not-allowed text-wc-gold/60 border-wc-gold/25 hover:text-wc-gold hover:border-wc-gold/60"
           >
             + Chip
           </button>
@@ -247,29 +252,350 @@ function ChipFixtureRow({
   );
 }
 
-function MyChipsTab({
+// ─── Knockout prediction card ─────────────────────────────────────────────────
+
+function MiniFlag({ team }: { team: Team }) {
+  if (team.code === 'TBD') {
+    return <div className="h-4 w-6 rounded-sm bg-black/10 dark:bg-white/10 shrink-0" />;
+  }
+  const Flag = getFlagByCode(team.code);
+  if (!Flag) return <div className="h-4 w-6 rounded-sm bg-black/10 dark:bg-white/10 shrink-0" />;
+  // Flag is a stable reference from a static module-scope map — not created during render
+  // eslint-disable-next-line react-hooks/static-components
+  return <Flag title={team.name} className="h-4 w-6 rounded-sm object-cover shrink-0 ring-1 ring-black/15 dark:ring-white/15" />;
+}
+
+function ScoreInput({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: number;
+  onChange: (v: number) => void;
+  disabled: boolean;
+}) {
+  return (
+    <div className="flex items-center shrink-0">
+      <button
+        type="button"
+        onClick={() => onChange(Math.max(0, value - 1))}
+        disabled={disabled || value <= 0}
+        className="w-9 h-9 flex items-center justify-center rounded-l-lg bg-black/8 dark:bg-white/8 text-wc-black dark:text-white text-base font-bold disabled:opacity-25 active:scale-95 transition-transform select-none"
+      >
+        −
+      </button>
+      <div className="w-9 h-9 flex items-center justify-center bg-black/[0.05] dark:bg-white/[0.05] text-wc-black dark:text-white text-base font-bold tabular-nums">
+        {value}
+      </div>
+      <button
+        type="button"
+        onClick={() => onChange(Math.min(20, value + 1))}
+        disabled={disabled}
+        className="w-9 h-9 flex items-center justify-center rounded-r-lg bg-black/8 dark:bg-white/8 text-wc-black dark:text-white text-base font-bold disabled:opacity-25 active:scale-95 transition-transform select-none"
+      >
+        +
+      </button>
+    </div>
+  );
+}
+
+function TeamRow({
+  team,
+  value,
+  savedValue,
+  onChange,
+  isEditable,
+  hasSavedPrediction,
+  disabled,
+}: {
+  team: Team;
+  value: number;
+  savedValue: number | undefined;
+  onChange: (v: number) => void;
+  isEditable: boolean;
+  hasSavedPrediction: boolean;
+  disabled: boolean;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <div className="flex items-center gap-2.5 min-w-0">
+        <MiniFlag team={team} />
+        <span className="text-sm font-medium text-wc-black dark:text-white leading-tight">
+          {team.name}
+        </span>
+      </div>
+      {isEditable ? (
+        <ScoreInput value={value} onChange={onChange} disabled={disabled} />
+      ) : hasSavedPrediction ? (
+        <span className="text-2xl font-bold tabular-nums text-wc-black dark:text-white">
+          {savedValue ?? 0}
+        </span>
+      ) : (
+        <span className="text-lg text-wc-black/20 dark:text-white/20">–</span>
+      )}
+    </div>
+  );
+}
+
+function KnockoutPredictionCard({
+  fixture,
+  savedPrediction,
+  hasChip,
+  chipsUsed,
+  chipLimit,
+  hasStarted,
+  result,
+  isChipLocked,
+  onApply,
+  onRemove,
+  onSave,
+}: {
+  fixture: Fixture;
+  savedPrediction: { homeGoals: number; awayGoals: number } | undefined;
+  hasChip: boolean;
+  chipsUsed: number;
+  chipLimit: number;
+  hasStarted: boolean;
+  result?: MatchResult;
+  isChipLocked: boolean;
+  onApply: () => void;
+  onRemove: () => void;
+  onSave: (homeGoals: number, awayGoals: number) => Promise<void>;
+}) {
+  // When untouched, display values come from savedPrediction (live prop).
+  // Once the user touches an input, we store locally until Save.
+  const [localHome, setLocalHome] = useState<number | undefined>(undefined);
+  const [localAway, setLocalAway] = useState<number | undefined>(undefined);
+  const [touched, setTouched] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const onSaveRef = useRef(onSave);
+  useEffect(() => { onSaveRef.current = onSave; }, [onSave]);
+  const onApplyRef = useRef(onApply);
+  useEffect(() => { onApplyRef.current = onApply; }, [onApply]);
+
+  const displayHome = touched ? (localHome ?? 0) : (savedPrediction?.homeGoals ?? 0);
+  const displayAway = touched ? (localAway ?? 0) : (savedPrediction?.awayGoals ?? 0);
+
+  const isDirty =
+    touched &&
+    (savedPrediction === undefined ||
+      displayHome !== savedPrediction.homeGoals ||
+      displayAway !== savedPrediction.awayGoals);
+
+  const handleChangeHome = (v: number) => {
+    setLocalHome(v);
+    setTouched(true);
+  };
+
+  const handleChangeAway = (v: number) => {
+    setLocalAway(v);
+    setTouched(true);
+  };
+
+  const handleSave = async () => {
+    setSaveStatus('saving');
+    try {
+      await onSaveRef.current(displayHome, displayAway);
+      setTouched(false);
+      setLocalHome(undefined);
+      setLocalAway(undefined);
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus((s) => (s === 'saved' ? 'idle' : s)), 2000);
+    } catch {
+      setSaveStatus('error');
+      setTimeout(() => setSaveStatus((s) => (s === 'error' ? 'idle' : s)), 3000);
+    }
+  };
+
+  // If no prediction exists yet, silently save the current display values (defaults 0-0) before applying.
+  const handleChipApply = async () => {
+    if (savedPrediction === undefined) {
+      try {
+        await onSaveRef.current(displayHome, displayAway);
+        setTouched(false);
+        setLocalHome(undefined);
+        setLocalAway(undefined);
+      } catch {
+        return;
+      }
+    }
+    onApplyRef.current();
+  };
+
+  const isEditable = !hasStarted;
+  const isSaving = saveStatus === 'saving';
+
+  const pts =
+    result && savedPrediction
+      ? scoreMatch(
+          { playerId: '', fixtureId: fixture.id, ...savedPrediction, multiChip: hasChip },
+          result,
+        ).points
+      : undefined;
+
+  const kickoffLabel = new Intl.DateTimeFormat('en-IE', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'Europe/Dublin',
+  }).format(new Date(fixture.kickoff));
+
+  return (
+    <div className="bg-white dark:bg-wc-ink rounded-2xl overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-2.5 border-b border-black/8 dark:border-white/8">
+        <span
+          className="text-[11px] font-semibold uppercase tracking-wider"
+          style={{ color: KNOCKOUT_TEAL }}
+        >
+          {STAGE_LABELS[fixture.stage]}
+        </span>
+        <div className="flex items-center gap-2">
+          {hasStarted && (
+            <span className="flex items-center gap-1 text-[10px] text-wc-black/40 dark:text-white/40">
+              <Lock size={9} />
+              Locked
+            </span>
+          )}
+          <span className="text-[11px] text-wc-black/40 dark:text-white/40 tabular-nums">
+            {kickoffLabel}
+          </span>
+        </div>
+      </div>
+
+      {/* Teams + inputs */}
+      <div className="px-4 pt-3.5 pb-3 space-y-3">
+        <TeamRow
+          team={fixture.homeTeam}
+          value={displayHome}
+          savedValue={savedPrediction?.homeGoals}
+          onChange={handleChangeHome}
+          isEditable={isEditable}
+          hasSavedPrediction={savedPrediction !== undefined}
+          disabled={isSaving}
+        />
+        <TeamRow
+          team={fixture.awayTeam}
+          value={displayAway}
+          savedValue={savedPrediction?.awayGoals}
+          onChange={handleChangeAway}
+          isEditable={isEditable}
+          hasSavedPrediction={savedPrediction !== undefined}
+          disabled={isSaving}
+        />
+      </div>
+
+      {/* Footer */}
+      <div className="flex items-center justify-between gap-3 px-4 py-2.5 border-t border-black/8 dark:border-white/8 min-h-[44px]">
+        {/* Left: save button / status / points */}
+        <div className="flex items-center gap-2 min-w-0">
+          {isEditable ? (
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={!isDirty || isSaving}
+              className="text-[12px] font-semibold text-white bg-wc-blue rounded-lg px-3 py-1.5 transition-opacity shrink-0 disabled:opacity-30"
+            >
+              {isSaving ? 'Saving…' : saveStatus === 'saved' ? '✓ Saved' : 'Save'}
+            </button>
+          ) : (
+            <>
+              {saveStatus === 'idle' && hasStarted && !savedPrediction && (
+                <span className="text-[11px] text-wc-black/25 dark:text-white/25 italic">No prediction</span>
+              )}
+              {pts !== undefined && (
+                <PointsBadge points={pts} multiChipApplied={hasChip} />
+              )}
+            </>
+          )}
+          {saveStatus === 'error' && (
+            <button
+              type="button"
+              onClick={handleSave}
+              className="text-[11px] text-red-500 dark:text-red-400 underline shrink-0"
+            >
+              Save failed — retry
+            </button>
+          )}
+        </div>
+
+        {/* Right: chip button */}
+        {hasStarted ? (
+          hasChip ? (
+            <span className="shrink-0 flex items-center gap-1 text-[11px] font-bold text-wc-black/35 dark:text-white/35 bg-black/[0.07] dark:bg-white/[0.07] border border-black/12 dark:border-white/12 rounded-full px-2.5 py-1">
+              <Lock size={10} />
+              Chip locked
+            </span>
+          ) : null
+        ) : hasChip ? (
+          <button
+            type="button"
+            onClick={onRemove}
+            style={{
+              color: KNOCKOUT_TEAL,
+              backgroundColor: `${KNOCKOUT_TEAL}22`,
+              borderColor: `${KNOCKOUT_TEAL}99`,
+            }}
+            className="shrink-0 flex items-center gap-1 text-[11px] font-bold rounded-full px-2.5 py-1 border transition-colors active:bg-red-500/15 active:border-red-500/40 active:text-red-400"
+          >
+            ✓ Chip
+            <X size={9} className="opacity-70" />
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={handleChipApply}
+            disabled={isChipLocked || chipsUsed >= chipLimit}
+            style={{ color: `${KNOCKOUT_TEAL}90`, borderColor: `${KNOCKOUT_TEAL}44` }}
+            className="shrink-0 text-[11px] font-semibold border rounded-full px-2.5 py-1 transition-colors disabled:opacity-25 disabled:cursor-not-allowed"
+          >
+            + Chip
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function MyPredictionsTab({
   viewerId,
-  allPredictions,
+  firestoreUsers,
   allChips,
   results,
   now,
   isKnockoutLocked,
+  onSavePrediction,
   onApply,
   onRemove,
 }: {
   viewerId: string;
-  allPredictions: Prediction[];
+  firestoreUsers: PublicProfile[];
   allChips: MultiChip[];
   results: MatchResult[];
   now: Date;
   isKnockoutLocked: boolean;
+  onSavePrediction: (fixtureId: string, homeGoals: number, awayGoals: number) => Promise<void>;
   onApply: (fixtureId: string) => void;
   onRemove: (fixtureId: string) => void;
 }) {
-  const myPredictions = useMemo(
+  const myProfile = useMemo(
+    () => firestoreUsers.find((u) => u.uid === viewerId),
+    [firestoreUsers, viewerId],
+  );
+
+  const myKnockoutPredictions = useMemo(
+    () => myProfile?.knockoutPredictions ?? {},
+    [myProfile],
+  );
+
+  const myStaticPredictions = useMemo(
     () =>
-      new Map(allPredictions.filter((p) => p.playerId === viewerId).map((p) => [p.fixtureId, p])),
-    [allPredictions, viewerId]
+      new Map(
+        staticPredictions.filter((p) => p.playerId === viewerId).map((p) => [p.fixtureId, p]),
+      ),
+    [viewerId],
   );
 
   const myGroupChipIds = useMemo(
@@ -277,9 +603,9 @@ function MyChipsTab({
       new Set(
         allChips
           .filter((c) => c.playerId === viewerId && GROUP_FIXTURE_IDS.has(c.fixtureId))
-          .map((c) => c.fixtureId)
+          .map((c) => c.fixtureId),
       ),
-    [allChips, viewerId]
+    [allChips, viewerId],
   );
 
   const myKnockoutChipIds = useMemo(
@@ -287,47 +613,37 @@ function MyChipsTab({
       new Set(
         allChips
           .filter((c) => c.playerId === viewerId && KNOCKOUT_FIXTURE_IDS.has(c.fixtureId))
-          .map((c) => c.fixtureId)
+          .map((c) => c.fixtureId),
       ),
-    [allChips, viewerId]
+    [allChips, viewerId],
   );
 
   const resultMap = useMemo(() => new Map(results.map((r) => [r.fixtureId, r])), [results]);
 
-  const groupFixtures = useMemo(
-    () =>
-      fixtures
-        .filter((f) => f.stage === 'group')
-        .sort((a, b) => new Date(a.kickoff).getTime() - new Date(b.kickoff).getTime()),
-    []
-  );
-
   const groupFixturesByDate = useMemo(() => {
     const map = new Map<string, Fixture[]>();
-    for (const fixture of groupFixtures) {
+    for (const fixture of fixtures.filter((f) => f.stage === 'group')) {
       const key = getFixtureDateKey(fixture.kickoff);
       const existing = map.get(key) ?? [];
       existing.push(fixture);
       map.set(key, existing);
     }
     return [...map.entries()].sort(([a], [b]) => a.localeCompare(b));
-  }, [groupFixtures]);
+  }, []);
 
-  const knockoutByStage = useMemo(() => {
-    const order = ['round_of_32', 'round_of_16', 'quarter_final', 'semi_final', 'third_place', 'final'];
-    return order
-      .map((stage) => ({
+  const knockoutByStage = useMemo(
+    () =>
+      KNOCKOUT_STAGE_ORDER.map((stage) => ({
         stage,
         stageFixtures: fixtures
           .filter((f) => f.stage === stage)
           .sort((a, b) => new Date(a.kickoff).getTime() - new Date(b.kickoff).getTime()),
-      }))
-      .filter(({ stageFixtures }) => stageFixtures.length > 0);
-  }, []);
+      })).filter(({ stageFixtures }) => stageFixtures.length > 0),
+    [],
+  );
 
-  // Default collapsed once the group stage is over
   const [groupExpanded, setGroupExpanded] = useState(
-    () => Date.now() < KNOCKOUT_UNLOCK.getTime()
+    () => Date.now() < KNOCKOUT_UNLOCK.getTime(),
   );
 
   const dateKeys = useMemo(() => groupFixturesByDate.map(([key]) => key), [groupFixturesByDate]);
@@ -346,7 +662,7 @@ function MyChipsTab({
 
   return (
     <div className="space-y-4">
-      {/* Group Stage — collapsible */}
+      {/* Group Stage — collapsible, chip management only */}
       <div className="bg-white dark:bg-wc-ink rounded-2xl overflow-hidden">
         <button
           type="button"
@@ -384,7 +700,7 @@ function MyChipsTab({
                   <ChipFixtureRow
                     key={fixture.id}
                     fixture={fixture}
-                    prediction={myPredictions.get(fixture.id)}
+                    prediction={myStaticPredictions.get(fixture.id)}
                     hasChip={myGroupChipIds.has(fixture.id)}
                     chipsUsed={myGroupChipIds.size}
                     chipLimit={GROUP_CHIP_LIMIT}
@@ -399,40 +715,25 @@ function MyChipsTab({
           ))}
       </div>
 
-      {/* Knockout stages */}
+      {/* Knockout stages — prediction entry */}
       {knockoutByStage.map(({ stage, stageFixtures }) => (
-        <div key={stage} className="bg-white dark:bg-wc-ink rounded-2xl overflow-hidden">
-          <div className="px-4 py-3 border-b border-black/8 dark:border-white/8 flex items-center justify-between">
-            <span className="text-sm font-bold" style={{ color: KNOCKOUT_TEAL }}>
-              {STAGE_LABELS[stage]}
-            </span>
-            {isKnockoutLocked && stage === 'round_of_32' && (
-              <div className="flex items-center gap-1.5">
-                <Clock size={11} className="opacity-50" style={{ color: KNOCKOUT_TEAL }} />
-                <span className="text-[11px] opacity-50" style={{ color: KNOCKOUT_TEAL }}>
-                  Unlocks soon
-                </span>
-              </div>
-            )}
-          </div>
-          <div className="px-4">
-            {stageFixtures.map((fixture) => (
-              <ChipFixtureRow
-                key={fixture.id}
-                fixture={fixture}
-                prediction={myPredictions.get(fixture.id)}
-                hasChip={myKnockoutChipIds.has(fixture.id)}
-                chipsUsed={myKnockoutChipIds.size}
-                chipLimit={KNOCKOUT_CHIP_LIMIT}
-                hasStarted={new Date(fixture.kickoff) <= now}
-                result={resultMap.get(fixture.id)}
-                isKnockout
-                isLocked={isKnockoutLocked}
-                onApply={() => onApply(fixture.id)}
-                onRemove={() => onRemove(fixture.id)}
-              />
-            ))}
-          </div>
+        <div key={stage} className="space-y-3">
+          {stageFixtures.map((fixture) => (
+            <KnockoutPredictionCard
+              key={fixture.id}
+              fixture={fixture}
+              savedPrediction={myKnockoutPredictions[fixture.id]}
+              hasChip={myKnockoutChipIds.has(fixture.id)}
+              chipsUsed={myKnockoutChipIds.size}
+              chipLimit={KNOCKOUT_CHIP_LIMIT}
+              hasStarted={new Date(fixture.kickoff) <= now}
+              result={resultMap.get(fixture.id)}
+              isChipLocked={isKnockoutLocked}
+              onApply={() => onApply(fixture.id)}
+              onRemove={() => onRemove(fixture.id)}
+              onSave={(h, a) => onSavePrediction(fixture.id, h, a)}
+            />
+          ))}
         </div>
       ))}
     </div>
@@ -441,7 +742,7 @@ function MyChipsTab({
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-type Tab = 'matches' | 'specials' | 'my-chips';
+type Tab = 'matches' | 'specials' | 'my-predictions';
 
 export default function PredictionsPage() {
   const now = useMemo(() => getNow(), []);
@@ -464,11 +765,9 @@ export default function PredictionsPage() {
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
 
   const { chips: allChips, apply: applyChip, remove: removeChip } = useMultiChips();
+  const storeSaveKnockoutPrediction = useAuthStore((s) => s.saveKnockoutPrediction);
 
-  const [isKnockoutLocked, setIsKnockoutLocked] = useState(true);
-  useEffect(() => {
-    setIsKnockoutLocked(Date.now() < KNOCKOUT_UNLOCK.getTime());
-  }, []);
+  const [isKnockoutLocked] = useState(() => Date.now() < KNOCKOUT_UNLOCK.getTime());
 
   const groupChipsUsed = useMemo(
     () =>
@@ -498,14 +797,34 @@ export default function PredictionsPage() {
     [firestoreUsers, deadlinePassed]
   );
 
-  const visiblePredictions = useMemo<Prediction[]>(
-    () =>
-      allPredictions.map((p) => ({
-        ...p,
-        multiChip: allChips.some((c) => c.playerId === p.playerId && c.fixtureId === p.fixtureId),
-      })),
-    [allChips]
-  );
+  const visiblePredictions = useMemo<Prediction[]>(() => {
+    const staticWithChips = staticPredictions.map((p) => ({
+      ...p,
+      multiChip: allChips.some((c) => c.playerId === p.playerId && c.fixtureId === p.fixtureId),
+    }));
+
+    const knockoutPreds: Prediction[] = [];
+    for (const user of firestoreUsers) {
+      const kp = user.knockoutPredictions;
+      if (!kp) continue;
+      for (const [fixtureId, { homeGoals, awayGoals }] of Object.entries(kp)) {
+        const fixture = fixtures.find((f) => f.id === fixtureId);
+        if (!fixture) continue;
+        const hasStarted = new Date(fixture.kickoff) <= now;
+        // Hide other players' predictions until the match starts
+        if (!hasStarted && user.uid !== viewerId) continue;
+        knockoutPreds.push({
+          playerId: user.uid,
+          fixtureId,
+          homeGoals,
+          awayGoals,
+          multiChip: allChips.some((c) => c.playerId === user.uid && c.fixtureId === fixtureId),
+        });
+      }
+    }
+
+    return [...staticWithChips, ...knockoutPreds];
+  }, [allChips, firestoreUsers, viewerId, now]);
   const visibleTournamentPicks = allTournamentPicks;
   const visibleBonusPredictions = allBonusPredictions;
 
@@ -591,7 +910,7 @@ export default function PredictionsPage() {
   }, []);
 
   useEffect(() => {
-    if (activeTab === 'matches' || activeTab === 'specials') {
+    if (activeTab === 'matches' || activeTab === 'specials' || activeTab === 'my-predictions') {
       window.scrollTo(0, 0);
     }
   }, [activeTab]);
@@ -619,7 +938,7 @@ export default function PredictionsPage() {
           <div className="mx-auto max-w-3xl">
             <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Predictions</h1>
             <p className="mt-2 max-w-lg text-sm text-wc-black/55 dark:text-white/55">
-              Browse match predictions, specials, and manage your chips.
+              Browse match predictions, specials, and manage your knockout predictions.
             </p>
           </div>
           <div className="mx-auto max-w-3xl mt-6 flex w-full border-b border-black/10 dark:border-white/10">
@@ -648,15 +967,15 @@ export default function PredictionsPage() {
             {viewerId && (
               <button
                 type="button"
-                onClick={() => setActiveTab('my-chips')}
+                onClick={() => setActiveTab('my-predictions')}
                 className={`flex-1 text-center pb-3 pt-1 text-sm font-semibold transition-colors border-b-2 -mb-px ${
-                  activeTab === 'my-chips'
+                  activeTab === 'my-predictions'
                     ? 'text-wc-black dark:text-white border-wc-blue'
                     : 'text-wc-black/40 dark:text-white/40 border-transparent hover:text-wc-black/70 dark:hover:text-white/70'
                 }`}
               >
                 <span className="inline-flex items-center justify-center gap-1.5">
-                  My Chips
+                  My Predictions
                   {myChipsRemaining > 0 && (
                     <span className="w-2 h-2 rounded-full bg-wc-gold shrink-0" />
                   )}
@@ -665,11 +984,14 @@ export default function PredictionsPage() {
             )}
           </div>
 
-          {/* Chip counters — sticky inside tab bar when My Chips is active */}
-          {activeTab === 'my-chips' && viewerId && (
-            <div className="mx-auto max-w-3xl pt-4 pb-1 space-y-3">
-              <ChipCounter used={groupChipsUsed} />
-              <KnockoutChipCounter used={knockoutChipsUsed} isLocked={isKnockoutLocked} />
+          {/* Compact chip bar — sticky inside tab bar when My Predictions is active */}
+          {activeTab === 'my-predictions' && viewerId && (
+            <div className="mx-auto max-w-3xl pt-3 pb-1">
+              <CompactChipBar
+                groupUsed={groupChipsUsed}
+                knockoutUsed={knockoutChipsUsed}
+                isKnockoutLocked={isKnockoutLocked}
+              />
             </div>
           )}
         </div>
@@ -771,14 +1093,17 @@ export default function PredictionsPage() {
               </div>
             )}
 
-            {activeTab === 'my-chips' && viewerId && (
-              <MyChipsTab
+            {activeTab === 'my-predictions' && viewerId && (
+              <MyPredictionsTab
                 viewerId={viewerId}
-                allPredictions={allPredictions}
+                firestoreUsers={firestoreUsers}
                 allChips={allChips}
                 results={storeResults}
                 now={now}
                 isKnockoutLocked={isKnockoutLocked}
+                onSavePrediction={(fixtureId, h, a) =>
+                  storeSaveKnockoutPrediction(viewerId, fixtureId, h, a)
+                }
                 onApply={(fixtureId) => applyChip(viewerId, fixtureId)}
                 onRemove={(fixtureId) => removeChip(viewerId, fixtureId)}
               />

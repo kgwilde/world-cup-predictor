@@ -91,6 +91,7 @@ export interface UserProfile {
   predictionUploadedAt: string | null;
   approved: boolean;
   multiChips?: string[];
+  knockoutPredictions?: Record<string, { homeGoals: number; awayGoals: number }>;
 }
 
 // Safe subset returned by getAllUsers() — email is never sent to the client for other users

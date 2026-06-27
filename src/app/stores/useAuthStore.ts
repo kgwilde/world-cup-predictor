@@ -4,9 +4,9 @@ import { onAuthStateChanged, signOut as firebaseSignOut, type User } from 'fireb
 import { create } from 'zustand';
 
 import { auth } from '@/lib/firebase';
-import { applyMultiChip, createUserProfile, getAllUsers, getUserProfile, removeMultiChip, subscribeToResults, subscribeToSpecialEvents } from '@/lib/firestore';
+import { applyMultiChip, createUserProfile, getAllUsers, getUserProfile, removeMultiChip, saveKnockoutPrediction as saveKnockoutPredictionToFirestore, subscribeToResults, subscribeToSpecialEvents, subscribeToSpecialOutcomes } from '@/lib/firestore';
 import { preloadedAvatarUrls, resolveAvatarSrc } from '@/lib/avatar';
-import type { MatchResult, PublicProfile, SpecialEvent, UserProfile } from '@/lib/types';
+import type { MatchResult, PublicProfile, SpecialEvent, SpecialOutcomes, UserProfile } from '@/lib/types';
 
 function preloadAvatars(users: PublicProfile[]): Promise<void> {
   const urls = users
@@ -40,17 +40,20 @@ interface AuthState {
   lastSyncedAt: Date | null;
   specialEvents: SpecialEvent[];
   specialEventsLoading: boolean;
+  specialOutcomes: SpecialOutcomes | null;
   init: () => () => void;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   applyChip: (uid: string, fixtureId: string) => Promise<void>;
   removeChip: (uid: string, fixtureId: string) => Promise<void>;
+  saveKnockoutPrediction: (uid: string, fixtureId: string, homeGoals: number, awayGoals: number) => Promise<void>;
 }
 
 // Module-level guards so we only ever fire one request per session
 let allUsersFetchPromise: Promise<void> | null = null;
 let resultsUnsubscribe: (() => void) | null = null;
 let specialEventsUnsubscribe: (() => void) | null = null;
+let specialOutcomesUnsubscribe: (() => void) | null = null;
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
@@ -64,6 +67,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   lastSyncedAt: null,
   specialEvents: [],
   specialEventsLoading: true,
+  specialOutcomes: null,
 
   init: () => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -124,6 +128,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           () => set({ specialEventsLoading: false }),
         );
       }
+
+      if (!specialOutcomesUnsubscribe) {
+        specialOutcomesUnsubscribe = subscribeToSpecialOutcomes(
+          (specialOutcomes) => set({ specialOutcomes }),
+        );
+      }
     });
     return unsubscribe;
   },
@@ -182,6 +192,29 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         allUsers: state.allUsers.map((u) =>
           u.uid === uid ? { ...u, multiChips: [...(u.multiChips ?? []), fixtureId] } : u,
         ),
+      }));
+    }
+  },
+
+  saveKnockoutPrediction: async (uid: string, fixtureId: string, homeGoals: number, awayGoals: number) => {
+    const prediction = { homeGoals, awayGoals };
+    set((state) => ({
+      allUsers: state.allUsers.map((u) =>
+        u.uid === uid
+          ? { ...u, knockoutPredictions: { ...u.knockoutPredictions, [fixtureId]: prediction } }
+          : u,
+      ),
+    }));
+    try {
+      await saveKnockoutPredictionToFirestore(uid, fixtureId, homeGoals, awayGoals);
+    } catch {
+      set((state) => ({
+        allUsers: state.allUsers.map((u) => {
+          if (u.uid !== uid) return u;
+          const kp = { ...u.knockoutPredictions };
+          delete kp[fixtureId];
+          return { ...u, knockoutPredictions: kp };
+        }),
       }));
     }
   },

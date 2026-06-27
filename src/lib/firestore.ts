@@ -77,6 +77,15 @@ export async function getSpecialOutcomes(): Promise<SpecialOutcomes | null> {
   return snap.exists() ? (snap.data() as SpecialOutcomes) : null;
 }
 
+export function subscribeToSpecialOutcomes(
+  onUpdate: (outcomes: SpecialOutcomes | null) => void,
+): () => void {
+  return onSnapshot(
+    doc(db, 'specials', 'outcomes'),
+    (snap) => onUpdate(snap.exists() ? (snap.data() as SpecialOutcomes) : null),
+  );
+}
+
 export async function getSpecialEvents(): Promise<SpecialEvent[]> {
   const snap = await getDoc(doc(db, 'specials', 'events'));
   if (!snap.exists()) return [];
@@ -106,4 +115,15 @@ export async function applyMultiChip(uid: string, fixtureId: string): Promise<vo
 
 export async function removeMultiChip(uid: string, fixtureId: string): Promise<void> {
   await updateDoc(doc(db, 'users', uid), { multiChips: arrayRemove(fixtureId) });
+}
+
+export async function saveKnockoutPrediction(
+  uid: string,
+  fixtureId: string,
+  homeGoals: number,
+  awayGoals: number,
+): Promise<void> {
+  await updateDoc(doc(db, 'users', uid), {
+    [`knockoutPredictions.${fixtureId}`]: { homeGoals, awayGoals },
+  });
 }
