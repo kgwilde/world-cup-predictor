@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ChevronDown, Lock, X } from 'lucide-react';
 import { fixtures } from '@/data/fixtures';
 import { allPredictions as staticPredictions, allTournamentPicks, allBonusPredictions } from '@/data/entries';
@@ -566,6 +566,7 @@ function MyPredictionsTab({
   results,
   now,
   isKnockoutLocked,
+  scrollContainerRef,
   onSavePrediction,
   onApply,
   onRemove,
@@ -576,6 +577,7 @@ function MyPredictionsTab({
   results: MatchResult[];
   now: Date;
   isKnockoutLocked: boolean;
+  scrollContainerRef: React.RefObject<HTMLDivElement | null>;
   onSavePrediction: (fixtureId: string, homeGoals: number, awayGoals: number) => Promise<void>;
   onApply: (fixtureId: string) => void;
   onRemove: (fixtureId: string) => void;
@@ -653,12 +655,11 @@ function MyPredictionsTab({
   useEffect(() => {
     if (!snapDateKey || !groupExpanded) return;
     const el = sectionRefs.current.get(snapDateKey);
-    if (!el) return;
-    const headerHeight = document.querySelector('header')?.getBoundingClientRect().height ?? 0;
-    const tabBarHeight = document.querySelector('[data-tab-bar]')?.getBoundingClientRect().height ?? 0;
-    const top = el.getBoundingClientRect().top + window.scrollY - headerHeight - tabBarHeight - 8;
-    window.scrollTo({ top, behavior: 'smooth' });
-  }, [snapDateKey, groupExpanded]);
+    const container = scrollContainerRef.current;
+    if (!el || !container) return;
+    const top = container.scrollTop + (el.getBoundingClientRect().top - container.getBoundingClientRect().top) - 8;
+    container.scrollTo({ top, behavior: 'smooth' });
+  }, [snapDateKey, groupExpanded, scrollContainerRef]);
 
   return (
     <div className="space-y-4">
@@ -901,17 +902,27 @@ export default function PredictionsPage() {
   );
 
   const activeButtonRef = useRef<HTMLButtonElement | null>(null);
-  const [headerHeight, setHeaderHeight] = useState(0);
+  const mainRef = useRef<HTMLElement>(null);
+  const contentScrollRef = useRef<HTMLDivElement>(null);
+  const [mainTop, setMainTop] = useState(0);
 
+  useLayoutEffect(() => {
+    if (mainRef.current) {
+      setMainTop(mainRef.current.getBoundingClientRect().top);
+    }
+  }, []);
+
+  // Prevent the window from scrolling while this page is mounted — the content
+  // area has its own overflow-y-auto container with a contained scrollbar.
   useEffect(() => {
-    const header = document.querySelector('header');
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (header) setHeaderHeight(header.getBoundingClientRect().height);
+    const prev = document.documentElement.style.overflow;
+    document.documentElement.style.overflow = 'hidden';
+    return () => { document.documentElement.style.overflow = prev; };
   }, []);
 
   useEffect(() => {
     if (activeTab === 'matches' || activeTab === 'specials' || activeTab === 'my-predictions') {
-      window.scrollTo(0, 0);
+      contentScrollRef.current?.scrollTo(0, 0);
     }
   }, [activeTab]);
 
@@ -928,12 +939,15 @@ export default function PredictionsPage() {
 
   return (
     <>
-      <main className="min-h-screen bg-wc-bone dark:bg-wc-black text-wc-black dark:text-white">
-        {/* Sticky header: title + tab strip */}
+      <main
+        ref={mainRef}
+        className="flex flex-col overflow-hidden bg-wc-bone dark:bg-wc-black text-wc-black dark:text-white"
+        style={{ height: `calc(100dvh - ${mainTop}px)` }}
+      >
+        {/* Tab bar — sits above the scroll container, does not scroll */}
         <div
           data-tab-bar
-          className="sticky z-10 bg-wc-bone dark:bg-wc-black px-4 pt-6 sm:px-6 lg:px-8"
-          style={{ top: headerHeight }}
+          className="shrink-0 bg-wc-bone dark:bg-wc-black px-4 pt-6 sm:px-6 lg:px-8"
         >
           <div className="mx-auto max-w-3xl">
             <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Predictions</h1>
@@ -996,8 +1010,8 @@ export default function PredictionsPage() {
           )}
         </div>
 
-        {/* Tab content */}
-        <div className="px-4 pt-6 pb-6 sm:px-6 lg:px-8">
+        {/* Scrollable tab content — scrollbar is contained here, not on the window */}
+        <div ref={contentScrollRef} className="flex-1 overflow-y-auto px-4 pt-6 pb-16 sm:pb-6 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-3xl">
             {activeTab === 'specials' && (
               <SpecialsTab
@@ -1101,6 +1115,7 @@ export default function PredictionsPage() {
                 results={storeResults}
                 now={now}
                 isKnockoutLocked={isKnockoutLocked}
+                scrollContainerRef={contentScrollRef}
                 onSavePrediction={(fixtureId, h, a) =>
                   storeSaveKnockoutPrediction(viewerId, fixtureId, h, a)
                 }
