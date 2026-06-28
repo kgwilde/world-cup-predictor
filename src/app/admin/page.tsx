@@ -582,15 +582,15 @@ function TeamPicker({
 }: {
   selected: string[];
   onChange: (teams: string[]) => void;
-  max: number;
+  max?: number;
   teams: Team[];
 }) {
   const selectedSet = new Set(selected);
-  const full = selected.length >= max;
+  const full = max !== undefined && selected.length >= max;
   return (
     <div>
       <p className="text-xs text-wc-bone/40 mb-2 tabular-nums">
-        {selected.length} / {max} selected
+        {max !== undefined ? `${selected.length} / ${max} selected` : `${selected.length} selected`}
         {selected.length > 0 && (
           <button
             onClick={() => onChange([])}
@@ -872,12 +872,13 @@ function SpecialsTab() {
         <SectionHeader title="(8) Group Stage Highest Scorers" />
         <div className="space-y-3 mb-3">
           <div>
-            <p className="text-xs text-wc-bone/50 mb-1.5">Actual highest scoring team</p>
-            <TeamSelect
-              value={outcomes.highestScoringTeam ?? ''}
-              onChange={(name) => setOutcomes((prev) => ({ ...prev, highestScoringTeam: name }))}
+            <p className="text-xs text-wc-bone/50 mb-1.5">
+              Actual highest scoring team(s) — select multiple if tied
+            </p>
+            <TeamPicker
+              selected={outcomes.highestScoringTeams ?? (outcomes.highestScoringTeam ? [outcomes.highestScoringTeam] : [])}
+              onChange={(teams) => setOutcomes((prev) => ({ ...prev, highestScoringTeams: teams, highestScoringTeam: teams[0] ?? undefined }))}
               teams={ALL_TEAMS}
-              placeholder="Select team…"
             />
           </div>
           <div>

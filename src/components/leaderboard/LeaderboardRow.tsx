@@ -89,6 +89,13 @@ function RoundChangeChip({
       </span>
     );
   }
+  if (points < 0) {
+    return (
+      <span className="inline-flex items-center text-[11px] font-bold tabular-nums rounded-md px-1.5 py-0.5 text-red-500 dark:text-red-400 bg-red-500/[0.15]">
+        {points}
+      </span>
+    );
+  }
   return (
     <span className="text-[11px] font-bold tabular-nums rounded-md px-1.5 py-0.5 text-slate-500 dark:text-slate-400 bg-black/[0.06] dark:bg-white/[0.06]">
       +0

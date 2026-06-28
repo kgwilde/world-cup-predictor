@@ -142,6 +142,7 @@ export interface SpecialOutcomes {
   finalists?: string[];
   winner?: string;
   highestScoringTeam?: string;
+  highestScoringTeams?: string[]; // supports ties: multiple teams sharing highest goals
   highestScoringTeamGoals?: number;
   highestScoringTeamGoalsMap?: Record<string, number>; // team name → group-stage goals scored
   bestDefenceTeam?: string;

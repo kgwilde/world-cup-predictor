@@ -115,7 +115,9 @@ function scoreHighestScorers(bonus: BonusPredictions, outcomes: SpecialOutcomes)
     outcomes.highestScoringTeamGoals ??
     0;
   const pts = goals;
-  const bonus10 = outcomes.highestScoringTeam === bonus.highestScoringTeam ? 10 : 0;
+  const winners = outcomes.highestScoringTeams ??
+    (outcomes.highestScoringTeam ? [outcomes.highestScoringTeam] : []);
+  const bonus10 = winners.includes(bonus.highestScoringTeam) ? 10 : 0;
   return pts + bonus10;
 }
 
