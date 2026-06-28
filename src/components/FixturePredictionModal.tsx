@@ -62,14 +62,33 @@ export function FixturePredictionModal({
     [firestoreUsers, deadlinePassed]
   );
 
-  const visiblePredictions = useMemo<Prediction[]>(
-    () =>
-      allPredictions.map((p) => ({
-        ...p,
-        multiChip: allChips.some((c) => c.playerId === p.playerId && c.fixtureId === p.fixtureId),
-      })),
-    [allChips]
-  );
+  const visiblePredictions = useMemo<Prediction[]>(() => {
+    const staticWithChips = allPredictions.map((p) => ({
+      ...p,
+      multiChip: allChips.some((c) => c.playerId === p.playerId && c.fixtureId === p.fixtureId),
+    }));
+
+    const knockoutPreds: Prediction[] = [];
+    for (const user of firestoreUsers) {
+      const kp = user.knockoutPredictions;
+      if (!kp) continue;
+      for (const [fixtureId, { homeGoals, awayGoals }] of Object.entries(kp)) {
+        const f = fixtures.find((fix) => fix.id === fixtureId);
+        if (!f) continue;
+        const hasStarted = new Date(f.kickoff) <= now;
+        if (!hasStarted && user.uid !== viewerId) continue;
+        knockoutPreds.push({
+          playerId: user.uid,
+          fixtureId,
+          homeGoals,
+          awayGoals,
+          multiChip: allChips.some((c) => c.playerId === user.uid && c.fixtureId === fixtureId),
+        });
+      }
+    }
+
+    return [...staticWithChips, ...knockoutPreds];
+  }, [allChips, firestoreUsers, viewerId, now]);
 
   const finalResults = useMemo(
     () => storeResults.filter((r) => r.status !== 'live' && r.status !== 'half_time'),

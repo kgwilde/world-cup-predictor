@@ -1,5 +1,15 @@
 import { ArrowLeft, ArrowRight } from 'lucide-react';
+import type { FixtureStage } from '@/lib/types';
 import type { TimelineStep } from '@/components/hooks/use_standings';
+
+const STAGE_LABELS: Partial<Record<FixtureStage, string>> = {
+  round_of_32: 'Ro32',
+  round_of_16: 'Ro16',
+  quarter_final: 'QF',
+  semi_final: 'SF',
+  third_place: '3rd Place',
+  final: 'Final',
+};
 
 interface Props {
   timeline: TimelineStep[];
@@ -30,11 +40,16 @@ function StatusLine({ currentIndex, currentStep }: { currentIndex: number; curre
     );
   }
 
+  const stageLabel = STAGE_LABELS[currentStep.fixture.stage];
+
   return (
     <div className="text-xs font-body text-wc-black/60 dark:text-wc-white/60 truncate">
       <span className="font-semibold text-wc-black dark:text-wc-white">
         Latest: {currentStep.fixture.homeTeam.name} vs {currentStep.fixture.awayTeam.name}
       </span>
+      {stageLabel && (
+        <span className="ml-1.5 text-wc-blue font-semibold">({stageLabel})</span>
+      )}
     </div>
   );
 }

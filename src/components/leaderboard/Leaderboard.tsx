@@ -70,14 +70,33 @@ export default function Leaderboard() {
     .filter((u) => u.approved === true)
     .filter((u) => !deadlinePassed || !!u.predictionFileUrl)
     .map(userToPlayer);
-  const predictions = useMemo<Prediction[]>(
-    () =>
-      allPredictions.map((p) => ({
-        ...p,
-        multiChip: allChips.some((c) => c.playerId === p.playerId && c.fixtureId === p.fixtureId),
-      })),
-    [allChips]
-  );
+  const predictions = useMemo<Prediction[]>(() => {
+    const staticWithChips = allPredictions.map((p) => ({
+      ...p,
+      multiChip: allChips.some((c) => c.playerId === p.playerId && c.fixtureId === p.fixtureId),
+    }));
+
+    const nowMs = getNow().getTime();
+    const knockoutPreds: Prediction[] = [];
+    for (const user of firestoreUsers) {
+      const kp = user.knockoutPredictions;
+      if (!kp) continue;
+      for (const [fixtureId, { homeGoals, awayGoals }] of Object.entries(kp)) {
+        const f = fixtures.find((fix) => fix.id === fixtureId);
+        if (!f) continue;
+        if (new Date(f.kickoff).getTime() > nowMs && user.uid !== viewerId) continue;
+        knockoutPreds.push({
+          playerId: user.uid,
+          fixtureId,
+          homeGoals,
+          awayGoals,
+          multiChip: allChips.some((c) => c.playerId === user.uid && c.fixtureId === fixtureId),
+        });
+      }
+    }
+
+    return [...staticWithChips, ...knockoutPreds];
+  }, [allChips, firestoreUsers, viewerId]);
 
   const { currentStandings, previousStandings, currentStep } = useStandings(
     players,

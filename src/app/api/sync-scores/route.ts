@@ -116,6 +116,23 @@ const FIXTURE_LOOKUP = new Map([
   ['Panama:Croatia', 'm047'],
   ['Panama:England', 'm067'],
   ['Croatia:Ghana', 'm068'],
+  // Round of 32
+  ['South Africa:Canada', 'm073'],
+  ['Germany:Paraguay', 'm074'],
+  ['Netherlands:Morocco', 'm075'],
+  ['Brazil:Japan', 'm076'],
+  ['France:Sweden', 'm077'],
+  ['Ivory Coast:Norway', 'm078'],
+  ['Mexico:Ecuador', 'm079'],
+  ['England:DR Congo', 'm080'],
+  ['United States:Bosnia & Herzegovina', 'm081'],
+  ['Belgium:Senegal', 'm082'],
+  ['Portugal:Croatia', 'm083'],
+  ['Spain:Austria', 'm084'],
+  ['Switzerland:Algeria', 'm085'],
+  ['Argentina:Cape Verde', 'm086'],
+  ['Colombia:Ghana', 'm087'],
+  ['Australia:Egypt', 'm088'],
 ]);
 
 const API_STATUS_MAP: Record<string, string> = {
