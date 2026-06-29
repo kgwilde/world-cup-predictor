@@ -1,7 +1,7 @@
 'use client';
 
 import { Fragment, useMemo, useState } from 'react';
-import type { Fixture, MatchResult, MultiChip, Player, Prediction } from '@/lib/types';
+import type { Fixture, GoalEvent, MatchResult, MultiChip, Player, Prediction } from '@/lib/types';
 import { getResultType } from '@/lib/predictions';
 import { scoreMatch } from '@/lib/scoring';
 import { FixtureCard, isFixtureLive } from '@/components/FixtureSlider';
@@ -16,15 +16,18 @@ function getRingClass(rank: number | undefined): string {
   return 'ring-2 ring-white/15 ring-offset-2 ring-offset-wc-ink';
 }
 
-function PlaceholderRow({ player }: { player: Player }) {
+function PlaceholderRow({ player, hasStarted }: { player: Player; hasStarted: boolean }) {
   return (
     <div className="flex items-center justify-between gap-3 border-b border-black/10 dark:border-white/10 py-3 last:border-0">
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <Avatar name={player.name} photoUrl={player.photoUrl} size={30} />
         <span className="text-sm font-medium leading-snug text-wc-black/90 dark:text-white/90">{player.name}</span>
       </div>
-      <div className="rounded-lg border border-dashed border-black/20 dark:border-white/20 px-3 py-1 text-sm font-semibold text-wc-black/20 dark:text-white/20 tabular-nums">
-        ? – ?
+      <div className="flex items-center gap-2 shrink-0">
+        <div className="rounded-lg border border-dashed border-black/20 dark:border-white/20 px-3 py-1 text-sm font-semibold text-wc-black/20 dark:text-white/20 tabular-nums">
+          ? – ?
+        </div>
+        {hasStarted && <PointsBadge points={0} />}
       </div>
     </div>
   );
@@ -218,6 +221,50 @@ function GroupedPointsRow({
   );
 }
 
+function GoalTimeline({ goals, fixture }: { goals: GoalEvent[]; fixture: Fixture }) {
+  if (goals.length === 0) return null;
+  return (
+    <div className="border-t border-black/10 dark:border-white/10 px-4 py-2.5 space-y-1.5">
+      {goals.map((goal, i) => {
+        const min = goal.injuryTime ? `${goal.minute}+${goal.injuryTime}'` : `${goal.minute}'`;
+        const label =
+          goal.type === 'OWN' ? `${goal.scorer} (OG)` :
+          goal.type === 'PENALTY' ? `${goal.scorer} (P)` :
+          goal.scorer;
+        const isHome = goal.side === 'home';
+        const teamColor = isHome ? fixture.homeTeam.accentColor : fixture.awayTeam.accentColor;
+        return (
+          <div key={i} className={`flex items-start gap-1.5 ${isHome ? 'justify-start' : 'justify-end'}`}>
+            {isHome ? (
+              <div className="flex items-baseline gap-1.5 max-w-[50%]">
+                <span style={{ color: teamColor }} className="text-[11px] leading-none">⚽</span>
+                <div className="flex flex-col">
+                  <span className="text-[11px] font-semibold text-wc-black dark:text-white leading-tight">{label}</span>
+                  {goal.assist && (
+                    <span className="text-[10px] text-wc-black/45 dark:text-white/45 leading-tight">{goal.assist}</span>
+                  )}
+                </div>
+                <span className="text-[10px] text-wc-black/40 dark:text-white/40 tabular-nums shrink-0">{min}</span>
+              </div>
+            ) : (
+              <div className="flex items-baseline gap-1.5 max-w-[50%]">
+                <span className="text-[10px] text-wc-black/40 dark:text-white/40 tabular-nums shrink-0">{min}</span>
+                <div className="flex flex-col items-end">
+                  <span className="text-[11px] font-semibold text-wc-black dark:text-white leading-tight">{label}</span>
+                  {goal.assist && (
+                    <span className="text-[10px] text-wc-black/45 dark:text-white/45 leading-tight">{goal.assist}</span>
+                  )}
+                </div>
+                <span style={{ color: teamColor }} className="text-[11px] leading-none">⚽</span>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 const SKELETON_NAME_WIDTHS = ['w-24', 'w-32', 'w-20', 'w-28', 'w-16'];
 
 function SkeletonPredictionRow({ index }: { index: number }) {
@@ -374,12 +421,15 @@ export function MatchPredictionCard({
     );
   }
 
+  const goals = result?.goals ?? [];
+
   return (
     <div className={`overflow-hidden rounded-2xl bg-white dark:bg-wc-ink ${isLatest ? 'ring-1 ring-wc-gold/70 dark:ring-wc-gold/50' : ''}`}>
       {latestBanner}
       <div className="p-3">
         <FixtureCard fixture={fixture} now={now} isFullWidth result={result} />
       </div>
+      {goals.length > 0 && <GoalTimeline goals={goals} fixture={fixture} />}
       <div className="border-t border-black/10 dark:border-white/10">
         {pointGroups ? (
           <div className="px-4">
@@ -417,11 +467,9 @@ export function MatchPredictionCard({
               )
             )}
             {unpredictedPlayers.length > 0 && (
-              <div
-                className={sortedPredictions.length > 0 ? 'border-t border-black/20 dark:border-white/20 mt-1 pt-1' : ''}
-              >
+              <div className={sortedPredictions.length > 0 ? 'mt-1 pt-1' : ''}>
                 {unpredictedPlayers.map((player) => (
-                  <PlaceholderRow key={player.id} player={player} />
+                  <PlaceholderRow key={player.id} player={player} hasStarted={hasStarted} />
                 ))}
               </div>
             )}
@@ -472,7 +520,7 @@ export function MatchPredictionCard({
             {unpredictedPlayers.length > 0 && (
               <div className="bg-black/[0.03] dark:bg-white/[0.03] rounded-xl px-4">
                 {unpredictedPlayers.map((player) => (
-                  <PlaceholderRow key={player.id} player={player} />
+                  <PlaceholderRow key={player.id} player={player} hasStarted={hasStarted} />
                 ))}
               </div>
             )}
@@ -498,11 +546,9 @@ export function MatchPredictionCard({
               );
             })}
             {unpredictedPlayers.length > 0 && (
-              <div
-                className={sortedPredictions.length > 0 ? 'border-t border-black/20 dark:border-white/20 mt-1 pt-1' : ''}
-              >
+              <div className={sortedPredictions.length > 0 ? 'mt-1 pt-1' : ''}>
                 {unpredictedPlayers.map((player) => (
-                  <PlaceholderRow key={player.id} player={player} />
+                  <PlaceholderRow key={player.id} player={player} hasStarted={hasStarted} />
                 ))}
               </div>
             )}

@@ -3,7 +3,7 @@ import { getAuth } from 'firebase-admin/auth';
 
 import { fixtures } from '@/data/fixtures';
 import { getAdminDb } from '@/lib/firebase-admin';
-import { Fixture } from '@/lib/types';
+import { Fixture, GoalEvent } from '@/lib/types';
 
 const MATCH_DURATION_MS = 150 * 60 * 1000;
 
@@ -177,7 +177,7 @@ export async function GET(request: Request) {
   const summarySnap = await summaryRef.get();
   const existing = (summarySnap.exists ? (summarySnap.data() ?? {}) : {}) as Record<
     string,
-    { status?: string }
+    { status?: string; goals?: unknown[] }
   > & { lastSyncedAt?: FirebaseFirestore.Timestamp };
 
   const hasStuckLiveMatch = Object.values(existing).some(
@@ -188,7 +188,16 @@ export async function GET(request: Request) {
       (r.status === 'live' || r.status === 'half_time'),
   );
 
-  if (getLiveMatches().length === 0 && !hasStuckLiveMatch) {
+  const hasFinalMatchWithoutGoals = Object.values(existing).some(
+    (r): r is { status?: string; goals?: unknown[] } =>
+      typeof r === 'object' &&
+      r !== null &&
+      'status' in r &&
+      r.status === 'final' &&
+      !Array.isArray(r.goals),
+  );
+
+  if (getLiveMatches().length === 0 && !hasStuckLiveMatch && !hasFinalMatchWithoutGoals) {
     return NextResponse.json({ written: 0, skipped: 0, warnings: [], noLiveMatches: true });
   }
 
@@ -224,7 +233,7 @@ export async function GET(request: Request) {
   const updates: Record<string, object> = {};
 
   for (const match of matches) {
-    const { status, homeTeam, awayTeam, score, minute, injuryTime } = match;
+    const { status, homeTeam, awayTeam, score, minute, injuryTime, goals: apiGoals } = match;
 
     if (!['FINISHED', 'IN_PLAY', 'PAUSED'].includes(status)) {
       skipped++;
@@ -255,8 +264,8 @@ export async function GET(request: Request) {
 
     const matchStatus = API_STATUS_MAP[status];
 
-    // Skip if already recorded as final — the score won't change.
-    if (matchStatus === 'final' && existing[fixtureId]?.status === 'final') {
+    // Skip if already recorded as final with goals — score and goals won't change.
+    if (matchStatus === 'final' && existing[fixtureId]?.status === 'final' && Array.isArray(existing[fixtureId]?.goals)) {
       skipped++;
       continue;
     }
@@ -268,6 +277,44 @@ export async function GET(request: Request) {
     const aetAwayGoals = duration === 'EXTRA_TIME' ? score.fullTime?.away : undefined;
     const penHomeGoals = duration === 'PENALTY_SHOOTOUT' ? score.penalties?.home : undefined;
     const penAwayGoals = duration === 'PENALTY_SHOOTOUT' ? score.penalties?.away : undefined;
+
+    if (apiGoals !== undefined) {
+      console.log(`sync-scores goals [${fixtureId}]:`, JSON.stringify(apiGoals));
+    }
+
+    const goals: GoalEvent[] = Array.isArray(apiGoals)
+      ? apiGoals
+          .filter((g: { minute?: number; scorer?: { shortName?: string } }) => g.minute != null && g.scorer != null)
+          .map((g: {
+            minute: number;
+            injuryTime?: number;
+            type: string;
+            team: { name: string };
+            scorer: { shortName?: string; name: string };
+            assist?: { shortName?: string; name: string } | null;
+          }) => {
+            const normGoalTeam = normalizeTeamName(g.team.name);
+            // For OWN goals, the API reports the team that scored into their own net —
+            // so the goal benefits the OTHER side.
+            let side: 'home' | 'away';
+            if (g.type === 'OWN') {
+              side = normGoalTeam === normHome ? 'away' : 'home';
+            } else {
+              side = normGoalTeam === normHome ? 'home' : 'away';
+            }
+            const event: GoalEvent = {
+              minute: g.minute,
+              type: (g.type === 'OWN' || g.type === 'PENALTY') ? g.type : 'NORMAL',
+              scorer: g.scorer.shortName ?? g.scorer.name,
+              side,
+            };
+            if (g.injuryTime != null) event.injuryTime = g.injuryTime;
+            if (g.assist?.shortName || g.assist?.name) {
+              event.assist = g.assist.shortName ?? g.assist.name;
+            }
+            return event;
+          })
+      : [];
 
     updates[fixtureId] = {
       fixtureId,
@@ -281,6 +328,7 @@ export async function GET(request: Request) {
       ...(aetAwayGoals != null ? { aetAwayGoals } : {}),
       ...(penHomeGoals != null ? { penHomeGoals } : {}),
       ...(penAwayGoals != null ? { penAwayGoals } : {}),
+      goals,
     };
     written++;
   }

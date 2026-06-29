@@ -34,6 +34,15 @@ export interface Fixture {
 
 // ─── Match Result ────────────────────────────────────────────────────────────
 
+export interface GoalEvent {
+  minute: number;
+  injuryTime?: number;
+  type: 'NORMAL' | 'OWN' | 'PENALTY';
+  scorer: string;
+  assist?: string;
+  side: 'home' | 'away';
+}
+
 export interface MatchResult {
   fixtureId: string;
   homeGoals: number;    // 90-min score — what predictions are scored against
@@ -46,6 +55,7 @@ export interface MatchResult {
   aetAwayGoals?: number;
   penHomeGoals?: number; // penalty kicks only (only when duration is PENALTY_SHOOTOUT)
   penAwayGoals?: number;
+  goals?: GoalEvent[];
 }
 
 export interface Player {
