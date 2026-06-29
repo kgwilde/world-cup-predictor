@@ -108,7 +108,7 @@ function formatCountdown(kickoff: Date, now: Date): string | null {
 
 export function isFixtureLive(kickoff: Date, now: Date, result?: MatchResult) {
   // If the API has told us the status, trust it — matches can run beyond 90 minutes.
-  if (result?.status === 'live' || result?.status === 'half_time' || result?.status === 'extra_time') return true;
+  if (result?.status === 'live' || result?.status === 'half_time' || result?.status === 'extra_time' || result?.status === 'penalties') return true;
   if (result?.status === 'final') return false;
   // No result yet: use the kickoff window as a best-guess until the first sync.
   const kickoffTime = kickoff.getTime();
@@ -259,6 +259,10 @@ export function FixtureCard({ fixture, now, isFullWidth, result, onClick }: Fixt
                   <span className="text-[9px] font-semibold uppercase tracking-widest text-wc-black/40 dark:text-wc-white/40">
                     HT
                   </span>
+                ) : result?.status === 'penalties' ? (
+                  <span className="text-[9px] font-semibold uppercase tracking-widest text-red-400/80">
+                    Pens
+                  </span>
                 ) : isLive && result.minute != null ? (
                   <span className="text-[9px] font-semibold tabular-nums text-red-400/80">
                     {result.minute > 90 ? `ET ${result.minute}` : result.minute}'
@@ -281,9 +285,14 @@ export function FixtureCard({ fixture, now, isFullWidth, result, onClick }: Fixt
                     {result.aetHomeGoals}–{result.aetAwayGoals}
                   </span>
                 )}
-                {!isLive && result.duration === 'PENALTY_SHOOTOUT' && result.penHomeGoals != null && (
+                {(result?.status === 'penalties' || (!isLive && result.duration === 'PENALTY_SHOOTOUT')) && result.penHomeGoals != null && (
                   <span className="text-[9px] tabular-nums text-wc-black/35 dark:text-wc-white/35">
                     {result.penHomeGoals}–{result.penAwayGoals} pens
+                  </span>
+                )}
+                {!isLive && (result.duration === 'EXTRA_TIME' || result.duration === 'PENALTY_SHOOTOUT') && (
+                  <span className="text-[9px] font-semibold uppercase tracking-widest text-wc-black/40 dark:text-wc-white/40">
+                    FT
                   </span>
                 )}
               </div>
@@ -389,7 +398,7 @@ export function FixtureSlider({ initialResults }: { initialResults?: MatchResult
     } else {
       targetIndex = allFixtures.findIndex((f) => {
         const result = resultsMap.get(f.id);
-        return !result || result.status === 'live' || result.status === 'half_time' || result.status === 'extra_time';
+        return !result || result.status === 'live' || result.status === 'half_time' || result.status === 'extra_time' || result.status === 'penalties';
       });
       scrollDone.current = true;
     }

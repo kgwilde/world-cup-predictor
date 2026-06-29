@@ -308,8 +308,8 @@ export function MatchPredictionCard({
   onPlayerClick: (playerId: string) => void;
 }) {
   const hasStarted = new Date(fixture.kickoff) <= now;
-  const isFinal = result?.status === 'final' || result?.status === 'extra_time';
-  const isLive = result?.status === 'live' || result?.status === 'half_time' || result?.status === 'extra_time';
+  const isFinal = result?.status === 'final' || result?.status === 'extra_time' || result?.status === 'penalties';
+  const isLive = result?.status === 'live' || result?.status === 'half_time' || result?.status === 'extra_time' || result?.status === 'penalties';
 
   const fixturePredictions = useMemo(
     () => allPredictions.filter((p) => p.fixtureId === fixture.id),

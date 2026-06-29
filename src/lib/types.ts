@@ -9,10 +9,10 @@ export type FixtureStage =
   | 'third_place'
   | 'final';
 
-export type MatchStatus = 'upcoming' | 'live' | 'half_time' | 'extra_time' | 'final';
+export type MatchStatus = 'upcoming' | 'live' | 'half_time' | 'extra_time' | 'penalties' | 'final';
 
 export function isInProgress(status?: MatchStatus): boolean {
-  return status === 'live' || status === 'half_time' || status === 'extra_time';
+  return status === 'live' || status === 'half_time' || status === 'extra_time' || status === 'penalties';
 }
 
 export interface Team {

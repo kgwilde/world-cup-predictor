@@ -185,7 +185,7 @@ export async function GET(request: Request) {
       typeof r === 'object' &&
       r !== null &&
       'status' in r &&
-      (r.status === 'live' || r.status === 'half_time' || r.status === 'extra_time'),
+      (r.status === 'live' || r.status === 'half_time' || r.status === 'extra_time' || r.status === 'penalties'),
   );
 
   const hasFinalMatchWithoutGoals = Object.values(existing).some(
@@ -235,12 +235,12 @@ export async function GET(request: Request) {
   for (const match of matches) {
     const { status, homeTeam, awayTeam, score, minute, injuryTime, goals: apiGoals } = match;
 
-    if (!['FINISHED', 'IN_PLAY', 'PAUSED'].includes(status)) {
+    if (!['FINISHED', 'IN_PLAY', 'PAUSED', 'PENALTY_SHOOTOUT'].includes(status)) {
       skipped++;
       continue;
     }
 
-    const isLive = status === 'IN_PLAY' || status === 'PAUSED';
+    const isLive = status === 'IN_PLAY' || status === 'PAUSED' || status === 'PENALTY_SHOOTOUT';
     // score.fullTime is cumulative (regular + ET + pens). Use score.regularTime for the
     // 90-min result, which is what predictions are scored against. regularTime is only
     // populated by the API for matches that went beyond 90 minutes.
@@ -262,9 +262,10 @@ export async function GET(request: Request) {
       continue;
     }
 
+    const isPenalties = status === 'PENALTY_SHOOTOUT';
     // Matches in extra time (minute > 90 while still IN_PLAY or PAUSED for ET half-time).
-    const isExtraTime = (status === 'IN_PLAY' || status === 'PAUSED') && minute != null && minute > 90;
-    const matchStatus = isExtraTime ? 'extra_time' : API_STATUS_MAP[status];
+    const isExtraTime = !isPenalties && (status === 'IN_PLAY' || status === 'PAUSED') && minute != null && minute > 90;
+    const matchStatus = isPenalties ? 'penalties' : isExtraTime ? 'extra_time' : API_STATUS_MAP[status];
 
     // Skip if already recorded as final with goals — score and goals won't change.
     if (matchStatus === 'final' && existing[fixtureId]?.status === 'final' && Array.isArray(existing[fixtureId]?.goals)) {
@@ -272,13 +273,13 @@ export async function GET(request: Request) {
       continue;
     }
 
-    // Only derive duration/ET/pen data for finished matches — these fields are
-    // not meaningful during live play and score.duration may not be set yet.
+    // Only derive duration/AET data for finished matches — score.duration may not be set during live play.
     const duration = status === 'FINISHED' ? (score.duration as 'REGULAR' | 'EXTRA_TIME' | 'PENALTY_SHOOTOUT' | undefined) : undefined;
     const aetHomeGoals = duration === 'EXTRA_TIME' ? score.fullTime?.home : undefined;
     const aetAwayGoals = duration === 'EXTRA_TIME' ? score.fullTime?.away : undefined;
-    const penHomeGoals = duration === 'PENALTY_SHOOTOUT' ? score.penalties?.home : undefined;
-    const penAwayGoals = duration === 'PENALTY_SHOOTOUT' ? score.penalties?.away : undefined;
+    // Pen score: populated for finished PEN matches; the API may also return a partial tally during live PENALTY_SHOOTOUT.
+    const penHomeGoals = (duration === 'PENALTY_SHOOTOUT' || isPenalties) ? (score.penalties?.home ?? undefined) : undefined;
+    const penAwayGoals = (duration === 'PENALTY_SHOOTOUT' || isPenalties) ? (score.penalties?.away ?? undefined) : undefined;
 
     if (apiGoals !== undefined) {
       console.log(`sync-scores goals [${fixtureId}]:`, JSON.stringify(apiGoals));
@@ -318,10 +319,13 @@ export async function GET(request: Request) {
           })
       : [];
 
-    const alreadyInET = existing[fixtureId]?.status === 'extra_time';
+    // Once a match enters ET or penalties the 90-min score is settled — lock it on first detection
+    // and only update the minute/pen tally on subsequent syncs.
+    const scoreIsLocked =
+      existing[fixtureId]?.status === 'extra_time' || existing[fixtureId]?.status === 'penalties';
+    const needsScoreLock = matchStatus === 'extra_time' || matchStatus === 'penalties';
 
-    if (matchStatus === 'extra_time' && alreadyInET) {
-      // Keep the 90-min score that was locked when ET was first detected — only update the minute.
+    if (needsScoreLock && scoreIsLocked) {
       updates[fixtureId] = {
         fixtureId,
         homeGoals: existing[fixtureId]!.homeGoals ?? homeGoals,
@@ -329,6 +333,8 @@ export async function GET(request: Request) {
         status: matchStatus,
         ...(minute != null ? { minute } : {}),
         ...(injuryTime != null ? { injuryTime } : {}),
+        ...(penHomeGoals != null ? { penHomeGoals } : {}),
+        ...(penAwayGoals != null ? { penAwayGoals } : {}),
         goals,
       };
     } else {
