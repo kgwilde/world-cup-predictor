@@ -262,7 +262,7 @@ export async function GET(request: Request) {
       continue;
     }
 
-    const isPenalties = status === 'PENALTY_SHOOTOUT';
+    const isPenalties = status === 'PENALTY_SHOOTOUT' || (isLive && score.duration === 'PENALTY_SHOOTOUT');
     // Matches in extra time (minute > 90 while still IN_PLAY or PAUSED for ET half-time).
     const isExtraTime = !isPenalties && (status === 'IN_PLAY' || status === 'PAUSED') && minute != null && minute > 90;
     const matchStatus = isPenalties ? 'penalties' : isExtraTime ? 'extra_time' : API_STATUS_MAP[status];
