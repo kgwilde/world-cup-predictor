@@ -177,7 +177,7 @@ export async function GET(request: Request) {
   const summarySnap = await summaryRef.get();
   const existing = (summarySnap.exists ? (summarySnap.data() ?? {}) : {}) as Record<
     string,
-    { status?: string; goals?: unknown[] }
+    { status?: string; goals?: unknown[]; homeGoals?: number; awayGoals?: number }
   > & { lastSyncedAt?: FirebaseFirestore.Timestamp };
 
   const hasStuckLiveMatch = Object.values(existing).some(
@@ -185,7 +185,7 @@ export async function GET(request: Request) {
       typeof r === 'object' &&
       r !== null &&
       'status' in r &&
-      (r.status === 'live' || r.status === 'half_time'),
+      (r.status === 'live' || r.status === 'half_time' || r.status === 'extra_time'),
   );
 
   const hasFinalMatchWithoutGoals = Object.values(existing).some(
@@ -262,7 +262,9 @@ export async function GET(request: Request) {
       continue;
     }
 
-    const matchStatus = API_STATUS_MAP[status];
+    // Matches in extra time (minute > 90 while still IN_PLAY or PAUSED for ET half-time).
+    const isExtraTime = (status === 'IN_PLAY' || status === 'PAUSED') && minute != null && minute > 90;
+    const matchStatus = isExtraTime ? 'extra_time' : API_STATUS_MAP[status];
 
     // Skip if already recorded as final with goals — score and goals won't change.
     if (matchStatus === 'final' && existing[fixtureId]?.status === 'final' && Array.isArray(existing[fixtureId]?.goals)) {
@@ -316,20 +318,35 @@ export async function GET(request: Request) {
           })
       : [];
 
-    updates[fixtureId] = {
-      fixtureId,
-      homeGoals,
-      awayGoals,
-      status: matchStatus,
-      ...(minute != null ? { minute } : {}),
-      ...(injuryTime != null ? { injuryTime } : {}),
-      ...(duration ? { duration } : {}),
-      ...(aetHomeGoals != null ? { aetHomeGoals } : {}),
-      ...(aetAwayGoals != null ? { aetAwayGoals } : {}),
-      ...(penHomeGoals != null ? { penHomeGoals } : {}),
-      ...(penAwayGoals != null ? { penAwayGoals } : {}),
-      goals,
-    };
+    const alreadyInET = existing[fixtureId]?.status === 'extra_time';
+
+    if (matchStatus === 'extra_time' && alreadyInET) {
+      // Keep the 90-min score that was locked when ET was first detected — only update the minute.
+      updates[fixtureId] = {
+        fixtureId,
+        homeGoals: existing[fixtureId]!.homeGoals ?? homeGoals,
+        awayGoals: existing[fixtureId]!.awayGoals ?? awayGoals,
+        status: matchStatus,
+        ...(minute != null ? { minute } : {}),
+        ...(injuryTime != null ? { injuryTime } : {}),
+        goals,
+      };
+    } else {
+      updates[fixtureId] = {
+        fixtureId,
+        homeGoals,
+        awayGoals,
+        status: matchStatus,
+        ...(minute != null ? { minute } : {}),
+        ...(injuryTime != null ? { injuryTime } : {}),
+        ...(duration ? { duration } : {}),
+        ...(aetHomeGoals != null ? { aetHomeGoals } : {}),
+        ...(aetAwayGoals != null ? { aetAwayGoals } : {}),
+        ...(penHomeGoals != null ? { penHomeGoals } : {}),
+        ...(penAwayGoals != null ? { penAwayGoals } : {}),
+        goals,
+      };
+    }
     written++;
   }
 

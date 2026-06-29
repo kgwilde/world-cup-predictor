@@ -108,7 +108,7 @@ function formatCountdown(kickoff: Date, now: Date): string | null {
 
 export function isFixtureLive(kickoff: Date, now: Date, result?: MatchResult) {
   // If the API has told us the status, trust it — matches can run beyond 90 minutes.
-  if (result?.status === 'live' || result?.status === 'half_time') return true;
+  if (result?.status === 'live' || result?.status === 'half_time' || result?.status === 'extra_time') return true;
   if (result?.status === 'final') return false;
   // No result yet: use the kickoff window as a best-guess until the first sync.
   const kickoffTime = kickoff.getTime();
@@ -389,7 +389,7 @@ export function FixtureSlider({ initialResults }: { initialResults?: MatchResult
     } else {
       targetIndex = allFixtures.findIndex((f) => {
         const result = resultsMap.get(f.id);
-        return !result || result.status === 'live' || result.status === 'half_time';
+        return !result || result.status === 'live' || result.status === 'half_time' || result.status === 'extra_time';
       });
       scrollDone.current = true;
     }
