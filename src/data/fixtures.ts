@@ -1003,7 +1003,7 @@ export const fixtures: Fixture[] = [
     stage: 'round_of_16',
     homeTeam: BRAZIL,
     awayTeam: NORWAY,
-    kickoff: '2026-07-06T20:00:00Z',
+    kickoff: '2026-07-05T20:00:00Z',
     venue: 'MetLife Stadium, New York/New Jersey',
   },
   {
