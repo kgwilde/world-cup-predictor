@@ -148,8 +148,8 @@ export const tournamentPicks: TournamentPicks = {
     'Netherlands',
     'Croatia',
     'Mexico',
-    'Columbia',
-    'USA',
+    'Colombia',
+    'United States',
     'Canada',
     'Morocco',
   ], // 16 team codes
