@@ -39,7 +39,7 @@ const STAGE_LABELS: Record<FixtureStage, string> = {
   final: 'Final',
 };
 
-const MATCH_DURATION_MINUTES = 90;
+const MATCH_DURATION_MINUTES = 150;
 const MILLISECONDS_PER_DAY = 1000 * 60 * 60 * 24;
 const MILLISECONDS_PER_MINUTE = 1000 * 60;
 const COUNTDOWN_TICK_INTERVAL_MS = 30 * 1000;

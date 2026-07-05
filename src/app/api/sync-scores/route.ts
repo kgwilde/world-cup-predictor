@@ -133,6 +133,15 @@ const FIXTURE_LOOKUP = new Map([
   ['Argentina:Cape Verde', 'm086'],
   ['Colombia:Ghana', 'm087'],
   ['Australia:Egypt', 'm088'],
+  // Round of 16
+  ['Paraguay:France', 'm089'],
+  ['Canada:Morocco', 'm090'],
+  ['Brazil:Norway', 'm091'],
+  ['Mexico:England', 'm092'],
+  ['Portugal:Spain', 'm093'],
+  ['United States:Belgium', 'm094'],
+  ['Argentina:Egypt', 'm095'],
+  ['Switzerland:Colombia', 'm096'],
 ]);
 
 const API_STATUS_MAP: Record<string, string> = {
@@ -146,12 +155,20 @@ function normalizeTeamName(name: string): string {
 }
 
 export async function GET(request: Request) {
+  const url = new URL(request.url);
+  const forceSync = url.searchParams.get('force') === 'true';
+
   const syncSecret = request.headers.get('x-sync-secret');
   const authHeader = request.headers.get('authorization');
   const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
 
   const isLegacyCron = syncSecret === process.env.SYNC_SECRET;
   const isVercelCron = bearerToken !== null && bearerToken === process.env.CRON_SECRET;
+
+  // force=true is only permitted for server-side callers (sync secret / cron), not Firebase tokens
+  if (forceSync && !isLegacyCron && !isVercelCron) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
   if (!isLegacyCron && !isVercelCron) {
     // Fall back to Firebase ID token for client-side calls
@@ -197,14 +214,14 @@ export async function GET(request: Request) {
       !Array.isArray(r.goals),
   );
 
-  if (getLiveMatches().length === 0 && !hasStuckLiveMatch && !hasFinalMatchWithoutGoals) {
+  if (!forceSync && getLiveMatches().length === 0 && !hasStuckLiveMatch && !hasFinalMatchWithoutGoals) {
     return NextResponse.json({ written: 0, skipped: 0, warnings: [], noLiveMatches: true });
   }
 
   // Server-side cooldown guard — prevents multiple clients racing to call the
   // external API in the same 15s window.
   const lastSyncedAt = existing.lastSyncedAt?.toDate();
-  if (lastSyncedAt && Date.now() - lastSyncedAt.getTime() < 15_000) {
+  if (!forceSync && lastSyncedAt && Date.now() - lastSyncedAt.getTime() < 15_000) {
     return NextResponse.json({ written: 0, skipped: 0, warnings: [], recentlySynced: true });
   }
 
