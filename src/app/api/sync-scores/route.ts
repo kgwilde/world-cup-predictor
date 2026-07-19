@@ -150,6 +150,9 @@ const FIXTURE_LOOKUP = new Map([
   // Semi-finals
   ['France:Spain', 'm101'],
   ['England:Argentina', 'm102'],
+  // Third-place & Final
+  ['France:England', 'm103'],
+  ['Spain:Argentina', 'm104'],
 ]);
 
 const API_STATUS_MAP: Record<string, string> = {
