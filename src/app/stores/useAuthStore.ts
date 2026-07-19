@@ -4,9 +4,9 @@ import { onAuthStateChanged, signOut as firebaseSignOut, type User } from 'fireb
 import { create } from 'zustand';
 
 import { auth } from '@/lib/firebase';
-import { applyMultiChip, createUserProfile, getAllUsers, getUserProfile, removeMultiChip, saveKnockoutPrediction as saveKnockoutPredictionToFirestore, subscribeToResults, subscribeToSpecialEvents, subscribeToSpecialOutcomes } from '@/lib/firestore';
+import { applyMultiChip, createUserProfile, getAllUsers, getUserProfile, removeMultiChip, saveKnockoutPrediction as saveKnockoutPredictionToFirestore, subscribeToResults, subscribeToSpecialEvents, subscribeToSpecialOutcomes, subscribeToTournamentStatus } from '@/lib/firestore';
 import { preloadedAvatarUrls, resolveAvatarSrc } from '@/lib/avatar';
-import type { MatchResult, PublicProfile, SpecialEvent, SpecialOutcomes, UserProfile } from '@/lib/types';
+import type { MatchResult, PublicProfile, SpecialEvent, SpecialOutcomes, TournamentStatus, UserProfile } from '@/lib/types';
 
 function preloadAvatars(users: PublicProfile[]): Promise<void> {
   const urls = users
@@ -41,6 +41,8 @@ interface AuthState {
   specialEvents: SpecialEvent[];
   specialEventsLoading: boolean;
   specialOutcomes: SpecialOutcomes | null;
+  tournamentFinalized: boolean;
+  tournamentFinalizedAt: string | null;
   init: () => () => void;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -54,6 +56,7 @@ let allUsersFetchPromise: Promise<void> | null = null;
 let resultsUnsubscribe: (() => void) | null = null;
 let specialEventsUnsubscribe: (() => void) | null = null;
 let specialOutcomesUnsubscribe: (() => void) | null = null;
+let tournamentStatusUnsubscribe: (() => void) | null = null;
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
@@ -68,6 +71,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   specialEvents: [],
   specialEventsLoading: true,
   specialOutcomes: null,
+  tournamentFinalized: false,
+  tournamentFinalizedAt: null,
 
   init: () => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -132,6 +137,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (!specialOutcomesUnsubscribe) {
         specialOutcomesUnsubscribe = subscribeToSpecialOutcomes(
           (specialOutcomes) => set({ specialOutcomes }),
+        );
+      }
+
+      if (!tournamentStatusUnsubscribe) {
+        tournamentStatusUnsubscribe = subscribeToTournamentStatus(
+          (status: TournamentStatus) =>
+            set({ tournamentFinalized: status.finalized, tournamentFinalizedAt: status.finalizedAt }),
         );
       }
     });

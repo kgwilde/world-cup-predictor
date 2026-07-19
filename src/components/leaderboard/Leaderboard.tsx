@@ -38,6 +38,7 @@ export default function Leaderboard() {
   const resultsLoading = useAuthStore((s) => s.resultsLoading);
   const specialEvents = useAuthStore((s) => s.specialEvents);
   const specialEventsLoading = useAuthStore((s) => s.specialEventsLoading);
+  const tournamentFinalized = useAuthStore((s) => s.tournamentFinalized);
 
   const activeResults: MatchResult[] = storeResults.filter((r) => r.status !== 'live' && r.status !== 'half_time');
 
@@ -133,6 +134,8 @@ export default function Leaderboard() {
 
   const now = useMemo(() => new Date(), []);
   const isLoading = usersLoading || resultsLoading || specialEventsLoading;
+  const atLatestStep = replayIndex === timeline.length - 1;
+  const showFinalized = tournamentFinalized && atLatestStep && !isLoading;
 
   return (
     <>
@@ -143,7 +146,10 @@ export default function Leaderboard() {
             currentIndex={replayIndex}
             onPrev={() => setReplayIndex((i) => Math.max(-1, i - 1))}
             onNext={() => setReplayIndex((i) => Math.min(timeline.length - 1, i + 1))}
+            isFinalized={tournamentFinalized}
           />
+
+          {showFinalized && <FinalizedBanner />}
 
           {!isLoading && currentStandings.length === 0 && <EmptyState />}
 
@@ -160,6 +166,7 @@ export default function Leaderboard() {
                     }
                     onClick={() => setSelectedPlayerId(standing.player.id)}
                     matchDelta={buildDelta(currentStandings, previousStandings, currentStep, standing.player.id)}
+                    isFinalized={showFinalized}
                   />
                 ))}
           </div>
@@ -235,6 +242,16 @@ function buildDelta(
     rankChange,
     multiChipApplied: false,
   };
+}
+
+function FinalizedBanner() {
+  return (
+    <div className="relative overflow-hidden rounded-2xl border border-wc-gold/50 bg-gradient-to-r from-wc-gold/25 via-wc-gold/10 to-wc-gold/25 px-4 py-3 text-center">
+      <p className="font-display text-sm font-bold tracking-wide text-wc-gold uppercase">
+        🏆 Final Standings
+      </p>
+    </div>
+  );
 }
 
 function EmptyState() {

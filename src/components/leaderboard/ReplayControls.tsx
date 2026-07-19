@@ -16,6 +16,7 @@ interface Props {
   currentIndex: number;
   onPrev: () => void;
   onNext: () => void;
+  isFinalized?: boolean;
 }
 
 function StatusLine({ currentIndex, currentStep }: { currentIndex: number; currentStep: TimelineStep | undefined }) {
@@ -54,7 +55,7 @@ function StatusLine({ currentIndex, currentStep }: { currentIndex: number; curre
   );
 }
 
-export default function ReplayControls({ timeline, currentIndex, onPrev, onNext }: Props) {
+export default function ReplayControls({ timeline, currentIndex, onPrev, onNext, isFinalized }: Props) {
   const currentStep = timeline[currentIndex];
   const isAtStart = currentIndex === -1;
   const isAtEnd = currentIndex === timeline.length - 1;
@@ -77,6 +78,11 @@ export default function ReplayControls({ timeline, currentIndex, onPrev, onNext 
           <StatusLine currentIndex={currentIndex} currentStep={currentStep} />
           <div className="text-[10px] text-wc-black/30 dark:text-wc-white/30 uppercase tracking-wider">
             {currentUpdateNumber} / {totalUpdates} updates
+            {isFinalized && (
+              <span className="ml-1.5 text-wc-black bg-wc-gold rounded px-1 py-0.5 font-bold tracking-wide">
+                FINAL
+              </span>
+            )}
           </div>
         </div>
 

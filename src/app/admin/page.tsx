@@ -1077,6 +1077,88 @@ function SpecialsTab() {
   );
 }
 
+// ─── Finalize Section ──────────────────────────────────────────────────────────
+
+function FinalizeSection() {
+  const { user } = useAuthStore();
+  const tournamentFinalized = useAuthStore((s) => s.tournamentFinalized);
+  const tournamentFinalizedAt = useAuthStore((s) => s.tournamentFinalizedAt);
+  const [confirming, setConfirming] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function setFinalized(finalized: boolean) {
+    if (!user) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const idToken = await getIdToken(user);
+      const res = await fetch('/api/admin/finalize-tournament', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken, finalized }),
+      });
+      if (!res.ok) throw new Error('Failed to update');
+      setConfirming(false);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (tournamentFinalized) {
+    return (
+      <div className="rounded-xl border border-wc-gold/40 bg-wc-gold/10 px-4 py-3 flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-wc-gold text-sm font-semibold">🏆 Tournament finalized</p>
+          {tournamentFinalizedAt && (
+            <p className="text-wc-bone/50 text-xs">
+              Locked{' '}
+              {new Date(tournamentFinalizedAt).toLocaleString('en-GB', {
+                day: '2-digit',
+                month: 'short',
+                hour: '2-digit',
+                minute: '2-digit',
+              })}
+            </p>
+          )}
+        </div>
+        {error && <span className="text-xs text-red-400 shrink-0">{error}</span>}
+        <button
+          onClick={() => setFinalized(false)}
+          disabled={loading}
+          className="text-xs font-semibold rounded-lg px-3 py-1.5 bg-white/10 text-wc-white hover:bg-white/15 transition-colors disabled:opacity-60 shrink-0"
+        >
+          {loading ? 'Reopening…' : 'Un-finalize'}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-xl border border-red-500/30 bg-red-500/5 px-4 py-3 flex items-center justify-between gap-3">
+      <div className="min-w-0">
+        <p className="text-wc-white text-sm font-semibold">Finalize tournament</p>
+        <p className="text-wc-bone/50 text-xs">Locks in final standings on the leaderboard.</p>
+      </div>
+      {error && <span className="text-xs text-red-400 shrink-0">{error}</span>}
+      <button
+        onClick={() => (confirming ? setFinalized(true) : setConfirming(true))}
+        onBlur={() => setConfirming(false)}
+        disabled={loading}
+        className={`text-xs font-semibold rounded-lg px-3 py-1.5 transition-colors disabled:opacity-60 shrink-0 ${
+          confirming
+            ? 'bg-red-500 text-white'
+            : 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
+        }`}
+      >
+        {loading ? 'Finalizing…' : confirming ? 'Click again to confirm' : 'Finalize Tournament'}
+      </button>
+    </div>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 type Tab = 'users' | 'results' | 'analytics' | 'specials';
@@ -1130,6 +1212,8 @@ export default function AdminPage() {
           </p>
           <h1 className="font-display font-bold text-3xl text-wc-white">Admin Dashboard</h1>
         </header>
+
+        <FinalizeSection />
 
         <div className="flex border-b border-white/10 overflow-x-auto">
           {(['users', 'results', 'specials', 'analytics'] as Tab[]).map((t) => (

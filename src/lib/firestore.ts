@@ -1,7 +1,7 @@
 import { arrayRemove, arrayUnion, collection, doc, getDoc, getDocsFromServer, onSnapshot, query, setDoc, updateDoc, where } from 'firebase/firestore';
 
 import { db } from './firebase';
-import type { MatchResult, PublicProfile, SpecialEvent, SpecialEventType, SpecialOutcomes, UserProfile } from './types';
+import type { MatchResult, PublicProfile, SpecialEvent, SpecialEventType, SpecialOutcomes, TournamentStatus, UserProfile } from './types';
 
 export async function getUserProfile(uid: string): Promise<UserProfile | null> {
   const snap = await getDoc(doc(db, 'users', uid));
@@ -105,6 +105,24 @@ export function subscribeToSpecialEvents(
         onUpdate([]);
       }
     },
+    () => onError?.(),
+  );
+}
+
+const DEFAULT_TOURNAMENT_STATUS: TournamentStatus = { finalized: false, finalizedAt: null };
+
+export async function getTournamentStatus(): Promise<TournamentStatus> {
+  const snap = await getDoc(doc(db, 'meta', 'tournament'));
+  return snap.exists() ? (snap.data() as TournamentStatus) : DEFAULT_TOURNAMENT_STATUS;
+}
+
+export function subscribeToTournamentStatus(
+  onUpdate: (status: TournamentStatus) => void,
+  onError?: () => void,
+): () => void {
+  return onSnapshot(
+    doc(db, 'meta', 'tournament'),
+    (snap) => onUpdate(snap.exists() ? (snap.data() as TournamentStatus) : DEFAULT_TOURNAMENT_STATUS),
     () => onError?.(),
   );
 }

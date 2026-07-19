@@ -194,3 +194,10 @@ export interface BonusPredictions {
   totalRedCards: number;
   penaltyShootouts: number;
 }
+
+// ─── Tournament Status ────────────────────────────────────────────────────────
+
+export interface TournamentStatus {
+  finalized: boolean;
+  finalizedAt: string | null; // ISO timestamp
+}

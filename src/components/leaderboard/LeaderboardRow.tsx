@@ -11,7 +11,10 @@ interface Props {
   matchDelta?: { points: number; rankChange: number; multiChipApplied: boolean } | null;
   winnerPick?: string;
   onClick?: () => void;
+  isFinalized?: boolean;
 }
+
+const MEDALS: Record<number, string> = { 1: '🥇', 2: '🥈' };
 
 const RANK_CONFIG: Record<
   number,
@@ -109,6 +112,7 @@ export default function LeaderboardRow({
   matchDelta,
   winnerPick,
   onClick,
+  isFinalized,
 }: Props) {
   const { rank } = standing;
   const cfg = RANK_CONFIG[rank] ?? DEFAULT_RANK_CONFIG;
@@ -140,7 +144,7 @@ export default function LeaderboardRow({
       <span
         className={`w-[18px] text-center text-base font-bold tabular-nums shrink-0 ${cfg.rankClass}`}
       >
-        {rank}
+        {isFinalized && MEDALS[rank] ? MEDALS[rank] : rank}
       </span>
 
       {/* Avatar */}
@@ -175,12 +179,20 @@ export default function LeaderboardRow({
         {/* Stat cluster */}
         <div className="shrink-0 flex flex-col items-end gap-1">
           <div className="h-5 flex items-center justify-end gap-1.5">
-            {matchDelta && <RankChangeChip rankChange={matchDelta.rankChange} />}
-            {matchDelta && (
-              <RoundChangeChip
-                points={matchDelta.points}
-                multiChipApplied={matchDelta.multiChipApplied}
-              />
+            {isFinalized ? (
+              <span className="text-[10px] font-bold tracking-wide rounded-md px-1.5 py-0.5 text-wc-gold bg-wc-gold/10">
+                FINAL
+              </span>
+            ) : (
+              <>
+                {matchDelta && <RankChangeChip rankChange={matchDelta.rankChange} />}
+                {matchDelta && (
+                  <RoundChangeChip
+                    points={matchDelta.points}
+                    multiChipApplied={matchDelta.multiChipApplied}
+                  />
+                )}
+              </>
             )}
           </div>
           <div className="flex items-baseline gap-1">
